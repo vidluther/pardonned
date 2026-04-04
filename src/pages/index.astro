@@ -1,141 +1,169 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import StatGrid from '../components/StatGrid.astro';
-import CategoryGrid from '../components/CategoryGrid.astro';
-import Timeline from '../components/Timeline.astro';
-import SourceBanner from '../components/SourceBanner.astro';
-import '../styles/global.css';
+import Layout from "../layouts/Layout.astro";
+import StatGrid from "../components/StatGrid.astro";
+import CategoryGrid from "../components/CategoryGrid.astro";
+import Timeline from "../components/Timeline.astro";
+import SourceBanner from "../components/SourceBanner.astro";
+import "../styles/global.css";
 
 const currentPath = Astro.url.pathname;
 
-const stats = [
-  { label: 'Clemency grants', value: '1,583+', footnote: 'Including ~1,500 Jan 6 blanket pardons' },
-  { label: 'Restitution abandoned', value: '$251M+', footnote: 'Owed to victims, now uncollectable', variant: 'restitution' as const },
-  { label: 'Prison years erased', value: '187+', footnote: 'Across individual grants' },
-  { label: 'Fraud-related pardons', value: '18', footnote: 'Securities, wire, bank, tax fraud' },
-];
+import { getCollection } from "astro:content";
+import { computeStats, filterByCategory } from "../lib/pardon-stats";
+
+const allGrants = await getCollection("pardonDetails");
+const stats = computeStats(allGrants);
+
+const fraudGrants = filterByCategory(allGrants, "fraud");
+const faceActGrants = filterByCategory(allGrants, "FACE act");
 
 const categoryCounts = [
-  { key: 'j6' as const, count: 1500 },
-  { key: 'face' as const, count: 24 },
-  { key: 'fraud' as const, count: 18 },
-  { key: 'crypto' as const, count: 7 },
-  { key: 'political' as const, count: 4 },
-  { key: 'drug' as const, count: 4 },
+    { key: "j6" as const, count: 1500 },
+    { key: "face" as const, count: 24 },
+    { key: "fraud" as const, count: 18 },
+    { key: "crypto" as const, count: 7 },
+    { key: "political" as const, count: 4 },
+    { key: "drug" as const, count: 4 },
 ];
 
 const timelineEntries = [
-  {
-    date: 'May 28, 2025',
-    grants: '16 Pardons, 6 Commutations',
-    names: ['Todd Chrisley', 'Julie Chrisley', 'Kentrell Gaulden (NBA YoungBoy)', 'Larry Hoover', 'Lawrence Duran', 'Michael Grimm'],
-    highlight: 'Chrisley fraud convictions carried $22M+ in restitution',
-    isLatest: true,
-  },
-  {
-    date: 'May 27, 2025',
-    grants: '2 Pardons',
-    names: ['Scott Howard Jenkins', 'James Callahan'],
-    highlight: 'Jenkins pardoned for bribery; sentenced to 10 years',
-  },
-  {
-    date: 'Apr 23, 2025',
-    grants: '2 Pardons',
-    names: ['Michele Fiore', 'Paul Walczak'],
-    highlight: 'Fiore pardoned pre-sentencing for wire fraud conspiracy',
-  },
-  {
-    date: 'Mar 28, 2025',
-    grants: '3 Commutations',
-    names: ['Jason Galanis', 'Ozy Media Inc.', 'Carlos Watson'],
-    highlight: 'Galanis owed $84M+ in restitution across two cases',
-  },
-  {
-    date: 'Mar 27, 2025',
-    grants: '6 Pardons',
-    names: ['Arthur Hayes', 'Benjamin Delo', 'Trevor Milton', 'HDR Global Trading', 'Samuel Reed', 'Gregory Dwyer'],
-    highlight: 'HDR Global fined $100M for Bank Secrecy Act violations',
-  },
-  {
-    date: 'Mar 25, 2025',
-    grants: '1 Pardon',
-    names: ['Devon Archer'],
-    highlight: 'Archer owed $43.4M restitution for securities fraud',
-  },
-  {
-    date: 'Jan 23, 2025',
-    grants: '24 Pardons',
-    names: ['Lauren Handy', 'Bevelyn Beatty Williams', 'Eva Edl', '+ 21 others'],
-    highlight: 'All convicted under the FACE Act for clinic blockades',
-  },
-  {
-    date: 'Jan 21, 2025',
-    grants: '1 Pardon',
-    names: ['Ross William Ulbricht'],
-    highlight: 'Silk Road founder; served ~11 years of life sentence',
-  },
-  {
-    date: 'Jan 20, 2025',
-    grants: 'Blanket pardon & commutations',
-    names: ['~1,500+ January 6 defendants'],
-    highlight: 'Executive order on Inauguration Day',
-  },
+    {
+        date: "May 28, 2025",
+        grants: "16 Pardons, 6 Commutations",
+        names: [
+            "Todd Chrisley",
+            "Julie Chrisley",
+            "Kentrell Gaulden (NBA YoungBoy)",
+            "Larry Hoover",
+            "Lawrence Duran",
+            "Michael Grimm",
+        ],
+        highlight: "Chrisley fraud convictions carried $22M+ in restitution",
+        isLatest: true,
+    },
+    {
+        date: "May 27, 2025",
+        grants: "2 Pardons",
+        names: ["Scott Howard Jenkins", "James Callahan"],
+        highlight: "Jenkins pardoned for bribery; sentenced to 10 years",
+    },
+    {
+        date: "Apr 23, 2025",
+        grants: "2 Pardons",
+        names: ["Michele Fiore", "Paul Walczak"],
+        highlight: "Fiore pardoned pre-sentencing for wire fraud conspiracy",
+    },
+    {
+        date: "Mar 28, 2025",
+        grants: "3 Commutations",
+        names: ["Jason Galanis", "Ozy Media Inc.", "Carlos Watson"],
+        highlight: "Galanis owed $84M+ in restitution across two cases",
+    },
+    {
+        date: "Mar 27, 2025",
+        grants: "6 Pardons",
+        names: [
+            "Arthur Hayes",
+            "Benjamin Delo",
+            "Trevor Milton",
+            "HDR Global Trading",
+            "Samuel Reed",
+            "Gregory Dwyer",
+        ],
+        highlight: "HDR Global fined $100M for Bank Secrecy Act violations",
+    },
+    {
+        date: "Mar 25, 2025",
+        grants: "1 Pardon",
+        names: ["Devon Archer"],
+        highlight: "Archer owed $43.4M restitution for securities fraud",
+    },
+    {
+        date: "Jan 23, 2025",
+        grants: "24 Pardons",
+        names: [
+            "Lauren Handy",
+            "Bevelyn Beatty Williams",
+            "Eva Edl",
+            "+ 21 others",
+        ],
+        highlight: "All convicted under the FACE Act for clinic blockades",
+    },
+    {
+        date: "Jan 21, 2025",
+        grants: "1 Pardon",
+        names: ["Ross William Ulbricht"],
+        highlight: "Silk Road founder; served ~11 years of life sentence",
+    },
+    {
+        date: "Jan 20, 2025",
+        grants: "Blanket pardon & commutations",
+        names: ["~1,500+ January 6 defendants"],
+        highlight: "Executive order on Inauguration Day",
+    },
 ];
 ---
 
-<Layout 
-  title="Home"
-  currentPath={currentPath}
->
-  <!-- Hero Section -->
-  <section class="py-20 px-10 max-w-home mx-auto text-center">
-    <p class="hero-tracking mb-6">Tracking presidential clemency · Updated May 2025</p>
-    <h1 class="hero-headline mb-6 max-w-3xl mx-auto">
-      Who gets a second chance—<br />and what it costs the rest of us
-    </h1>
-    <p class="hero-subtitle max-w-xl mx-auto mb-12">
-      Every pardon and commutation granted by President Trump since January 2025, sourced directly from DOJ warrant documents. Follow the patterns.
-    </p>
+<Layout title="Home" currentPath={currentPath}>
+    <!-- Hero Section -->
+    <section class="py-20 px-10 max-w-home mx-auto text-center">
+        <p class="hero-tracking mb-6">
+            Tracking presidential clemency · Updated May 2025
+        </p>
+        <h1 class="hero-headline mb-6 max-w-3xl mx-auto">
+            Who gets a second chance—<br />and what it costs the rest of us
+        </h1>
+        <p class="hero-subtitle max-w-xl mx-auto mb-12">
+            Every pardon and commutation granted by President Trump since
+            January 2025, sourced directly from DOJ warrant documents. Follow
+            the patterns.
+        </p>
 
-    <StatGrid stats={stats} animated={true} />
-  </section>
+        <StatGrid stats={stats} animated={true} />
+    </section>
 
-  <!-- Gradient Divider -->
-  <div class="max-w-home mx-auto px-10">
-    <div class="divider-gradient"></div>
-  </div>
-
-  <!-- Categories Section -->
-  <section class="py-section px-10 max-w-home mx-auto">
-    <h2 class="text-section font-serif text-text-primary mb-2">By category</h2>
-    <p class="text-nav text-text-faint mb-8">Clemency grants grouped by primary offense type</p>
-    <CategoryGrid 
-      categoryCounts={categoryCounts} 
-      columns={3}
-      hrefPattern="/search?category={key}"
-    />
-  </section>
-
-  <!-- Flat Divider -->
-  <div class="max-w-home mx-auto px-10">
-    <div class="divider-flat"></div>
-  </div>
-
-  <!-- Timeline Section -->
-  <section class="py-section px-10 max-w-home mx-auto">
-    <h2 class="text-section font-serif text-text-primary mb-2">Timeline</h2>
-    <p class="text-nav text-text-faint mb-10">Every clemency action in reverse chronological order</p>
-    <Timeline entries={timelineEntries} />
-    
-    <div class="text-center mt-5">
-      <a href="/search" class="load-more-btn inline-block no-underline">
-        Search all pardons →
-      </a>
+    <!-- Gradient Divider -->
+    <div class="max-w-home mx-auto px-10">
+        <div class="divider-gradient"></div>
     </div>
-  </section>
 
-  <!-- Source Banner -->
-  <section class="max-w-source mx-auto px-8 mb-10">
-    <SourceBanner />
-  </section>
+    <!-- Categories Section -->
+    <section class="py-section px-10 max-w-home mx-auto">
+        <h2 class="text-section font-serif text-text-primary mb-2">
+            By category
+        </h2>
+        <p class="text-nav text-text-faint mb-8">
+            Clemency grants grouped by primary offense type
+        </p>
+        <CategoryGrid
+            categoryCounts={categoryCounts}
+            columns={3}
+            hrefPattern="/search?category={key}"
+        />
+    </section>
+
+    <!-- Flat Divider -->
+    <div class="max-w-home mx-auto px-10">
+        <div class="divider-flat"></div>
+    </div>
+
+    <!-- Timeline Section -->
+    <section class="py-section px-10 max-w-home mx-auto">
+        <h2 class="text-section font-serif text-text-primary mb-2">Timeline</h2>
+        <p class="text-nav text-text-faint mb-10">
+            Every clemency action in reverse chronological order
+        </p>
+        <Timeline entries={timelineEntries} />
+
+        <div class="text-center mt-5">
+            <a href="/search" class="load-more-btn inline-block no-underline">
+                Search all pardons →
+            </a>
+        </div>
+    </section>
+
+    <!-- Source Banner -->
+    <section class="max-w-source mx-auto px-8 mb-10">
+        <SourceBanner />
+    </section>
 </Layout>

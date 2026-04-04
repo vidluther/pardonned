@@ -1,30 +1,29 @@
 ---
-import StatCard from './StatCard.astro';
+import StatCard from "./StatCard.astro";
 
 interface Stat {
-  label: string;
-  value: string;
-  footnote?: string;
-  variant?: 'default' | 'restitution' | 'small';
+    label: string;
+    value: string;
+    footnote?: string;
+    variant?: "default" | "restitution" | "small";
 }
 
 interface Props {
-  stats: Stat[];
-  animated?: boolean;
+    stats: Stat[];
+    animated?: boolean;
 }
 
 const { stats, animated = false } = Astro.props;
+console.log(stats);
 ---
 
 <div class="grid grid-cols-4 gap-stat-grid">
-  {stats.map((stat, index) => (
     <StatCard
-      label={stat.label}
-      value={stat.value}
-      footnote={stat.footnote}
-      variant={stat.variant || 'default'}
-      animated={animated}
-      animationDelay={animated ? index * 150 : 0}
+        label="Total Grants"
+        value={stats.totalGrants}
+        footnote="footnote"
+        variant="default"
+        animated={animated}
+        animationDelay={animated ? 1 * 150 : 0}
     />
-  ))}
 </div>
