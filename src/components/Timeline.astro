@@ -1,0 +1,45 @@
+---
+import NameChip from './NameChip.astro';
+
+interface TimelineEntry {
+  date: string;
+  grants: string;
+  names: string[];
+  highlight: string;
+  isLatest?: boolean;
+}
+
+interface Props {
+  entries: TimelineEntry[];
+}
+
+const { entries } = Astro.props;
+---
+
+<div class="timeline-container">
+  <div class="timeline-line"></div>
+  
+  {entries.map((entry, i) => (
+    <div class="relative mb-9 pl-5">
+      <div
+        class:list={[
+          'timeline-dot absolute -left-8 top-1.5',
+          entry.isLatest ? 'timeline-dot-active' : ''
+        ]}
+      ></div>
+      
+      <div class="flex items-baseline gap-4 mb-1.5">
+        <span class="timeline-date">{entry.date}</span>
+        <span class="timeline-grants-badge">{entry.grants}</span>
+      </div>
+      
+      <div class="flex flex-wrap gap-1.5 mb-2">
+        {entry.names.map((name) => (
+          <NameChip name={name} />
+        ))}
+      </div>
+      
+      <p class="timeline-highlight m-0">{entry.highlight}</p>
+    </div>
+  ))}
+</div>

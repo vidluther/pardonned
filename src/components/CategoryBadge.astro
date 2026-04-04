@@ -1,0 +1,32 @@
+---
+import { categoryColors, type CategoryKey } from '../config/categories';
+
+interface Props {
+  category: CategoryKey;
+  label?: string;
+}
+
+const { category, label } = Astro.props;
+
+const color = categoryColors[category];
+
+// Default labels for categories
+const defaultLabels: Record<CategoryKey, string> = {
+  j6: 'January 6',
+  face: 'FACE Act',
+  fraud: 'Financial Fraud',
+  crypto: 'Crypto & Securities',
+  political: 'Political Corruption',
+  drug: 'Drug Offenses',
+  other: 'Other',
+};
+
+const displayLabel = label || defaultLabels[category];
+---
+
+<span 
+  class="badge badge-category"
+  style={`color: ${color};`}
+>
+  {displayLabel}
+</span>

@@ -1,0 +1,30 @@
+---
+interface Props {
+  label: string;
+  active?: boolean;
+  onClick?: string;
+  href?: string;
+  count?: number;
+}
+
+const { label, active = false, onClick, href, count } = Astro.props;
+
+const displayLabel = count !== undefined ? `${label} (${count})` : label;
+
+const classes = [
+  'filter-pill',
+  active ? 'filter-pill-active' : 'filter-pill-inactive'
+];
+
+const Element = href ? 'a' : 'button';
+---
+
+<Element 
+  class:list={classes}
+  href={href}
+  onclick={onClick}
+  type={!href ? 'button' : undefined}
+  aria-pressed={active}
+>
+  {displayLabel}
+</Element>

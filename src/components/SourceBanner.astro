@@ -1,0 +1,19 @@
+---
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const { 
+  title = "Every claim sourced to DOJ warrant documents",
+  description = "All data on this site is scraped directly from the U.S. Department of Justice Office of the Pardon Attorney. Each pardon links to its original warrant PDF."
+} = Astro.props;
+---
+
+<div class="source-banner">
+  <span class="text-xl mt-0.5">⚖</span>
+  <div>
+    <p class="text-sm text-text-primary m-0 mb-1.5 font-medium">{title}</p>
+    <p class="text-xs text-text-faint m-0 leading-relaxed">{description}</p>
+  </div>
+</div>

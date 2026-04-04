@@ -1,0 +1,85 @@
+---
+import TypeBadge from './TypeBadge.astro';
+import CategoryBadge from './CategoryBadge.astro';
+import { categoryColors, type CategoryKey } from '../config/categories';
+
+interface Props {
+  name: string;
+  clemencyType: 'pardon' | 'commutation';
+  category: CategoryKey;
+  offense: string;
+  district?: string;
+  sentence?: string;
+  date: string;
+  restitution?: number;
+  href?: string;
+}
+
+const { 
+  name, 
+  clemencyType, 
+  category, 
+  offense, 
+  district, 
+  sentence, 
+  date, 
+  restitution,
+  href 
+} = Astro.props;
+
+const CardWrapper = href ? 'a' : 'div';
+
+// Format restitution for display
+function formatRestitution(value: number): string {
+  if (value >= 1_000_000) {
+    return `$${(value / 1_000_000).toFixed(1)}M`;
+  }
+  if (value >= 1_000) {
+    return `$${Math.round(value / 1_000)}K`;
+  }
+  return `$${value.toLocaleString()}`;
+}
+
+const formattedRestitution = restitution ? formatRestitution(restitution) : null;
+---
+
+<CardWrapper 
+  href={href}
+  class:list={[
+    'search-card',
+    href && 'block no-underline'
+  ]}
+>
+  <div class="flex justify-between items-start">
+    <div class="flex-1 min-w-0">
+      <!-- Row 1: Name, Type Badge, Category Badge -->
+      <div class="flex items-center gap-3 mb-2 flex-wrap">
+        <span class="text-card-title font-medium text-text-primary truncate">{name}</span>
+        <TypeBadge type={clemencyType} />
+        <CategoryBadge category={category} />
+      </div>
+      
+      <!-- Row 2: Offense -->
+      <p class="text-card-offense text-text-secondary mb-2 line-clamp-2">{offense}</p>
+      
+      <!-- Row 3: District and Sentence -->
+      {(district || sentence) && (
+        <div class="flex gap-4 text-meta text-text-faint">
+          {district && <span>{district}</span>}
+          {sentence && <span>{sentence}</span>}
+        </div>
+      )}
+    </div>
+    
+    <!-- Right Column: Date and Restitution -->
+    <div class="text-right ml-4 flex-shrink-0">
+      <div class="text-meta text-text-faint mb-1">{date}</div>
+      {formattedRestitution && (
+        <>
+          <div class="text-body font-medium text-accent">{formattedRestitution}</div>
+          <div class="text-badge text-text-faint">restitution</div>
+        </>
+      )}
+    </div>
+  </div>
+</CardWrapper>

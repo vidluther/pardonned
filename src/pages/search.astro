@@ -1,0 +1,236 @@
+---
+import Layout from '../layouts/Layout.astro';
+import FilterPill from '../components/FilterPill.astro';
+import GrantList from '../components/GrantList.astro';
+import { categories } from '../config/categories';
+import '../styles/global.css';
+
+const currentPath = Astro.url.pathname;
+
+const searchResults = [
+  {
+    id: '1',
+    name: 'Robert Johnson',
+    clemencyType: 'pardon' as const,
+    category: 'fraud' as const,
+    offense: 'Bank Fraud; Wire Fraud',
+    district: 'S.D.N.Y.',
+    sentence: '60 months prison',
+    date: 'Jan 20, 2025',
+    restitution: 500000,
+  },
+  {
+    id: '2',
+    name: 'Sarah Williams',
+    clemencyType: 'commutation' as const,
+    category: 'drug' as const,
+    offense: 'Conspiracy to Distribute Controlled Substances',
+    district: 'W.D. Texas',
+    sentence: '120 months prison',
+    date: 'Jan 20, 2025',
+  },
+  {
+    id: '3',
+    name: 'Michael Chen',
+    clemencyType: 'pardon' as const,
+    category: 'crypto' as const,
+    offense: 'Securities Fraud; Money Laundering',
+    district: 'N.D. Cal.',
+    sentence: '36 months prison',
+    date: 'Jan 19, 2025',
+    restitution: 2500000,
+  },
+  {
+    id: '4',
+    name: 'Patricia Martinez',
+    clemencyType: 'commutation' as const,
+    category: 'political' as const,
+    offense: 'Honest Services Fraud',
+    district: 'D. Md.',
+    sentence: '24 months prison',
+    date: 'Jan 18, 2025',
+  },
+  {
+    id: '5',
+    name: 'David Thompson',
+    clemencyType: 'pardon' as const,
+    category: 'j6' as const,
+    offense: 'Obstruction of an Official Proceeding',
+    district: 'D.D.C.',
+    sentence: '18 months prison',
+    date: 'Jan 20, 2025',
+  },
+  {
+    id: '6',
+    name: 'Lisa Anderson',
+    clemencyType: 'pardon' as const,
+    category: 'face' as const,
+    offense: 'Conspiracy to Violate FACE Act',
+    district: 'E.D. Va.',
+    sentence: '12 months prison',
+    date: 'Jan 23, 2025',
+  },
+];
+---
+
+<Layout 
+  title="Search"
+  currentPath={currentPath}
+>
+  <div class="max-w-search mx-auto px-10 py-section">
+    <h1 class="text-page-title font-serif text-text-primary mb-2">Search Grants</h1>
+    <p class="text-body text-text-body mb-8">
+      Filter and search through all clemency grants.
+    </p>
+
+    <!-- Filter Bar -->
+    <div class="filter-bar mb-8">
+      <div class="flex flex-wrap gap-3 items-center">
+        <input 
+          id="search-input"
+          type="text" 
+          placeholder="Search by name..."
+          class="filter-input flex-1 min-w-[200px]"
+        />
+        <select id="type-select" class="filter-input !py-2 !px-3 !w-auto">
+          <option value="">All Types</option>
+          <option value="pardon">Pardon</option>
+          <option value="commutation">Commutation</option>
+        </select>
+      </div>
+      
+      <!-- Category Pills -->
+      <div id="category-pills" class="flex flex-wrap gap-2 mt-4">
+        <FilterPill label="All" active={true} count={searchResults.length} />
+        {categories.map((cat) => {
+          const count = searchResults.filter((g) => g.category === cat.key).length;
+          if (count === 0) return null;
+          return <FilterPill label={cat.name} count={count} />;
+        })}
+      </div>
+    </div>
+
+    <!-- Results Count -->
+    <p id="results-count" class="text-meta text-text-faint mb-4">Showing {searchResults.length.toLocaleString()} results</p>
+
+    <!-- Results List -->
+    <div id="results-list">
+      <GrantList grants={searchResults} hrefPattern="/pardon/{id}" />
+    </div>
+
+    <!-- Empty State -->
+    <div id="empty-state" class="hidden text-center py-16">
+      <p class="text-faint text-lg mb-2">No results found</p>
+      <p class="text-faint">Try adjusting your filters or search terms.</p>
+    </div>
+  </div>
+
+  <script is:inline>
+    document.addEventListener('DOMContentLoaded', () => {
+      const grants = {searchResults};
+      const searchInput = document.getElementById('search-input');
+      const typeSelect = document.getElementById('type-select');
+      const resultsList = document.getElementById('results-list');
+      const emptyState = document.getElementById('empty-state');
+      const resultsCount = document.getElementById('results-count');
+      const categoryPills = document.getElementById('category-pills');
+      
+      let activeCategory = 'all';
+
+      function formatRestitution(value) {
+        if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
+        if (value >= 1000) return `$${Math.round(value / 1000)}K`;
+        return `$${value.toLocaleString()}`;
+      }
+
+      function renderResults(filtered) {
+        if (filtered.length === 0) {
+          resultsList.innerHTML = '';
+          emptyState.classList.remove('hidden');
+          resultsCount.textContent = 'No results';
+          return;
+        }
+        
+        emptyState.classList.add('hidden');
+        resultsCount.textContent = `Showing ${filtered.length.toLocaleString()} results`;
+        
+        resultsList.innerHTML = filtered.map((grant) => {
+          const categoryLabels = {
+            j6: 'January 6', face: 'FACE Act', fraud: 'Financial Fraud',
+            crypto: 'Crypto & Securities', political: 'Political Corruption',
+            drug: 'Drug Offenses', other: 'Other'
+          };
+          const categoryColors = {
+            j6: '#C23B22', face: '#B8652A', fraud: '#8A6B1E',
+            crypto: '#2A6A7A', political: '#6A4B7A', drug: '#3A6A4A', other: '#7A7870'
+          };
+          
+          const restitutionHtml = grant.restitution
+            ? `<div class="text-body font-medium text-accent">${formatRestitution(grant.restitution)}</div><div class="text-badge text-text-faint">restitution</div>`
+            : '';
+          
+          const metaHtml = (grant.district || grant.sentence)
+            ? `<div class="flex gap-4 text-meta text-text-faint">${grant.district ? `<span>${grant.district}</span>` : ''}${grant.sentence ? `<span>${grant.sentence}</span>` : ''}</div>`
+            : '';
+
+          return `
+            <a href="/pardon/${grant.id}" class="search-card block no-underline mb-3">
+              <div class="flex justify-between items-start">
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-3 mb-2 flex-wrap">
+                    <span class="text-card-title font-medium text-text-primary truncate">${grant.name}</span>
+                    <span class="badge ${grant.clemencyType === 'pardon' ? 'badge-pardon' : 'badge-commutation'}">${grant.clemencyType === 'pardon' ? 'Pardon' : 'Commutation'}</span>
+                    <span class="badge badge-category" style="color: ${categoryColors[grant.category]}">${categoryLabels[grant.category]}</span>
+                  </div>
+                  <p class="text-card-offense text-text-secondary mb-2 line-clamp-2">${grant.offense}</p>
+                  ${metaHtml}
+                </div>
+                <div class="text-right ml-4 flex-shrink-0">
+                  <div class="text-meta text-text-faint mb-1">${grant.date}</div>
+                  ${restitutionHtml}
+                </div>
+              </div>
+            </a>
+          `;
+        }).join('');
+      }
+
+      function filterGrants() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const typeFilter = typeSelect.value;
+        
+        let filtered = grants.filter((grant) => {
+          const matchesSearch = !searchTerm || grant.name.toLowerCase().includes(searchTerm) || grant.offense.toLowerCase().includes(searchTerm);
+          const matchesType = !typeFilter || grant.clemencyType === typeFilter;
+          const matchesCategory = activeCategory === 'all' || grant.category === activeCategory;
+          return matchesSearch && matchesType && matchesCategory;
+        });
+        
+        renderResults(filtered);
+      }
+
+      searchInput.addEventListener('input', filterGrants);
+      typeSelect.addEventListener('change', filterGrants);
+      
+      categoryPills.addEventListener('click', (e) => {
+        const pill = e.target.closest('button, a');
+        if (!pill) return;
+        
+        const label = pill.textContent.trim().split(' (')[0];
+        const categoryMap = { 'All': 'all' };
+        categories.forEach((cat) => { categoryMap[cat.name] = cat.key; });
+        
+        activeCategory = categoryMap[label] || 'all';
+        
+        document.querySelectorAll('#category-pills button, #category-pills a').forEach((p) => {
+          p.classList.remove('filter-pill-active');
+          p.classList.add('filter-pill-inactive');
+        });
+        pill.classList.remove('filter-pill-inactive');
+        pill.classList.add('filter-pill-active');
+        
+        filterGrants();
+      });
+    });
+  </script>
+</Layout>

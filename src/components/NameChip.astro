@@ -1,0 +1,17 @@
+---
+interface Props {
+  name: string;
+  href?: string;
+}
+
+const { name, href } = Astro.props;
+
+const Chip = href ? 'a' : 'span';
+---
+
+<Chip 
+  class="name-chip"
+  href={href}
+>
+  {name}
+</Chip>

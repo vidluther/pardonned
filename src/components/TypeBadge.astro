@@ -1,0 +1,16 @@
+---
+interface Props {
+  type: 'pardon' | 'commutation';
+}
+
+const { type } = Astro.props;
+
+const label = type === 'pardon' ? 'Pardon' : 'Commutation';
+---
+
+<span class:list={[
+  'badge',
+  type === 'pardon' ? 'badge-pardon' : 'badge-commutation'
+]}>
+  {label}
+</span>

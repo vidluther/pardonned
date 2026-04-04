@@ -1,0 +1,29 @@
+---
+import { categoryColors, type CategoryKey } from '../config/categories';
+
+interface Props {
+  name: string;
+  count: number;
+  category: CategoryKey;
+  href?: string;
+}
+
+const { name, count, category, href } = Astro.props;
+
+const color = categoryColors[category];
+const CardWrapper = href ? 'a' : 'div';
+---
+
+<CardWrapper 
+  href={href}
+  class:list={[
+    'category-card',
+    href && 'hover:bg-muted transition-colors'
+  ]}
+  style={`border-left-color: ${color};`}
+>
+  <span class="category-count" style={`color: ${color};`}>
+    {count.toLocaleString()}
+  </span>
+  <span class="text-nav text-text-body">{name}</span>
+</CardWrapper>

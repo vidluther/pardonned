@@ -1,0 +1,41 @@
+---
+import { siteConfig, mainNavigation, isActiveNavItem } from '../config/navigation';
+
+interface Props {
+  currentPath?: string;
+}
+
+const { currentPath = "/" } = Astro.props;
+---
+
+<header class="border-b border-border-DEFAULT">
+  <div class="max-w-home mx-auto px-10 py-4 flex justify-between items-center">
+    <!-- Logo / Wordmark -->
+    <a href="/" class="flex items-baseline gap-3 no-underline hover:opacity-80 transition-opacity">
+      <span class="wordmark">
+        Pardonn<span class="wordmark-accent">e</span>d
+      </span>
+      <span class="tracker-label">{siteConfig.tagline}</span>
+    </a>
+
+    <!-- Navigation -->
+    <nav class="flex gap-8">
+      {mainNavigation.map((item) => {
+        const isActive = isActiveNavItem(item.href, currentPath);
+        return (
+          <a
+            href={item.href}
+            class:list={[
+              "text-nav transition-colors pb-0.5",
+              isActive 
+                ? "text-text-primary font-medium border-b border-accent" 
+                : "text-text-muted hover:text-text-primary"
+            ]}
+          >
+            {item.label}
+          </a>
+        );
+      })}
+    </nav>
+  </div>
+</header>

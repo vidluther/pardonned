@@ -1,23 +1,53 @@
+---
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { siteConfig } from '../config/navigation';
+
+interface Props {
+  title?: string;
+  description?: string;
+  showHeader?: boolean;
+  showFooter?: boolean;
+  currentPath?: string;
+}
+
+const { 
+  title = siteConfig.name,
+  description = siteConfig.description,
+  showHeader = true,
+  showFooter = true,
+  currentPath = "/"
+} = Astro.props;
+
+const fullTitle = title === siteConfig.name 
+  ? title 
+  : `${title} — ${siteConfig.name}`;
+---
+
 <!doctype html>
 <html lang="en">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro Basics</title>
-	</head>
-	<body>
-		<slot />
-	</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="description" content={description} />
+    
+    <!-- Google Fonts - DM Sans + DM Serif Display -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=DM+Serif+Display:ital@0;1&display=swap">
+    
+    <title>{fullTitle}</title>
+  </head>
+  <body class="bg-page font-sans text-body antialiased min-h-screen flex flex-col">
+    {showHeader && <Header currentPath={currentPath} />}
+    
+    <main class="flex-1">
+      <slot />
+    </main>
+    
+    {showFooter && <Footer />}
+  </body>
 </html>
-
-<style>
-	html,
-	body {
-		margin: 0;
-		width: 100%;
-		height: 100%;
-	}
-</style>

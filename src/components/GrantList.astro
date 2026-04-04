@@ -1,0 +1,39 @@
+---
+import GrantListItem from './GrantListItem.astro';
+import type { CategoryKey } from '../config/categories';
+
+interface Grant {
+  name: string;
+  clemencyType: 'pardon' | 'commutation';
+  category: CategoryKey;
+  offense: string;
+  district?: string;
+  sentence?: string;
+  date: string;
+  restitution?: number;
+  id?: string;
+}
+
+interface Props {
+  grants: Grant[];
+  hrefPattern?: string; // e.g., "/pardon/{id}"
+}
+
+const { grants, hrefPattern } = Astro.props;
+---
+
+<div class="space-y-3">
+  {grants.map((grant) => (
+    <GrantListItem
+      name={grant.name}
+      clemencyType={grant.clemencyType}
+      category={grant.category}
+      offense={grant.offense}
+      district={grant.district}
+      sentence={grant.sentence}
+      date={grant.date}
+      restitution={grant.restitution}
+      href={grant.id && hrefPattern ? hrefPattern.replace('{id}', grant.id) : undefined}
+    />
+  ))}
+</div>
