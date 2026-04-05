@@ -7,6 +7,7 @@ interface TimelineEntry {
   names: string[];
   highlight: string;
   isLatest?: boolean;
+  hrefs?: Record<string, string>; // Map of name -> href
 }
 
 interface Props {
@@ -35,7 +36,7 @@ const { entries } = Astro.props;
       
       <div class="flex flex-wrap gap-1.5 mb-2">
         {entry.names.map((name) => (
-          <NameChip name={name} />
+          <NameChip name={name} href={entry.hrefs?.[name]} />
         ))}
       </div>
       

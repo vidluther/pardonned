@@ -10,6 +10,7 @@ const currentPath = Astro.url.pathname;
 
 import { getCollection } from "astro:content";
 import { computeStats } from "../lib/pardon-stats";
+import { slugify } from "../lib/slugify";
 
 const categoryColors: Record<string, string> = {
     fraud: "#8A6B1E",
@@ -55,6 +56,12 @@ const timelineEntries = sortedDates.map((date, i) => {
         (g) => g.clemency_type === "commutation",
     ).length;
 
+    // Create hrefs mapping for each name
+    const hrefs = grants.reduce((acc, grant) => {
+        acc[grant.recipient_name] = `/pardon/details/${slugify(grant.recipient_name)}`;
+        return acc;
+    }, {} as Record<string, string>);
+
     const parts: string[] = [];
     if (pardons > 0)
         parts.push(`${pardons} ${pardons === 1 ? "pardon" : "pardons"}`);
@@ -81,6 +88,7 @@ const timelineEntries = sortedDates.map((date, i) => {
         names,
         highlight: categories.join(", "),
         isLatest: i === 0,
+        hrefs,
     };
 });
 ---

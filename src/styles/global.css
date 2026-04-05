@@ -119,7 +119,20 @@
     border: 1px solid #e8e6e0;
     padding: 4px 10px;
     border-radius: 4px;
+    cursor: default;
+    display: inline-block;
+    transition: all 0.15s ease;
+  }
+
+  .name-chip-link {
     cursor: pointer;
+    text-decoration: none;
+  }
+
+  .name-chip-link:hover {
+    background: #e8e6e0;
+    border-color: #d0cec8;
+    color: #1a1918;
   }
 
   .badge {

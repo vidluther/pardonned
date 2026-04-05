@@ -4,6 +4,7 @@ import FilterPill from '../components/FilterPill.astro';
 import '../styles/global.css';
 
 import { getCollection } from "astro:content";
+import { slugify } from "../lib/slugify";
 
 const currentPath = Astro.url.pathname;
 
@@ -46,7 +47,7 @@ function formatSentence(months: number | null, originalSentence: string | null):
 const searchResults = allGrants.map((entry) => {
     const d = entry.data;
     return {
-        id: entry.id,
+        slug: slugify(d.recipient_name),
         name: d.recipient_name,
         clemencyType: d.clemency_type,
         category: d.offense_category,
@@ -169,7 +170,7 @@ for (const grant of searchResults) {
             : '';
 
           return `
-            <a href="/pardon/${grant.id}" class="search-card block no-underline mb-3">
+            <a href="/pardon/details/${grant.slug}" class="search-card block no-underline mb-3">
               <div class="flex justify-between items-start">
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center gap-3 mb-2 flex-wrap">
