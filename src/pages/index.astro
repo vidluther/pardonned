@@ -15,9 +15,10 @@ import type { CategoryKey } from "../config/categories";
 const allGrants = await getCollection("pardonDetails");
 const stats = computeStats(allGrants);
 
-const categoryCounts = Object.entries(stats.byCategory).map(
-    ([key, count]) => ({ key: key as CategoryKey, count }),
-);
+const categoryCounts = Object.entries(stats.byCategory).map(([key, count]) => ({
+    key: key as CategoryKey,
+    count,
+}));
 
 const timelineEntries = [
     {
@@ -100,19 +101,12 @@ const timelineEntries = [
 <Layout title="Home" currentPath={currentPath}>
     <!-- Hero Section -->
     <section class="py-20 px-10 max-w-home mx-auto text-center">
-        <p class="hero-tracking mb-6">
-            Tracking presidential clemency · Updated May 2025
-        </p>
         <h1 class="hero-headline mb-6 max-w-3xl mx-auto">
-            Who gets a second chance—<br />and what it costs the rest of us
+            Pardons granted by Donald J Trump
         </h1>
-        <p class="hero-subtitle max-w-xl mx-auto mb-12">
-            Every pardon and commutation granted by President Trump since
-            January 2025, sourced directly from DOJ warrant documents. Follow
-            the patterns.
-        </p>
-
+        <h2 class="">Not Including the January 6th Pardons</h2>
         <StatGrid stats={stats} animated={true} />
+        <p class="hero-tracking py-5 mb-2">Updated April 2026</p>
     </section>
 
     <!-- Gradient Divider -->

@@ -38,29 +38,17 @@ const { stats, animated = false } = Astro.props;
 
 <div class="grid grid-cols-4 gap-stat-grid">
     <StatCard
-        label="Total Grants"
+        label="Pardons"
         value={stats.totalGrants.toLocaleString()}
         variant="default"
         animated={animated}
+        footnote="Does not include January 6th"
         animationDelay={animated ? 1 * 150 : 0}
     />
     <StatCard
-        label="Pardons"
-        value={stats.totalPardons.toLocaleString()}
-        variant="default"
-        animated={animated}
-        animationDelay={animated ? 2 * 150 : 0}
-    />
-    <StatCard
-        label="Commutations"
-        value={stats.totalCommutations.toLocaleString()}
-        variant="default"
-        animated={animated}
-        animationDelay={animated ? 3 * 150 : 0}
-    />
-    <StatCard
-        label="Years Erased"
+        label="Prison Time Reduced "
         value={stats.totalYearsErased.toLocaleString()}
+        footnote="In Years"
         variant="default"
         animated={animated}
         animationDelay={animated ? 4 * 150 : 0}
@@ -68,29 +56,15 @@ const { stats, animated = false } = Astro.props;
     <StatCard
         label="Restitution Abandoned"
         value={formatCurrency(stats.totalRestitutionAbandoned)}
-        variant="restitution"
+        variant="default"
         animated={animated}
         animationDelay={animated ? 5 * 150 : 0}
     />
     <StatCard
         label="Fines Abandoned"
         value={formatCurrency(stats.totalFinesAbandoned)}
-        variant="restitution"
+        variant="default"
         animated={animated}
         animationDelay={animated ? 6 * 150 : 0}
-    />
-    <StatCard
-        label="Fraud Cases"
-        value={stats.fraudCount.toLocaleString()}
-        variant="default"
-        animated={animated}
-        animationDelay={animated ? 7 * 150 : 0}
-    />
-    <StatCard
-        label="Life Sentences"
-        value={stats.lifeSentenceCount.toLocaleString()}
-        variant="default"
-        animated={animated}
-        animationDelay={animated ? 8 * 150 : 0}
     />
 </div>

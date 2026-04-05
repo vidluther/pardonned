@@ -4,15 +4,6 @@ export interface NavItem {
   href: string;
 }
 
-export const siteConfig = {
-  name: "Pardonned",
-  tagline: "Clemency tracker",
-  description:
-    "A public-interest data site tracking presidential clemency grants.",
-  dataSource: "DOJ Office of the Pardon Attorney",
-  disclaimer: "Not affiliated with the U.S. government",
-};
-
 export const mainNavigation: NavItem[] = [
   { label: "Home", href: "/" },
   { label: "Search", href: "/search" },
