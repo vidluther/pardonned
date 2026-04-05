@@ -1,10 +1,11 @@
 ---
 import CategoryCard from './CategoryCard.astro';
-import { categories, type CategoryKey } from '../config/categories';
 
 interface CategoryCount {
-  key: CategoryKey;
+  key: string;
+  name: string;
   count: number;
+  color?: string;
 }
 
 interface Props {
@@ -15,27 +16,17 @@ interface Props {
 
 const { categoryCounts, columns = 3, hrefPattern } = Astro.props;
 
-const sortedCategories = categoryCounts
-  .map((cc) => {
-    const config = categories.find((c) => c.key === cc.key);
-    if (!config) {
-      console.warn(`Unknown category key: ${cc.key}`);
-      return null;
-    }
-    return { ...cc, config };
-  })
-  .filter((item): item is NonNullable<typeof item> => item !== null)
-  .sort((a, b) => b.count - a.count);
+const sortedCategories = [...categoryCounts].sort((a, b) => b.count - a.count);
 
 const gridClasses = columns === 2 ? 'grid-cols-2' : 'grid-cols-3';
 ---
 
 <div class:list={['grid gap-grid', gridClasses]}>
-  {sortedCategories.map(({ key, count, config }) => (
+  {sortedCategories.map(({ key, name, count, color }) => (
     <CategoryCard
-      name={config.name}
+      name={name}
       count={count}
-      category={key}
+      color={color}
       href={hrefPattern?.replace('{key}', key)}
     />
   ))}

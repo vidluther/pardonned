@@ -1,11 +1,13 @@
 ---
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
-import { siteConfig } from '../config/navigation';
+import { siteConfig } from '../config/site';
+import { generateMetaTags, generateJsonLd } from '../lib/seo';
 
 interface Props {
   title?: string;
   description?: string;
+  ogImage?: string;
   showHeader?: boolean;
   showFooter?: boolean;
   currentPath?: string;
@@ -14,6 +16,7 @@ interface Props {
 const { 
   title = siteConfig.name,
   description = siteConfig.description,
+  ogImage,
   showHeader = true,
   showFooter = true,
   currentPath = "/"
@@ -22,6 +25,17 @@ const {
 const fullTitle = title === siteConfig.name 
   ? title 
   : `${title} — ${siteConfig.name}`;
+
+const seoMeta = generateMetaTags({
+  title: fullTitle,
+  description,
+  ogImage,
+}, Astro.url);
+
+const jsonLd = generateJsonLd({
+  title: fullTitle,
+  description,
+}, Astro.url);
 ---
 
 <!doctype html>
@@ -33,6 +47,27 @@ const fullTitle = title === siteConfig.name
     <link rel="icon" href="/favicon.ico" />
     <meta name="generator" content={Astro.generator} />
     <meta name="description" content={description} />
+    <link rel="canonical" href={Astro.url?.toString()} />
+    
+    <!-- Open Graph -->
+    <meta property="og:title" content={seoMeta["og:title"]} />
+    <meta property="og:description" content={seoMeta["og:description"]} />
+    <meta property="og:url" content={seoMeta["og:url"]} />
+    <meta property="og:type" content={seoMeta["og:type"]} />
+    <meta property="og:image" content={seoMeta["og:image"]} />
+    <meta property="og:locale" content={seoMeta["og:locale"]} />
+    <meta property="og:site_name" content={seoMeta["og:site_name"]} />
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content={seoMeta["twitter:card"]} />
+    <meta name="twitter:title" content={seoMeta["twitter:title"]} />
+    <meta name="twitter:description" content={seoMeta["twitter:description"]} />
+    <meta name="twitter:image" content={seoMeta["twitter:image"]} />
+    {seoMeta["twitter:site"] && <meta name="twitter:site" content={seoMeta["twitter:site"]} />}
+    {seoMeta["twitter:creator"] && <meta name="twitter:creator" content={seoMeta["twitter:creator"]} />}
+    
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json" set:html={jsonLd} />
     
     <!-- Google Fonts - DM Sans + DM Serif Display -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
