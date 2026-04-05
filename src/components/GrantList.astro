@@ -1,11 +1,10 @@
 ---
 import GrantListItem from './GrantListItem.astro';
-import type { CategoryKey } from '../config/categories';
 
 interface Grant {
   name: string;
   clemencyType: 'pardon' | 'commutation';
-  category: CategoryKey;
+  category: string;
   offense: string;
   district?: string;
   sentence?: string;
@@ -16,7 +15,7 @@ interface Grant {
 
 interface Props {
   grants: Grant[];
-  hrefPattern?: string; // e.g., "/pardon/{id}"
+  hrefPattern?: string;
 }
 
 const { grants, hrefPattern } = Astro.props;

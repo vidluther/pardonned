@@ -1,12 +1,11 @@
 ---
 import TypeBadge from './TypeBadge.astro';
 import CategoryBadge from './CategoryBadge.astro';
-import { categoryColors, type CategoryKey } from '../config/categories';
 
 interface Props {
   name: string;
   clemencyType: 'pardon' | 'commutation';
-  category: CategoryKey;
+  category: string;
   offense: string;
   district?: string;
   sentence?: string;

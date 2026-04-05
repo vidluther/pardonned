@@ -1,16 +1,13 @@
 ---
-import { categoryColors, type CategoryKey } from '../config/categories';
-
 interface Props {
   name: string;
   count: number;
-  category: CategoryKey;
+  color?: string;
   href?: string;
 }
 
-const { name, count, category, href } = Astro.props;
+const { name, count, color = '#7A7880', href } = Astro.props;
 
-const color = categoryColors[category];
 const CardWrapper = href ? 'a' : 'div';
 ---
 

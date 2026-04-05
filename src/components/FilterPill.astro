@@ -5,9 +5,10 @@ interface Props {
   onClick?: string;
   href?: string;
   count?: number;
+  'data-category'?: string;
 }
 
-const { label, active = false, onClick, href, count } = Astro.props;
+const { label, active = false, onClick, href, count, 'data-category': dataCategory } = Astro.props;
 
 const displayLabel = count !== undefined ? `${label} (${count})` : label;
 
@@ -25,6 +26,7 @@ const Element = href ? 'a' : 'button';
   onclick={onClick}
   type={!href ? 'button' : undefined}
   aria-pressed={active}
+  data-category={dataCategory}
 >
   {displayLabel}
 </Element>

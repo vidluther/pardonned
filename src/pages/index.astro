@@ -10,92 +10,79 @@ const currentPath = Astro.url.pathname;
 
 import { getCollection } from "astro:content";
 import { computeStats } from "../lib/pardon-stats";
-import type { CategoryKey } from "../config/categories";
+
+const categoryColors: Record<string, string> = {
+    fraud: "#8A6B1E",
+    "drug offense": "#3A6A4A",
+    firearms: "#C23B22",
+    "FACE act": "#B8652A",
+    "financial crime": "#2A6A7A",
+    "violent crime": "#6A4B7A",
+    immigration: "#7A6A3A",
+    other: "#7A7870",
+};
 
 const allGrants = await getCollection("pardonDetails");
 const stats = computeStats(allGrants);
 
 const categoryCounts = Object.entries(stats.byCategory).map(([key, count]) => ({
-    key: key as CategoryKey,
+    key,
+    name: key.replace(/\b\w/g, (c) => c.toUpperCase()),
     count,
+    color: categoryColors[key] ?? "#7A7880",
 }));
 
-const timelineEntries = [
-    {
-        date: "May 28, 2025",
-        grants: "16 Pardons, 6 Commutations",
-        names: [
-            "Todd Chrisley",
-            "Julie Chrisley",
-            "Kentrell Gaulden (NBA YoungBoy)",
-            "Larry Hoover",
-            "Lawrence Duran",
-            "Michael Grimm",
-        ],
-        highlight: "Chrisley fraud convictions carried $22M+ in restitution",
-        isLatest: true,
+const groupedByDate = allGrants.reduce(
+    (acc, entry) => {
+        const date = entry.data.grant_date;
+        if (!acc[date]) acc[date] = [];
+        acc[date].push(entry.data);
+        return acc;
     },
-    {
-        date: "May 27, 2025",
-        grants: "2 Pardons",
-        names: ["Scott Howard Jenkins", "James Callahan"],
-        highlight: "Jenkins pardoned for bribery; sentenced to 10 years",
-    },
-    {
-        date: "Apr 23, 2025",
-        grants: "2 Pardons",
-        names: ["Michele Fiore", "Paul Walczak"],
-        highlight: "Fiore pardoned pre-sentencing for wire fraud conspiracy",
-    },
-    {
-        date: "Mar 28, 2025",
-        grants: "3 Commutations",
-        names: ["Jason Galanis", "Ozy Media Inc.", "Carlos Watson"],
-        highlight: "Galanis owed $84M+ in restitution across two cases",
-    },
-    {
-        date: "Mar 27, 2025",
-        grants: "6 Pardons",
-        names: [
-            "Arthur Hayes",
-            "Benjamin Delo",
-            "Trevor Milton",
-            "HDR Global Trading",
-            "Samuel Reed",
-            "Gregory Dwyer",
-        ],
-        highlight: "HDR Global fined $100M for Bank Secrecy Act violations",
-    },
-    {
-        date: "Mar 25, 2025",
-        grants: "1 Pardon",
-        names: ["Devon Archer"],
-        highlight: "Archer owed $43.4M restitution for securities fraud",
-    },
-    {
-        date: "Jan 23, 2025",
-        grants: "24 Pardons",
-        names: [
-            "Lauren Handy",
-            "Bevelyn Beatty Williams",
-            "Eva Edl",
-            "+ 21 others",
-        ],
-        highlight: "All convicted under the FACE Act for clinic blockades",
-    },
-    {
-        date: "Jan 21, 2025",
-        grants: "1 Pardon",
-        names: ["Ross William Ulbricht"],
-        highlight: "Silk Road founder; served ~11 years of life sentence",
-    },
-    {
-        date: "Jan 20, 2025",
-        grants: "Blanket pardon & commutations",
-        names: ["~1,500+ January 6 defendants"],
-        highlight: "Executive order on Inauguration Day",
-    },
-];
+    {} as Record<string, (typeof allGrants)[number]["data"][]>,
+);
+
+const sortedDates = Object.keys(groupedByDate).sort((a, b) =>
+    b.localeCompare(a),
+);
+
+const timelineEntries = sortedDates.map((date, i) => {
+    const grants = groupedByDate[date];
+    const names = grants.map((g) => g.recipient_name);
+    const categories = [...new Set(grants.map((g) => g.offense_category))];
+    const pardons = grants.filter((g) => g.clemency_type === "pardon").length;
+    const commutations = grants.filter(
+        (g) => g.clemency_type === "commutation",
+    ).length;
+
+    const parts: string[] = [];
+    if (pardons > 0)
+        parts.push(`${pardons} ${pardons === 1 ? "pardon" : "pardons"}`);
+    if (commutations > 0)
+        parts.push(
+            `${commutations} ${commutations === 1 ? "commutation" : "commutations"}`,
+        );
+
+    const grantLabel = parts.join(", ");
+    const [y, m, d] = date.split("-");
+    const formattedDate = new Date(
+        Number(y),
+        Number(m) - 1,
+        Number(d),
+    ).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+    });
+
+    return {
+        date: formattedDate,
+        grants: grantLabel,
+        names,
+        highlight: categories.join(", "),
+        isLatest: i === 0,
+    };
+});
 ---
 
 <Layout title="Home" currentPath={currentPath}>
@@ -117,11 +104,8 @@ const timelineEntries = [
     <!-- Categories Section -->
     <section class="py-section px-10 max-w-home mx-auto">
         <h2 class="text-section font-serif text-text-primary mb-2">
-            By category
+            By Offense Category
         </h2>
-        <p class="text-nav text-text-faint mb-8">
-            Clemency grants grouped by primary offense type
-        </p>
         <CategoryGrid
             categoryCounts={categoryCounts}
             columns={3}

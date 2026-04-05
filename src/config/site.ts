@@ -1,6 +1,6 @@
 export const siteConfig = {
   name: "Pardonned",
-  tagline: "Clemency tracker",
+  tagline: "Tracking Pardons by President",
   description:
     "A public-interest data site tracking presidential clemency grants.",
   dataSource: "DOJ Office of the Pardon Attorney",
