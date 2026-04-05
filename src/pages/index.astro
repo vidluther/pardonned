@@ -9,22 +9,15 @@ import "../styles/global.css";
 const currentPath = Astro.url.pathname;
 
 import { getCollection } from "astro:content";
-import { computeStats, filterByCategory } from "../lib/pardon-stats";
+import { computeStats } from "../lib/pardon-stats";
+import type { CategoryKey } from "../config/categories";
 
 const allGrants = await getCollection("pardonDetails");
 const stats = computeStats(allGrants);
 
-const fraudGrants = filterByCategory(allGrants, "fraud");
-const faceActGrants = filterByCategory(allGrants, "FACE act");
-
-const categoryCounts = [
-    { key: "j6" as const, count: 1500 },
-    { key: "face" as const, count: 24 },
-    { key: "fraud" as const, count: 18 },
-    { key: "crypto" as const, count: 7 },
-    { key: "political" as const, count: 4 },
-    { key: "drug" as const, count: 4 },
-];
+const categoryCounts = Object.entries(stats.byCategory).map(
+    ([key, count]) => ({ key: key as CategoryKey, count }),
+);
 
 const timelineEntries = [
     {

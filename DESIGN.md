@@ -29,11 +29,11 @@ interactive data exploration.
 
 ### Pages
 
-| Route                  | Purpose                                    |
-|------------------------|--------------------------------------------|
-| `/`                    | Home — hero stats, category grid, timeline |
-| `/search`              | Filterable, sortable list of all grants    |
-| `/pardon/[id]`         | Individual grant detail with tabs          |
+| Route          | Purpose                                    |
+| -------------- | ------------------------------------------ |
+| `/`            | Home — hero stats, category grid, timeline |
+| `/search`      | Filterable, sortable list of all grants    |
+| `/pardon/[id]` | Individual grant detail with tabs          |
 
 ---
 
@@ -44,30 +44,31 @@ the red editorial accent and the offense-category system.
 
 ### Core neutrals (light theme)
 
-| Token              | Hex       | Usage                                      |
-|--------------------|-----------|--------------------------------------------|
-| `bg-page`          | `#FAFAF7` | Page background                            |
-| `bg-card`          | `#FFFFFF` | Card / panel backgrounds                   |
-| `bg-muted`         | `#F6F5F0` | Input backgrounds, hover states, pills     |
-| `bg-subtle`        | `#F2F1EC` | Name chips, secondary fills                |
-| `border-default`   | `#E8E6E0` | Card borders, dividers, input borders      |
-| `border-soft`      | `#D0CEC8` | Timeline dots (inactive), button borders   |
-| `text-primary`     | `#1A1918` | Headlines, names, primary content          |
-| `text-body`        | `#4A4840` | Body copy, descriptions                    |
-| `text-secondary`   | `#6A6860` | Offense text, supporting details           |
-| `text-muted`       | `#7A7870` | Nav links, labels, breadcrumbs             |
-| `text-faint`       | `#9A9890` | Metadata, timestamps, helper text          |
-| `text-ghost`       | `#B0AEA8` | Footer text, disabled states               |
+| Token            | Hex       | Usage                                    |
+| ---------------- | --------- | ---------------------------------------- |
+| `bg-page`        | `#FAFAF7` | Page background                          |
+| `bg-card`        | `#FFFFFF` | Card / panel backgrounds                 |
+| `bg-muted`       | `#F6F5F0` | Input backgrounds, hover states, pills   |
+| `bg-subtle`      | `#F2F1EC` | Name chips, secondary fills              |
+| `border-default` | `#E8E6E0` | Card borders, dividers, input borders    |
+| `border-soft`    | `#D0CEC8` | Timeline dots (inactive), button borders |
+| `text-primary`   | `#1A1918` | Headlines, names, primary content        |
+| `text-body`      | `#4A4840` | Body copy, descriptions                  |
+| `text-secondary` | `#6A6860` | Offense text, supporting details         |
+| `text-muted`     | `#7A7870` | Nav links, labels, breadcrumbs           |
+| `text-faint`     | `#9A9890` | Metadata, timestamps, helper text        |
+| `text-ghost`     | `#B0AEA8` | Footer text, disabled states             |
 
 ### Accent
 
-| Token        | Hex       | Usage                                             |
-|--------------|-----------|----------------------------------------------------|
-| `accent`     | `#C23B22` | Restitution figures, active nav underline, badges  |
-| `accent-bg`  | `rgba(194,59,34,0.08)` | Badge backgrounds, pill highlights      |
-| `accent-border` | `rgba(194,59,34,0.12)` | Alert card borders, stat card borders |
+| Token           | Hex                    | Usage                                             |
+| --------------- | ---------------------- | ------------------------------------------------- |
+| `accent`        | `#C23B22`              | Restitution figures, active nav underline, badges |
+| `accent-bg`     | `rgba(194,59,34,0.08)` | Badge backgrounds, pill highlights                |
+| `accent-border` | `rgba(194,59,34,0.12)` | Alert card borders, stat card borders             |
 
 The red accent is the single most important design element. It appears on:
+
 - The "e" in the Pardonn**e**d wordmark
 - All restitution dollar amounts
 - Pardon-type badges
@@ -82,15 +83,15 @@ The red accent is the single most important design element. It appears on:
 These appear only in category badges and the category grid on the home page.
 They are muted and earthy — never saturated or neon.
 
-| Category              | Hex       | Tailwind token suggestion |
-|-----------------------|-----------|---------------------------|
-| January 6             | `#C23B22` | `category-j6`             |
-| FACE Act              | `#B8652A` | `category-face`           |
-| Financial fraud       | `#8A6B1E` | `category-fraud`          |
-| Crypto & securities   | `#2A6A7A` | `category-crypto`         |
-| Political corruption  | `#6A4B7A` | `category-political`      |
-| Drug offenses         | `#3A6A4A` | `category-drug`           |
-| Other                 | `#7A7870` | `category-other`          |
+| Category             | Hex       | Tailwind token suggestion |
+| -------------------- | --------- | ------------------------- |
+| January 6            | `#C23B22` | `category-j6`             |
+| FACE Act             | `#B8652A` | `category-face`           |
+| Financial fraud      | `#8A6B1E` | `category-fraud`          |
+| Crypto & securities  | `#2A6A7A` | `category-crypto`         |
+| Political corruption | `#6A4B7A` | `category-political`      |
+| Drug offenses        | `#3A6A4A` | `category-drug`           |
+| Other                | `#7A7870` | `category-other`          |
 
 These map to the `offense_category` column in the `pardon` table.
 
@@ -122,23 +123,23 @@ Set `font-sans` as the default body font in `tailwind.config.ts`.
 
 ### Type scale
 
-| Element                    | Font           | Size  | Weight | Color          | Leading |
-|----------------------------|----------------|-------|--------|----------------|---------|
-| Hero headline              | DM Serif       | 52px  | 400    | text-primary   | 1.1     |
-| Page title (h1)            | DM Serif       | 36px  | 400    | text-primary   | 1.2     |
-| Section heading (h2)       | DM Serif       | 28px  | 400    | text-primary   | 1.3     |
-| Stat card number           | DM Serif       | 36px  | 400    | varies         | 1.1     |
-| Stat card number (small)   | DM Serif       | 28px  | 400    | varies         | 1.1     |
-| Detail name (h1)           | DM Serif       | 42px  | 400    | text-primary   | 1.15    |
-| Combined impact number     | DM Serif       | 20px  | 500    | varies         | 1.2     |
-| Body / description         | DM Sans        | 15px  | 400    | text-body      | 1.8     |
-| Nav link                   | DM Sans        | 14px  | 400    | text-muted     | —       |
-| Card title (name)          | DM Sans        | 16px  | 500    | text-primary   | —       |
-| Card offense text          | DM Sans        | 13px  | 400    | text-secondary | 1.5     |
-| Metadata (district, date)  | DM Sans        | 12px  | 400    | text-faint     | —       |
-| Badge / pill               | DM Sans        | 11px  | 400    | varies         | —       |
-| Overline label             | DM Sans        | 11px  | 500    | text-faint     | —       |
-| Tracking label             | DM Sans        | 12px  | 400    | varies         | —       |
+| Element                   | Font     | Size | Weight | Color          | Leading |
+| ------------------------- | -------- | ---- | ------ | -------------- | ------- |
+| Hero headline             | DM Serif | 52px | 400    | text-primary   | 1.1     |
+| Page title (h1)           | DM Serif | 36px | 400    | text-primary   | 1.2     |
+| Section heading (h2)      | DM Serif | 28px | 400    | text-primary   | 1.3     |
+| Stat card number          | DM Serif | 36px | 400    | varies         | 1.1     |
+| Stat card number (small)  | DM Serif | 28px | 400    | varies         | 1.1     |
+| Detail name (h1)          | DM Serif | 42px | 400    | text-primary   | 1.15    |
+| Combined impact number    | DM Serif | 20px | 500    | varies         | 1.2     |
+| Body / description        | DM Sans  | 15px | 400    | text-body      | 1.8     |
+| Nav link                  | DM Sans  | 14px | 400    | text-muted     | —       |
+| Card title (name)         | DM Sans  | 16px | 500    | text-primary   | —       |
+| Card offense text         | DM Sans  | 13px | 400    | text-secondary | 1.5     |
+| Metadata (district, date) | DM Sans  | 12px | 400    | text-faint     | —       |
+| Badge / pill              | DM Sans  | 11px | 400    | varies         | —       |
+| Overline label            | DM Sans  | 11px | 500    | text-faint     | —       |
+| Tracking label            | DM Sans  | 12px | 400    | varies         | —       |
 
 ### Overline pattern
 
@@ -158,12 +159,12 @@ margin-bottom: 6–8px
 
 ### Page widths
 
-| Context          | Max width | Padding  |
-|------------------|-----------|----------|
-| Home content     | 960px     | 40px     |
-| Search content   | 1040px    | 40px     |
-| Detail content   | 880px     | 40px     |
-| Source banner     | 880px     | 32px     |
+| Context        | Max width | Padding |
+| -------------- | --------- | ------- |
+| Home content   | 960px     | 40px    |
+| Search content | 1040px    | 40px    |
+| Detail content | 880px     | 40px    |
+| Source banner  | 880px     | 32px    |
 
 All centered with `margin: 0 auto`.
 
@@ -223,6 +224,7 @@ padding: 24px 16px (home) or 20px (detail)
 ```
 
 The restitution stat card uses a tinted background:
+
 ```
 background: rgba(194,59,34,0.04)
 border: 1px solid rgba(194,59,34,0.12)
@@ -256,6 +258,7 @@ Dot (active/latest): 13px circle, bg accent, border 2px solid accent
 ```
 
 Each entry:
+
 ```
   [date]         — 13px, text-muted, font-weight 500, min-width 110px
   [grants badge] — 11px uppercase, accent-bg background, accent text, 3px 10px padding, 4px radius
@@ -280,12 +283,14 @@ cursor: pointer
 Two variants:
 
 **Type badge** (Pardon / Commutation):
+
 ```
 Pardon:      bg rgba(194,59,34,0.08), color #C23B22
 Commutation: bg rgba(42,106,122,0.08), color #2A6A7A
 ```
 
 **Category badge**:
+
 ```
 background: bg-muted (#F6F5F0)
 border: 1px solid border-default
@@ -429,12 +434,14 @@ display: flex, gap 8px, align-items center
 Two patterns:
 
 **Gradient divider** (between hero and categories):
+
 ```
 height: 1px
 background: linear-gradient(90deg, transparent, rgba(194,59,34,0.2), transparent)
 ```
 
 **Flat divider** (between other sections):
+
 ```
 height: 1px
 background: border-default (#E8E6E0)
@@ -534,7 +541,7 @@ These rules govern how data from the `pardonned` schema renders in the UI.
    with a brief message and suggestion to adjust filters. No illustrations or icons.
 
 10. **Number formatting.** Restitution values ≥ $1M display as `$XX.XM`. Values ≥ $1K
-    display as `$XXXK`. Below that, use `toLocaleString()`. Sentence months convert
+display as `$XXXK`. Below that, use `toLocaleString()`. Sentence months convert
     to years only when ≥ 12 (show "X years"); below 12, show "X months".
 
 ---

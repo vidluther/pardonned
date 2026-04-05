@@ -1,11 +1,11 @@
 // Category configuration
 export type CategoryKey =
-  | "j6"
-  | "face"
   | "fraud"
-  | "crypto"
-  | "political"
-  | "drug"
+  | "firearms"
+  | "drug offense"
+  | "FACE act"
+  | "financial crime"
+  | "violent crime"
   | "other";
 
 export interface CategoryConfig {
@@ -15,26 +15,34 @@ export interface CategoryConfig {
 }
 
 export const categoryColors: Record<CategoryKey, string> = {
-  j6: "#C23B22",
-  face: "#B8652A",
   fraud: "#8A6B1E",
-  crypto: "#2A6A7A",
-  political: "#6A4B7A",
-  drug: "#3A6A4A",
+  "drug offense": "#3A6A4A",
+  firearms: "#C23B22",
+  "FACE act": "#B8652A",
+  "financial crime": "#2A6A7A",
+  "violent crime": "#6A4B7A",
   other: "#7A7870",
 };
 
 export const categories: CategoryConfig[] = [
-  { key: "j6", name: "January 6", color: categoryColors.j6 },
-  { key: "face", name: "FACE Act", color: categoryColors.face },
-  { key: "fraud", name: "Financial Fraud", color: categoryColors.fraud },
-  { key: "crypto", name: "Crypto & Securities", color: categoryColors.crypto },
+  { key: "fraud", name: "Fraud", color: categoryColors.fraud },
   {
-    key: "political",
-    name: "Political Corruption",
-    color: categoryColors.political,
+    key: "drug offense",
+    name: "Drug Offenses",
+    color: categoryColors["drug offense"],
   },
-  { key: "drug", name: "Drug Offenses", color: categoryColors.drug },
+  { key: "firearms", name: "Firearms", color: categoryColors.firearms },
+  { key: "FACE act", name: "FACE Act", color: categoryColors["FACE act"] },
+  {
+    key: "financial crime",
+    name: "Financial Crime",
+    color: categoryColors["financial crime"],
+  },
+  {
+    key: "violent crime",
+    name: "Violent Crime",
+    color: categoryColors["violent crime"],
+  },
   { key: "other", name: "Other", color: categoryColors.other },
 ];
 

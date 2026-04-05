@@ -71,10 +71,8 @@ export function pardonDetailsLoader(
     schema: pardonDetailSchema,
 
     async load({ store, logger, parseData, generateDigest }) {
-      const apiHost =
-        options.apiHost ?? import.meta.env.PARDONNED_API_HOST;
-      const apiKey =
-        options.apiKey ?? import.meta.env.PARDONNED_API_KEY;
+      const apiHost = options.apiHost ?? import.meta.env.PARDONNED_API_HOST;
+      const apiKey = options.apiKey ?? import.meta.env.PARDONNED_API_KEY;
       const resource = options.resource ?? "pardon_details";
 
       if (!apiHost || !apiKey) {

@@ -88,16 +88,17 @@ export function computeStats(entries: CollectionEntry[]): PardonStats {
     stats.byCategory[d.offense_category] =
       (stats.byCategory[d.offense_category] ?? 0) + 1;
 
-    if (d.offense_category === "fraud" || d.offense_category === "financial crime") {
+    if (
+      d.offense_category === "fraud" ||
+      d.offense_category === "financial crime"
+    ) {
       stats.fraudCount++;
     }
 
     // Sentence aggregation
     if (d.sentence_in_months != null) {
       stats.totalMonthsErased += d.sentence_in_months;
-    } else if (
-      d.original_sentence?.toLowerCase().includes("life")
-    ) {
+    } else if (d.original_sentence?.toLowerCase().includes("life")) {
       stats.lifeSentenceCount++;
     }
 
@@ -110,8 +111,7 @@ export function computeStats(entries: CollectionEntry[]): PardonStats {
     }
   }
 
-  stats.totalYearsErased =
-    Math.round((stats.totalMonthsErased / 12) * 10) / 10;
+  stats.totalYearsErased = Math.round((stats.totalMonthsErased / 12) * 10) / 10;
 
   return stats;
 }

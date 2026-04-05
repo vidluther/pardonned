@@ -1,29 +1,96 @@
 ---
 import StatCard from "./StatCard.astro";
 
-interface Stat {
-    label: string;
-    value: string;
-    footnote?: string;
-    variant?: "default" | "restitution" | "small";
+function formatCurrency(value: number): string {
+    if (value >= 1_000_000_000) {
+        return `$${(value / 1_000_000_000).toFixed(1)}B`;
+    }
+    if (value >= 1_000_000) {
+        return `$${(value / 1_000_000).toFixed(1)}M`;
+    }
+    if (value >= 1_000) {
+        return `$${(value / 1_000).toFixed(1)}K`;
+    }
+    return `$${value.toLocaleString()}`;
+}
+
+interface PardonStats {
+    totalGrants: number;
+    totalPardons: number;
+    totalCommutations: number;
+    totalMonthsErased: number;
+    totalYearsErased: number;
+    totalRestitutionAbandoned: number;
+    totalFinesAbandoned: number;
+    fraudCount: number;
+    lifeSentenceCount: number;
+    byCategory: Record<string, number>;
+    byType: Record<string, number>;
 }
 
 interface Props {
-    stats: Stat[];
+    stats: PardonStats;
     animated?: boolean;
 }
 
 const { stats, animated = false } = Astro.props;
-console.log(stats);
 ---
 
 <div class="grid grid-cols-4 gap-stat-grid">
     <StatCard
         label="Total Grants"
-        value={stats.totalGrants}
-        footnote="footnote"
+        value={stats.totalGrants.toLocaleString()}
         variant="default"
         animated={animated}
         animationDelay={animated ? 1 * 150 : 0}
+    />
+    <StatCard
+        label="Pardons"
+        value={stats.totalPardons.toLocaleString()}
+        variant="default"
+        animated={animated}
+        animationDelay={animated ? 2 * 150 : 0}
+    />
+    <StatCard
+        label="Commutations"
+        value={stats.totalCommutations.toLocaleString()}
+        variant="default"
+        animated={animated}
+        animationDelay={animated ? 3 * 150 : 0}
+    />
+    <StatCard
+        label="Years Erased"
+        value={stats.totalYearsErased.toLocaleString()}
+        variant="default"
+        animated={animated}
+        animationDelay={animated ? 4 * 150 : 0}
+    />
+    <StatCard
+        label="Restitution Abandoned"
+        value={formatCurrency(stats.totalRestitutionAbandoned)}
+        variant="restitution"
+        animated={animated}
+        animationDelay={animated ? 5 * 150 : 0}
+    />
+    <StatCard
+        label="Fines Abandoned"
+        value={formatCurrency(stats.totalFinesAbandoned)}
+        variant="restitution"
+        animated={animated}
+        animationDelay={animated ? 6 * 150 : 0}
+    />
+    <StatCard
+        label="Fraud Cases"
+        value={stats.fraudCount.toLocaleString()}
+        variant="default"
+        animated={animated}
+        animationDelay={animated ? 7 * 150 : 0}
+    />
+    <StatCard
+        label="Life Sentences"
+        value={stats.lifeSentenceCount.toLocaleString()}
+        variant="default"
+        animated={animated}
+        animationDelay={animated ? 8 * 150 : 0}
     />
 </div>

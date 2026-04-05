@@ -1,43 +1,42 @@
 ---
 interface Props {
-  label: string;
-  value: string;
-  footnote?: string;
-  variant?: 'default' | 'restitution' | 'small';
-  animated?: boolean;
-  animationDelay?: number;
+    label: string;
+    value: string;
+    footnote?: string;
+    variant?: "default" | "restitution" | "small";
+    animated?: boolean;
+    animationDelay?: number;
 }
 
-const { 
-  label, 
-  value, 
-  footnote,
-  variant = 'default',
-  animated = false,
-  animationDelay = 0
+const {
+    label,
+    value,
+    footnote,
+    variant = "default",
+    animated = false,
+    animationDelay = 0,
 } = Astro.props;
 
-const isRestitution = variant === 'restitution';
-const isSmall = variant === 'small';
+const isRestitution = variant === "restitution";
+const isSmall = variant === "small";
 
 const cardClasses = [
-  'stat-card',
-  isRestitution && 'stat-card-restitution',
-  animated && 'animate-fade-in'
+    "stat-card",
+    isRestitution && "stat-card-restitution",
+    animated && "animate-fade-in",
 ];
 
 const valueClasses = [
-  isSmall ? 'stat-number-sm' : 'stat-number',
-  isRestitution ? 'text-accent' : 'text-text-primary'
+    isSmall ? "stat-number-sm" : "stat-number",
+    isRestitution ? "text-accent" : "text-text-primary",
 ];
 
-const delayStyle = animationDelay > 0 ? `animation-delay: ${animationDelay}ms;` : '';
+const delayStyle =
+    animationDelay > 0 ? `animation-delay: ${animationDelay}ms;` : "";
 ---
 
 <div class:list={cardClasses} style={delayStyle}>
-  <div class="overline">{label}</div>
-  <div class:list={valueClasses}>{value}</div>
-  {footnote && (
-    <div class="text-meta text-text-ghost mt-1">{footnote}</div>
-  )}
+    <div class="underline">{label}</div>
+    <div class:list={valueClasses}>{value}</div>
+    {footnote && <div class="text-meta text-text-ghost mt-1">{footnote}</div>}
 </div>
