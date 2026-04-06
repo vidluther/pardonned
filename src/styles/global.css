@@ -415,6 +415,39 @@
   .load-more-btn:hover {
     background: #f6f5f0;
   }
+
+  .mobile-nav-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: #4a4840;
+  }
+
+  .mobile-nav {
+    display: none;
+    border-bottom: 1px solid #e8e6e0;
+    padding: 0 20px 16px;
+  }
+
+  .mobile-nav.is-open {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  @media (min-width: 768px) {
+    .mobile-nav-toggle {
+      display: none;
+    }
+    .mobile-nav {
+      display: none !important;
+    }
+  }
 }
 
 @layer utilities {
