@@ -18,7 +18,6 @@ const { grant } = Astro.props;
 const data = grant.data;
 const currentPath = Astro.url.pathname;
 
-// Format date for display (long form: "February 15, 2025")
 function formatDate(dateStr: string): string {
     const [y, m, d] = dateStr.split("-");
     return new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString(
@@ -27,7 +26,6 @@ function formatDate(dateStr: string): string {
     );
 }
 
-// Format date for kicker line ("FEB 15, 2025")
 function formatDateShort(dateStr: string): string {
     const [y, m, d] = dateStr.split("-");
     return new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString(
@@ -61,7 +59,6 @@ function capitalize(s: string): string {
     return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-// Display labels for enum values (preserves acronyms like FACE)
 const clemencyLabels: Record<string, string> = {
     pardon: "Pardon",
     commutation: "Commutation",
@@ -84,23 +81,22 @@ const formattedSentence = formatSentence(data.sentence_in_months);
 const formattedRestitution = formatCurrency(data.restitution);
 const formattedFine = formatCurrency(data.fine);
 
-// Parse offenses from comma-separated field
 const offenses = data.offense
     .split(",")
     .map((o) => o.trim())
     .filter((o) => o.length > 0);
 
-// Hero stat logic — priority chain adapts to data shape
-type HeroVariant = "default" | "restitution";
+const hasRestitution = data.restitution != null && data.restitution > 0;
+
 type HeroStat = {
     label: string;
     value: string;
     footnote: string;
-    variant: HeroVariant;
+    variant: "default" | "restitution";
 };
 let heroStat: HeroStat | null = null;
 
-if (data.restitution && data.restitution > 0) {
+if (hasRestitution) {
     heroStat = {
         label: "Restitution abandoned",
         value: formattedRestitution,
@@ -129,8 +125,6 @@ if (data.restitution && data.restitution > 0) {
     };
 }
 
-// Inline metadata grid — omit optional rows when null, but ALWAYS show
-// restitution and fine (their absence is meaningful information)
 type MetaEntry = { label: string; value: string; emphasis?: boolean };
 const metadata: MetaEntry[] = [
     {
@@ -144,12 +138,12 @@ if (data.sentence_in_months != null) {
     metadata.push({ label: "Sentence", value: formattedSentence });
 }
 
+// Restitution and fine always render — their absence is meaningful
 metadata.push({
     label: "Restitution",
     value: formattedRestitution,
-    emphasis: !!(data.restitution && data.restitution > 0),
+    emphasis: hasRestitution,
 });
-
 metadata.push({ label: "Fine", value: formattedFine });
 
 if (data.district) {
@@ -160,12 +154,27 @@ metadata.push({
     label: "Category",
     value: categoryLabels[data.offense_category] ?? capitalize(data.offense_category),
 });
+
+const sources = [
+    {
+        url: data.warrant_url,
+        icon: "📄",
+        title: "Pardon warrant (PDF)",
+        subtitle: "DOJ Office of the Pardon Attorney",
+    },
+    {
+        url: data.source_url,
+        icon: "🏛",
+        title: "DOJ clemency listing page",
+        subtitle: "justice.gov/pardon",
+    },
+].filter((s) => s.url);
 ---
 
 <Layout title={data.recipient_name} currentPath={currentPath}>
-    <div class="max-w-detail mx-auto px-10 py-10">
+    <div class="max-w-detail mx-auto px-5 md:px-10 py-6 md:py-10">
         <!-- Breadcrumb -->
-        <div class="breadcrumb mb-10">
+        <div class="breadcrumb mb-6 md:mb-10">
             <a
                 href="/search"
                 class="text-text-muted no-underline hover:text-text-primary transition-colors"
@@ -181,8 +190,8 @@ metadata.push({
                 {data.clemency_type} · {grantDateShort}
             </div>
             <h1
-                class="font-serif text-text-primary m-0 mb-3"
-                style="font-size: 42px; line-height: 1.15; letter-spacing: -0.02em;"
+                class="font-serif text-text-primary m-0 mb-3 text-[28px] md:text-detail-name"
+                style="letter-spacing: -0.02em;"
             >
                 {data.recipient_name}
             </h1>
@@ -196,7 +205,7 @@ metadata.push({
         <!-- Hero stat (conditional) -->
         {
             heroStat && (
-                <div class="mb-10">
+                <div class="mb-6 md:mb-10">
                     <StatCard
                         label={heroStat.label}
                         value={heroStat.value}
@@ -208,7 +217,7 @@ metadata.push({
         }
 
         <!-- Offenses (lead content) -->
-        <div class="mb-10">
+        <div class="mb-6 md:mb-10">
             <div class="overline">Offenses</div>
             <ul class="list-none p-0 m-0 flex flex-col gap-3">
                 {
@@ -235,11 +244,11 @@ metadata.push({
         <!-- Original sentence (conditional, lead content) -->
         {
             data.original_sentence && (
-                <div class="mb-12">
+                <div class="mb-8 md:mb-12">
                     <div class="overline">Original Sentence</div>
                     <blockquote
-                        class="m-0 p-0 pl-5 text-text-body"
-                        style="border-left: 2px solid #E8E6E0; font-style: italic; font-size: 20px; line-height: 1.55;"
+                        class="m-0 p-0 pl-5 text-text-body border-l-2 border-border"
+                        style="font-style: italic; font-size: 20px; line-height: 1.55;"
                     >
                         {data.original_sentence}
                     </blockquote>
@@ -248,18 +257,18 @@ metadata.push({
         }
 
         <!-- Inline metadata grid -->
-        <div class="grid grid-cols-2 gap-x-10 gap-y-5 mb-12">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-5 mb-12">
             {
                 metadata.map((entry) => (
                     <div>
                         <div class="tracker-label mb-1">{entry.label}</div>
                         <div
-                            class="text-body"
-                            style={
+                            class:list={[
+                                "text-body",
                                 entry.emphasis
-                                    ? "color: #C23B22; font-weight: 500;"
-                                    : "color: #1A1918;"
-                            }
+                                    ? "text-accent font-medium"
+                                    : "text-text-primary",
+                            ]}
                         >
                             {entry.value}
                         </div>
@@ -276,49 +285,27 @@ metadata.push({
             <div class="overline">Source Documents</div>
             <div class="flex flex-col gap-3">
                 {
-                    data.warrant_url && (
-                        <a
-                            href={data.warrant_url}
-                            target="_blank"
-                            rel="noopener"
-                            class="source-link no-underline hover:bg-muted transition-colors"
-                        >
-                            <span class="text-xl opacity-50">📄</span>
-                            <div>
-                                <div class="text-nav text-text-primary mb-0.5">
-                                    Pardon warrant (PDF)
+                    sources.length > 0 ? (
+                        sources.map((src) => (
+                            <a
+                                href={src.url}
+                                target="_blank"
+                                rel="noopener"
+                                class="source-link no-underline hover:bg-muted transition-colors"
+                            >
+                                <span class="text-xl opacity-50">{src.icon}</span>
+                                <div>
+                                    <div class="text-nav text-text-primary mb-0.5">
+                                        {src.title}
+                                    </div>
+                                    <div class="text-meta text-text-faint">
+                                        {src.subtitle}
+                                    </div>
                                 </div>
-                                <div class="text-meta text-text-faint">
-                                    DOJ Office of the Pardon Attorney
-                                </div>
-                            </div>
-                            <span class="text-faint ml-auto">↗</span>
-                        </a>
-                    )
-                }
-                {
-                    data.source_url && (
-                        <a
-                            href={data.source_url}
-                            target="_blank"
-                            rel="noopener"
-                            class="source-link no-underline hover:bg-muted transition-colors"
-                        >
-                            <span class="text-xl opacity-50">🏛</span>
-                            <div>
-                                <div class="text-nav text-text-primary mb-0.5">
-                                    DOJ clemency listing page
-                                </div>
-                                <div class="text-meta text-text-faint">
-                                    justice.gov/pardon
-                                </div>
-                            </div>
-                            <span class="text-faint ml-auto">↗</span>
-                        </a>
-                    )
-                }
-                {
-                    !data.warrant_url && !data.source_url && (
+                                <span class="text-faint ml-auto">↗</span>
+                            </a>
+                        ))
+                    ) : (
                         <p class="text-body text-text-muted m-0">
                             No source documents available.
                         </p>

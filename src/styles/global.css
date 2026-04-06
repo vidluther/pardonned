@@ -299,8 +299,14 @@
   }
 
   .timeline-container {
-    padding-left: 32px;
+    padding-left: 24px;
     position: relative;
+  }
+
+  @media (min-width: 768px) {
+    .timeline-container {
+      padding-left: 32px;
+    }
   }
 
   .timeline-line {
@@ -381,7 +387,13 @@
     font-size: 13px;
     color: #7a7870;
     font-weight: 500;
-    min-width: 110px;
+    min-width: 0;
+  }
+
+  @media (min-width: 640px) {
+    .timeline-date {
+      min-width: 110px;
+    }
   }
 
   .timeline-grants-badge {
