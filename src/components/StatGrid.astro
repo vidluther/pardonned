@@ -36,7 +36,7 @@ interface Props {
 const { stats, animated = false } = Astro.props;
 ---
 
-<div class="grid grid-cols-4 gap-stat-grid">
+<div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-stat-grid">
     <StatCard
         label="Pardons"
         value={stats.totalGrants.toLocaleString()}

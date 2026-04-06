@@ -18,10 +18,12 @@ const { categoryCounts, columns = 3, hrefPattern } = Astro.props;
 
 const sortedCategories = [...categoryCounts].sort((a, b) => b.count - a.count);
 
-const gridClasses = columns === 2 ? 'grid-cols-2' : 'grid-cols-3';
+const gridClasses = columns === 2
+  ? 'grid-cols-1 sm:grid-cols-2'
+  : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3';
 ---
 
-<div class:list={['grid gap-grid', gridClasses]}>
+<div class:list={['grid gap-3 sm:gap-grid', gridClasses]}>
   {sortedCategories.map(({ key, name, count, color }) => (
     <CategoryCard
       name={name}

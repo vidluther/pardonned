@@ -95,7 +95,7 @@ const timelineEntries = sortedDates.map((date, i) => {
 
 <Layout title="Home" currentPath={currentPath}>
     <!-- Hero Section -->
-    <section class="py-20 px-10 max-w-home mx-auto text-center">
+    <section class="py-10 md:py-20 px-5 md:px-10 max-w-home mx-auto text-center">
         <h1 class="hero-headline mb-6 max-w-3xl mx-auto">
             Pardons granted by Donald J Trump
         </h1>
@@ -105,12 +105,12 @@ const timelineEntries = sortedDates.map((date, i) => {
     </section>
 
     <!-- Gradient Divider -->
-    <div class="max-w-home mx-auto px-10">
+    <div class="max-w-home mx-auto px-5 md:px-10">
         <div class="divider-gradient"></div>
     </div>
 
     <!-- Categories Section -->
-    <section class="py-section px-10 max-w-home mx-auto">
+    <section class="py-10 md:py-section px-5 md:px-10 max-w-home mx-auto">
         <h2 class="text-section font-serif text-text-primary mb-2">
             By Offense Category
         </h2>
@@ -122,12 +122,12 @@ const timelineEntries = sortedDates.map((date, i) => {
     </section>
 
     <!-- Flat Divider -->
-    <div class="max-w-home mx-auto px-10">
+    <div class="max-w-home mx-auto px-5 md:px-10">
         <div class="divider-flat"></div>
     </div>
 
     <!-- Timeline Section -->
-    <section class="py-section px-10 max-w-home mx-auto">
+    <section class="py-10 md:py-section px-5 md:px-10 max-w-home mx-auto">
         <h2 class="text-section font-serif text-text-primary mb-2">Timeline</h2>
         <p class="text-nav text-text-faint mb-10">
             Every clemency action in reverse chronological order
@@ -142,7 +142,7 @@ const timelineEntries = sortedDates.map((date, i) => {
     </section>
 
     <!-- Source Banner -->
-    <section class="max-w-source mx-auto px-8 mb-10">
+    <section class="max-w-source mx-auto px-5 md:px-8 mb-10">
         <SourceBanner />
     </section>
 </Layout>
