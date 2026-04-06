@@ -1,0 +1,317 @@
+---
+import Layout from "../../../layouts/Layout.astro";
+import StatCard from "../../../components/StatCard.astro";
+import "../../../styles/global.css";
+import { getCollection } from "astro:content";
+import { slugify } from "../../../lib/slugify";
+
+export async function getStaticPaths() {
+    const allPardons = await getCollection("pardonDetails");
+
+    return allPardons.map((grant) => ({
+        params: { slug: slugify(grant.data.recipient_name) },
+        props: { grant },
+    }));
+}
+
+const { grant } = Astro.props;
+const data = grant.data;
+const currentPath = Astro.url.pathname;
+
+function formatDate(dateStr: string): string {
+    const [y, m, d] = dateStr.split("-");
+    return new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString(
+        "en-US",
+        { year: "numeric", month: "long", day: "numeric" },
+    );
+}
+
+function formatDateShort(dateStr: string): string {
+    const [y, m, d] = dateStr.split("-");
+    return new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString(
+        "en-US",
+        { year: "numeric", month: "short", day: "numeric" },
+    );
+}
+
+// Editorial convention: em-dash for null/zero (absence), currency for positive amounts
+function formatCurrency(amount: number | null): string {
+    if (amount === null || amount === undefined) return "—";
+    if (amount === 0) return "—";
+    return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+        maximumFractionDigits: 0,
+    }).format(amount);
+}
+
+function formatSentence(months: number | null): string {
+    if (months === null || months === undefined) return "—";
+    if (months < 12) return `${months} months`;
+    const years = Math.floor(months / 12);
+    const remainingMonths = months % 12;
+    if (remainingMonths === 0) return `${years} year${years > 1 ? "s" : ""}`;
+    return `${years} year${years > 1 ? "s" : ""}, ${remainingMonths} month${remainingMonths > 1 ? "s" : ""}`;
+}
+
+function capitalize(s: string): string {
+    if (!s) return "";
+    return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+const clemencyLabels: Record<string, string> = {
+    pardon: "Pardon",
+    commutation: "Commutation",
+};
+
+const categoryLabels: Record<string, string> = {
+    "violent crime": "Violent Crime",
+    fraud: "Fraud",
+    "drug offense": "Drug Offense",
+    "FACE act": "FACE Act",
+    immigration: "Immigration",
+    firearms: "Firearms",
+    "financial crime": "Financial Crime",
+    other: "Other",
+};
+
+const grantDate = formatDate(data.grant_date);
+const grantDateShort = formatDateShort(data.grant_date);
+const formattedSentence = formatSentence(data.sentence_in_months);
+const formattedRestitution = formatCurrency(data.restitution);
+const formattedFine = formatCurrency(data.fine);
+
+const offenses = data.offense
+    .split(",")
+    .map((o) => o.trim())
+    .filter((o) => o.length > 0);
+
+const hasRestitution = data.restitution != null && data.restitution > 0;
+
+type HeroStat = {
+    label: string;
+    value: string;
+    footnote: string;
+    variant: "default" | "restitution";
+};
+let heroStat: HeroStat | null = null;
+
+if (hasRestitution) {
+    heroStat = {
+        label: "Restitution abandoned",
+        value: formattedRestitution,
+        footnote: "Originally ordered by the court",
+        variant: "restitution",
+    };
+} else if (data.sentence_in_months && data.sentence_in_months > 0) {
+    heroStat = {
+        label:
+            data.clemency_type === "commutation"
+                ? "Sentence commuted"
+                : "Prison sentence",
+        value: formattedSentence,
+        footnote: `${data.sentence_in_months} months`,
+        variant: "default",
+    };
+} else if (data.original_sentence?.toLowerCase().includes("life")) {
+    heroStat = {
+        label:
+            data.clemency_type === "commutation"
+                ? "Life sentence commuted"
+                : "Life sentence",
+        value: "Life imprisonment",
+        footnote: "Original sentence",
+        variant: "default",
+    };
+}
+
+type MetaEntry = { label: string; value: string; emphasis?: boolean };
+const metadata: MetaEntry[] = [
+    {
+        label: "Clemency Type",
+        value: clemencyLabels[data.clemency_type] ?? capitalize(data.clemency_type),
+    },
+    { label: "Grant Date", value: grantDate },
+];
+
+if (data.sentence_in_months != null) {
+    metadata.push({ label: "Sentence", value: formattedSentence });
+}
+
+// Restitution and fine always render — their absence is meaningful
+metadata.push({
+    label: "Restitution",
+    value: formattedRestitution,
+    emphasis: hasRestitution,
+});
+metadata.push({ label: "Fine", value: formattedFine });
+
+if (data.district) {
+    metadata.push({ label: "District", value: data.district });
+}
+
+metadata.push({
+    label: "Category",
+    value: categoryLabels[data.offense_category] ?? capitalize(data.offense_category),
+});
+
+const sources = [
+    {
+        url: data.warrant_url,
+        icon: "📄",
+        title: "Pardon warrant (PDF)",
+        subtitle: "DOJ Office of the Pardon Attorney",
+    },
+    {
+        url: data.source_url,
+        icon: "🏛",
+        title: "DOJ clemency listing page",
+        subtitle: "justice.gov/pardon",
+    },
+].filter((s) => s.url);
+---
+
+<Layout title={data.recipient_name} currentPath={currentPath}>
+    <div class="max-w-detail mx-auto px-5 md:px-10 py-6 md:py-10">
+        <!-- Breadcrumb -->
+        <div class="breadcrumb mb-6 md:mb-10">
+            <a
+                href="/search"
+                class="text-text-muted no-underline hover:text-text-primary transition-colors"
+                >Search</a
+            >
+            <span class="text-border-soft">/</span>
+            <span class="text-text-body">{data.recipient_name}</span>
+        </div>
+
+        <!-- Header: kicker + name + district -->
+        <div class="mb-10">
+            <div class="hero-tracking mb-4">
+                {data.clemency_type} · {grantDateShort}
+            </div>
+            <h1
+                class="font-serif text-text-primary m-0 mb-3 text-[28px] md:text-detail-name"
+                style="letter-spacing: -0.02em;"
+            >
+                {data.recipient_name}
+            </h1>
+            {
+                data.district && (
+                    <p class="text-body text-text-faint m-0">{data.district}</p>
+                )
+            }
+        </div>
+
+        <!-- Hero stat (conditional) -->
+        {
+            heroStat && (
+                <div class="mb-6 md:mb-10">
+                    <StatCard
+                        label={heroStat.label}
+                        value={heroStat.value}
+                        footnote={heroStat.footnote}
+                        variant={heroStat.variant}
+                    />
+                </div>
+            )
+        }
+
+        <!-- Offenses (lead content) -->
+        <div class="mb-6 md:mb-10">
+            <div class="overline">Offenses</div>
+            <ul class="list-none p-0 m-0 flex flex-col gap-3">
+                {
+                    offenses.map((offense) => (
+                        <li class="flex gap-4 items-baseline">
+                            <span
+                                class="text-text-faint"
+                                style="font-size: 20px; line-height: 1;"
+                            >
+                                ·
+                            </span>
+                            <span
+                                class="text-text-primary"
+                                style="font-size: 18px; line-height: 1.5;"
+                            >
+                                {capitalize(offense)}
+                            </span>
+                        </li>
+                    ))
+                }
+            </ul>
+        </div>
+
+        <!-- Original sentence (conditional, lead content) -->
+        {
+            data.original_sentence && (
+                <div class="mb-8 md:mb-12">
+                    <div class="overline">Original Sentence</div>
+                    <blockquote
+                        class="m-0 p-0 pl-5 text-text-body border-l-2 border-border"
+                        style="font-style: italic; font-size: 20px; line-height: 1.55;"
+                    >
+                        {data.original_sentence}
+                    </blockquote>
+                </div>
+            )
+        }
+
+        <!-- Inline metadata grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-5 mb-12">
+            {
+                metadata.map((entry) => (
+                    <div>
+                        <div class="tracker-label mb-1">{entry.label}</div>
+                        <div
+                            class:list={[
+                                "text-body",
+                                entry.emphasis
+                                    ? "text-accent font-medium"
+                                    : "text-text-primary",
+                            ]}
+                        >
+                            {entry.value}
+                        </div>
+                    </div>
+                ))
+            }
+        </div>
+
+        <!-- Divider -->
+        <div class="divider-gradient mb-10" />
+
+        <!-- Source documents -->
+        <div>
+            <div class="overline">Source Documents</div>
+            <div class="flex flex-col gap-3">
+                {
+                    sources.length > 0 ? (
+                        sources.map((src) => (
+                            <a
+                                href={src.url}
+                                target="_blank"
+                                rel="noopener"
+                                class="source-link no-underline hover:bg-muted transition-colors"
+                            >
+                                <span class="text-xl opacity-50">{src.icon}</span>
+                                <div>
+                                    <div class="text-nav text-text-primary mb-0.5">
+                                        {src.title}
+                                    </div>
+                                    <div class="text-meta text-text-faint">
+                                        {src.subtitle}
+                                    </div>
+                                </div>
+                                <span class="text-faint ml-auto">↗</span>
+                            </a>
+                        ))
+                    ) : (
+                        <p class="text-body text-text-muted m-0">
+                            No source documents available.
+                        </p>
+                    )
+                }
+            </div>
+        </div>
+    </div>
+</Layout>

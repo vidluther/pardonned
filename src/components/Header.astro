@@ -10,17 +10,17 @@ const { currentPath = "/" } = Astro.props;
 ---
 
 <header class="border-b border-border-DEFAULT">
-  <div class="max-w-home mx-auto px-10 py-4 flex justify-between items-center">
+  <div class="max-w-home mx-auto px-5 md:px-10 py-4 flex justify-between items-center">
     <!-- Logo / Wordmark -->
     <a href="/" class="flex items-baseline gap-3 no-underline hover:opacity-80 transition-opacity">
       <span class="wordmark">
         Pardonn<span class="wordmark-accent">e</span>d
       </span>
-      <span class="tracker-label">{siteConfig.tagline}</span>
+      <span class="tracker-label hidden sm:inline">{siteConfig.tagline}</span>
     </a>
 
-    <!-- Navigation -->
-    <nav class="flex gap-8">
+    <!-- Desktop Navigation -->
+    <nav class="hidden md:flex gap-8">
       {mainNavigation.map((item) => {
         const isActive = isActiveNavItem(item.href, currentPath);
         return (
@@ -28,8 +28,8 @@ const { currentPath = "/" } = Astro.props;
             href={item.href}
             class:list={[
               "text-nav transition-colors pb-0.5",
-              isActive 
-                ? "text-text-primary font-medium border-b border-accent" 
+              isActive
+                ? "text-text-primary font-medium border-b border-accent"
                 : "text-text-muted hover:text-text-primary"
             ]}
           >
@@ -38,5 +38,52 @@ const { currentPath = "/" } = Astro.props;
         );
       })}
     </nav>
+
+    <!-- Mobile Hamburger Button -->
+    <button
+      class="mobile-nav-toggle md:hidden"
+      aria-label="Toggle navigation"
+      aria-expanded="false"
+      id="mobile-nav-toggle"
+    >
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <line x1="3" y1="6" x2="21" y2="6" />
+        <line x1="3" y1="12" x2="21" y2="12" />
+        <line x1="3" y1="18" x2="21" y2="18" />
+      </svg>
+    </button>
   </div>
+
+  <!-- Mobile Navigation Drawer -->
+  <nav class="mobile-nav md:hidden" id="mobile-nav">
+    {mainNavigation.map((item) => {
+      const isActive = isActiveNavItem(item.href, currentPath);
+      return (
+        <a
+          href={item.href}
+          class:list={[
+            "text-nav transition-colors py-2",
+            isActive
+              ? "text-text-primary font-medium"
+              : "text-text-muted hover:text-text-primary"
+          ]}
+        >
+          {item.label}
+        </a>
+      );
+    })}
+  </nav>
 </header>
+
+<script is:inline>
+  document.addEventListener('DOMContentLoaded', () => {
+    const toggle = document.getElementById('mobile-nav-toggle');
+    const nav = document.getElementById('mobile-nav');
+    if (!toggle || !nav) return;
+
+    toggle.addEventListener('click', () => {
+      const isOpen = nav.classList.toggle('is-open');
+      toggle.setAttribute('aria-expanded', String(isOpen));
+    });
+  });
+</script>

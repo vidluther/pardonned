@@ -5,13 +5,17 @@ interface Props {
 }
 
 const { name, href } = Astro.props;
-
-const Chip = href ? 'a' : 'span';
 ---
 
-<Chip 
-  class="name-chip"
-  href={href}
->
-  {name}
-</Chip>
+{href ? (
+  <a 
+    href={href}
+    class="name-chip name-chip-link no-underline"
+  >
+    {name}
+  </a>
+) : (
+  <span class="name-chip">
+    {name}
+  </span>
+)}

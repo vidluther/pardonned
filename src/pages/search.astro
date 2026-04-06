@@ -4,6 +4,7 @@ import FilterPill from '../components/FilterPill.astro';
 import '../styles/global.css';
 
 import { getCollection } from "astro:content";
+import { slugify } from "../lib/slugify";
 
 const currentPath = Astro.url.pathname;
 
@@ -46,7 +47,7 @@ function formatSentence(months: number | null, originalSentence: string | null):
 const searchResults = allGrants.map((entry) => {
     const d = entry.data;
     return {
-        id: entry.id,
+        slug: slugify(d.recipient_name),
         name: d.recipient_name,
         clemencyType: d.clemency_type,
         category: d.offense_category,
@@ -69,7 +70,7 @@ for (const grant of searchResults) {
   title="Search"
   currentPath={currentPath}
 >
-  <div class="max-w-search mx-auto px-10 py-section">
+  <div class="max-w-search mx-auto px-5 md:px-10 py-10 md:py-section">
     <h1 class="text-page-title font-serif text-text-primary mb-2">Search Grants</h1>
     <p class="text-body text-text-body mb-8">
       Filter and search through all clemency grants.
@@ -77,12 +78,12 @@ for (const grant of searchResults) {
 
     <!-- Filter Bar -->
     <div class="filter-bar mb-8">
-      <div class="flex flex-wrap gap-3 items-center">
+      <div class="flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-center">
         <input
           id="search-input"
           type="text"
           placeholder="Search by name..."
-          class="filter-input flex-1 min-w-[200px]"
+          class="filter-input flex-1 w-full sm:w-auto sm:min-w-[200px]"
         />
         <select id="type-select" class="filter-input !py-2 !px-3 !w-auto">
           <option value="">All Types</option>
@@ -169,10 +170,10 @@ for (const grant of searchResults) {
             : '';
 
           return `
-            <a href="/pardon/${grant.id}" class="search-card block no-underline mb-3">
-              <div class="flex justify-between items-start">
+            <a href="/pardon/details/${grant.slug}" class="search-card block no-underline mb-3">
+              <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
                 <div class="flex-1 min-w-0">
-                  <div class="flex items-center gap-3 mb-2 flex-wrap">
+                  <div class="flex items-center gap-2 sm:gap-3 mb-2 flex-wrap">
                     <span class="text-card-title font-medium text-text-primary truncate">${grant.name}</span>
                     <span class="badge ${typeBadgeClass}">${typeLabel}</span>
                     <span class="badge badge-category" style="color: ${catColor}">${catLabel}</span>
@@ -180,8 +181,8 @@ for (const grant of searchResults) {
                   <p class="text-card-offense text-text-secondary mb-2 line-clamp-2">${grant.offense}</p>
                   ${metaHtml}
                 </div>
-                <div class="text-right ml-4 flex-shrink-0">
-                  <div class="text-meta text-text-faint mb-1">${grant.date}</div>
+                <div class="flex sm:flex-col sm:text-right gap-3 sm:gap-0 sm:ml-4 flex-shrink-0 items-center sm:items-end">
+                  <div class="text-meta text-text-faint sm:mb-1">${grant.date}</div>
                   ${restitutionHtml}
                 </div>
               </div>
@@ -225,7 +226,18 @@ for (const grant of searchResults) {
         filterGrants();
       });
 
-      renderResults(grants);
+      // Apply ?category= URL param as initial filter (from home page links)
+      const urlParams = new URLSearchParams(window.location.search);
+      const initialCategory = urlParams.get('category');
+      if (initialCategory) {
+        const matchingPill = categoryPills.querySelector(`[data-category="${initialCategory}"]`);
+        if (matchingPill) {
+          activeCategory = initialCategory;
+          setActivePill(matchingPill);
+        }
+      }
+
+      filterGrants();
     });
   </script>
 
