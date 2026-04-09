@@ -71,40 +71,49 @@ for (const grant of searchResults) {
   currentPath={currentPath}
 >
   <div class="max-w-search mx-auto px-5 md:px-10 py-10 md:py-section">
+    <p class="overline">Clemency Database</p>
     <h1 class="text-page-title font-serif text-text-primary mb-2">Search Grants</h1>
-    <p class="text-body text-text-body mb-8">
+    <p class="text-nav text-text-faint mb-8">
       Filter and search through all clemency grants.
     </p>
 
     <!-- Filter Bar -->
-    <div class="filter-bar mb-8">
+    <div class="filter-bar mb-4">
       <div class="flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-center">
-        <input
-          id="search-input"
-          type="text"
-          placeholder="Search by name..."
-          class="filter-input flex-1 w-full sm:w-auto sm:min-w-[200px]"
-        />
+        <div class="search-input-wrapper">
+          <svg aria-hidden="true" class="search-input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <label for="search-input" class="sr-only">Search grants by name or offense</label>
+          <input
+            id="search-input"
+            type="text"
+            placeholder="Search by name or offense..."
+            class="filter-input w-full"
+          />
+        </div>
+        <label for="type-select" class="sr-only">Filter by clemency type</label>
         <select id="type-select" class="filter-input !py-2 !px-3 !w-auto">
           <option value="">All Types</option>
           <option value="pardon">Pardon</option>
           <option value="commutation">Commutation</option>
         </select>
       </div>
+    </div>
 
-      <!-- Category Pills -->
-      <div id="category-pills" class="flex flex-wrap gap-2 mt-4">
-        <FilterPill label="All" active={true} count={searchResults.length} data-category="all" />
-        {Object.entries(categoryCounts)
-            .sort(([, a], [, b]) => b - a)
-            .map(([key, count]) => (
-            <FilterPill label={formatCategoryName(key)} count={count} data-category={key} />
-        ))}
-      </div>
+    <!-- Category Pills -->
+    <div id="category-pills" class="flex flex-wrap gap-2 mb-8">
+      <FilterPill label="All" active={true} count={searchResults.length} data-category="all" />
+      {Object.entries(categoryCounts)
+          .sort(([, a], [, b]) => b - a)
+          .map(([key, count]) => (
+          <FilterPill label={formatCategoryName(key)} count={count} data-category={key} />
+      ))}
     </div>
 
     <!-- Results Count -->
-    <p id="results-count" class="text-meta text-text-faint mb-4">Showing {searchResults.length.toLocaleString()} results</p>
+    <p id="results-count" class="text-meta text-text-faint mb-4" aria-live="polite" role="status">Showing {searchResults.length.toLocaleString()} results</p>
 
     <!-- Results List (rendered client-side) -->
     <div id="results-list"></div>
@@ -146,7 +155,7 @@ for (const grant of searchResults) {
 
       function renderResults(filtered) {
         if (filtered.length === 0) {
-          resultsList.innerHTML = '';
+          resultsList.textContent = '';
           emptyState.classList.remove('hidden');
           resultsCount.textContent = 'No results';
           return;
@@ -155,40 +164,114 @@ for (const grant of searchResults) {
         emptyState.classList.add('hidden');
         resultsCount.textContent = `Showing ${filtered.length.toLocaleString()} results`;
 
-        resultsList.innerHTML = filtered.map((grant) => {
+        // Clear previous results
+        resultsList.textContent = '';
+
+        filtered.forEach((grant, i) => {
           const catLabel = formatCategoryName(grant.category);
           const catColor = categoryColors[grant.category] || '#7A7870';
           const typeLabel = grant.clemencyType === 'pardon' ? 'Pardon' : 'Commutation';
           const typeBadgeClass = grant.clemencyType === 'pardon' ? 'badge-pardon' : 'badge-commutation';
 
-          const restitutionHtml = grant.restitution
-            ? `<div class="text-body font-medium text-accent">${formatRestitution(grant.restitution)}</div><div class="text-badge text-text-faint">restitution</div>`
-            : '';
+          const card = document.createElement('a');
+          card.href = '/pardon/details/' + grant.slug;
+          card.className = 'search-card block no-underline mb-3' + (i < 10 ? ' animate-fade-in' : '');
+          card.style.borderLeftColor = catColor;
+          if (i < 10) card.style.animationDelay = (i * 40) + 'ms';
 
-          const metaHtml = (grant.district || grant.sentence)
-            ? `<div class="flex gap-4 text-meta text-text-faint">${grant.district ? `<span>${grant.district}</span>` : ''}${grant.sentence ? `<span>${grant.sentence}</span>` : ''}</div>`
-            : '';
+          // Outer flex container
+          const outer = document.createElement('div');
+          outer.className = 'flex items-center gap-3';
 
-          return `
-            <a href="/pardon/details/${grant.slug}" class="search-card block no-underline mb-3">
-              <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
-                <div class="flex-1 min-w-0">
-                  <div class="flex items-center gap-2 sm:gap-3 mb-2 flex-wrap">
-                    <span class="text-card-title font-medium text-text-primary truncate">${grant.name}</span>
-                    <span class="badge ${typeBadgeClass}">${typeLabel}</span>
-                    <span class="badge badge-category" style="color: ${catColor}">${catLabel}</span>
-                  </div>
-                  <p class="text-card-offense text-text-secondary mb-2 line-clamp-2">${grant.offense}</p>
-                  ${metaHtml}
-                </div>
-                <div class="flex sm:flex-col sm:text-right gap-3 sm:gap-0 sm:ml-4 flex-shrink-0 items-center sm:items-end">
-                  <div class="text-meta text-text-faint sm:mb-1">${grant.date}</div>
-                  ${restitutionHtml}
-                </div>
-              </div>
-            </a>
-          `;
-        }).join('');
+          // Content area
+          const content = document.createElement('div');
+          content.className = 'flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 flex-1 min-w-0';
+
+          // Left side
+          const left = document.createElement('div');
+          left.className = 'flex-1 min-w-0';
+
+          // Name row
+          const nameRow = document.createElement('div');
+          nameRow.className = 'flex items-center gap-2 sm:gap-3 mb-2 flex-wrap';
+
+          const nameSpan = document.createElement('span');
+          nameSpan.className = 'font-serif text-text-primary';
+          nameSpan.style.fontSize = '17px';
+          nameSpan.textContent = grant.name;
+
+          const typeBadge = document.createElement('span');
+          typeBadge.className = 'badge ' + typeBadgeClass;
+          typeBadge.textContent = typeLabel;
+
+          const catBadge = document.createElement('span');
+          catBadge.className = 'badge badge-category';
+          catBadge.style.color = catColor;
+          catBadge.textContent = catLabel;
+
+          nameRow.appendChild(nameSpan);
+          nameRow.appendChild(typeBadge);
+          nameRow.appendChild(catBadge);
+          left.appendChild(nameRow);
+
+          // Offense
+          const offense = document.createElement('p');
+          offense.className = 'text-card-offense text-text-secondary mb-1 line-clamp-2';
+          offense.textContent = grant.offense;
+          left.appendChild(offense);
+
+          // Meta row
+          if (grant.district || grant.sentence) {
+            const meta = document.createElement('div');
+            meta.className = 'flex gap-4 text-meta text-text-faint mt-1';
+            if (grant.district) {
+              const d = document.createElement('span');
+              d.textContent = grant.district;
+              meta.appendChild(d);
+            }
+            if (grant.sentence) {
+              const s = document.createElement('span');
+              s.textContent = grant.sentence;
+              meta.appendChild(s);
+            }
+            left.appendChild(meta);
+          }
+
+          content.appendChild(left);
+
+          // Right side
+          const right = document.createElement('div');
+          right.className = 'flex sm:flex-col sm:text-right gap-3 sm:gap-0 sm:ml-4 flex-shrink-0 items-center sm:items-end';
+
+          const dateDiv = document.createElement('div');
+          dateDiv.className = 'text-meta text-text-faint sm:mb-1';
+          dateDiv.textContent = grant.date;
+          right.appendChild(dateDiv);
+
+          if (grant.restitution) {
+            const restVal = document.createElement('div');
+            restVal.className = 'text-body font-medium text-accent';
+            restVal.textContent = formatRestitution(grant.restitution);
+            right.appendChild(restVal);
+
+            const restLabel = document.createElement('div');
+            restLabel.className = 'text-badge text-text-faint';
+            restLabel.textContent = 'restitution';
+            right.appendChild(restLabel);
+          }
+
+          content.appendChild(right);
+          outer.appendChild(content);
+
+          // Chevron
+          const chevron = document.createElement('span');
+          chevron.className = 'search-card-chevron hidden sm:block';
+          chevron.innerHTML = '&#8250;';
+          outer.appendChild(chevron);
+
+          card.appendChild(outer);
+          resultsList.appendChild(card);
+        });
       }
 
       function filterGrants() {
