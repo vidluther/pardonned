@@ -93,14 +93,14 @@
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: #9a9890;
+    color: #807e76;
   }
 
   .overline {
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    color: #9a9890;
+    color: #807e76;
     margin-bottom: 6px;
   }
 
@@ -241,7 +241,7 @@
     left: 10px;
     top: 50%;
     transform: translateY(-50%);
-    color: #9a9890;
+    color: #807e76;
     pointer-events: none;
   }
 
@@ -306,7 +306,7 @@
   }
 
   .tab-inactive {
-    color: #9a9890;
+    color: #807e76;
     font-weight: 400;
     border-bottom: 2px solid transparent;
   }
@@ -346,7 +346,7 @@
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    color: #9a9890;
+    color: #807e76;
     margin-bottom: 16px;
     padding-bottom: 8px;
     border-bottom: 1px solid #e8e6e0;

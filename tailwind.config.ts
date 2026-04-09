@@ -27,8 +27,8 @@ export default {
           body: "#4A4840",
           secondary: "#6A6860",
           muted: "#7A7870",
-          faint: "#9A9890",
-          ghost: "#B0AEA8",
+          faint: "#807E76",
+          ghost: "#908E86",
         },
         category: {
           j6: "#C23B22",
