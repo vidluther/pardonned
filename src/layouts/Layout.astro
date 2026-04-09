@@ -77,9 +77,10 @@ const jsonLd = generateJsonLd({
     <title>{fullTitle}</title>
   </head>
   <body class="bg-page font-sans text-body antialiased min-h-screen flex flex-col">
+    <a href="#main-content" class="skip-link">Skip to content</a>
     {showHeader && <Header currentPath={currentPath} />}
-    
-    <main class="flex-1">
+
+    <main id="main-content" class="flex-1">
       <slot />
     </main>
     

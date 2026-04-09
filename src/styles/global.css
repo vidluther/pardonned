@@ -44,9 +44,33 @@
       font-size: 28px;
     }
   }
+
+  *:focus-visible {
+    outline: 2px solid #c23b22;
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
 }
 
 @layer components {
+  .skip-link {
+    position: absolute;
+    top: -100%;
+    left: 16px;
+    z-index: 100;
+    padding: 8px 16px;
+    background: #1a1918;
+    color: #ffffff;
+    font-size: 14px;
+    border-radius: 0 0 6px 6px;
+    text-decoration: none;
+    transition: top 0.15s;
+  }
+
+  .skip-link:focus {
+    top: 0;
+  }
+
   .wordmark {
     font-family: "DM Serif Display", Georgia, serif;
     font-size: 26px;
@@ -180,14 +204,45 @@
   .search-card {
     background: #ffffff;
     border: 1px solid #e8e6e0;
-    border-radius: 8px;
+    border-left-width: 3px;
+    border-radius: 0 8px 8px 0;
     padding: 18px 24px;
-    transition: background 0.15s;
+    transition: background 0.15s, border-color 0.15s;
     cursor: pointer;
+    position: relative;
   }
 
   .search-card:hover {
     background: #f6f5f0;
+    border-left-color: currentColor;
+  }
+
+  .search-card-chevron {
+    color: #d0cec8;
+    transition: color 0.15s, transform 0.15s;
+    flex-shrink: 0;
+    font-size: 18px;
+    line-height: 1;
+  }
+
+  .search-card:hover .search-card-chevron {
+    color: #7a7870;
+    transform: translateX(2px);
+  }
+
+  .search-input-wrapper {
+    position: relative;
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .search-input-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9a9890;
+    pointer-events: none;
   }
 
   .filter-bar {
@@ -221,6 +276,13 @@
     background: #f6f5f0;
     color: #7a7870;
     border: 1px solid #e8e6e0;
+    transition: background 0.15s, color 0.15s;
+    cursor: pointer;
+  }
+
+  .filter-pill-inactive:hover {
+    background: #ededea;
+    color: #4a4840;
   }
 
   .tab-nav {
@@ -257,6 +319,37 @@
     border: 1px solid #e8e6e0;
     border-radius: 6px;
     padding: 14px 18px;
+    transition: background 0.15s, border-color 0.15s;
+  }
+
+  .source-link:hover {
+    background: #ededea;
+    border-color: #d0cec8;
+  }
+
+  .source-link-arrow {
+    transition: transform 0.15s;
+  }
+
+  .source-link:hover .source-link-arrow {
+    transform: translate(2px, -2px);
+  }
+
+  .metadata-group {
+    background: #ffffff;
+    border: 1px solid #e8e6e0;
+    border-radius: 8px;
+    padding: 20px 24px;
+  }
+
+  .metadata-group-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #9a9890;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e8e6e0;
   }
 
   .impact-callout {
