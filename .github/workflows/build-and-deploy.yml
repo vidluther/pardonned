@@ -81,7 +81,7 @@ jobs:
           PARDONNED_DB: ./data/pardonned.db
         run: |
           echo "Scraping pardons for all presidents"
-          pnpm tsx src/scraper/scrape.ts"
+          pnpm tsx src/scraper/scrape.ts
 
       - name: Verify database
         run: |
