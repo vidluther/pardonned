@@ -93,15 +93,15 @@ const timelineEntries = sortedDates.map((date, i) => {
 });
 ---
 
-<Layout title="Home" currentPath={currentPath}>
+<Layout title="Home" description="Explore presidential clemency grants. Track pardons and commutations by category, date, and financial impact." currentPath={currentPath}>
     <!-- Hero Section -->
     <section class="py-10 md:py-20 px-5 md:px-10 max-w-home mx-auto text-center">
         <h1 class="hero-headline mb-6 max-w-3xl mx-auto">
             Pardons granted by Donald J Trump
         </h1>
-        <h2 class="">Not Including the January 6th Pardons</h2>
+        <h2 class="hero-subtitle mb-8">Not Including the January 6th Pardons</h2>
         <StatGrid stats={stats} animated={true} />
-        <p class="hero-tracking py-5 mb-2">Updated April 2026</p>
+        <p class="hero-tracking pt-4 mb-0">Updated April 2026</p>
     </section>
 
     <!-- Gradient Divider -->
@@ -110,10 +110,13 @@ const timelineEntries = sortedDates.map((date, i) => {
     </div>
 
     <!-- Categories Section -->
-    <section class="py-10 md:py-section px-5 md:px-10 max-w-home mx-auto">
+    <section class="py-10 md:py-section px-5 md:px-10 max-w-home mx-auto" data-animate>
         <h2 class="text-section font-serif text-text-primary mb-2">
             By Offense Category
         </h2>
+        <p class="text-nav text-text-faint mb-10">
+            Breakdown of all pardons by type of offense
+        </p>
         <CategoryGrid
             categoryCounts={categoryCounts}
             columns={3}
@@ -127,7 +130,7 @@ const timelineEntries = sortedDates.map((date, i) => {
     </div>
 
     <!-- Timeline Section -->
-    <section class="py-10 md:py-section px-5 md:px-10 max-w-home mx-auto">
+    <section class="py-10 md:py-section px-5 md:px-10 max-w-home mx-auto" data-animate>
         <h2 class="text-section font-serif text-text-primary mb-2">Timeline</h2>
         <p class="text-nav text-text-faint mb-10">
             Every clemency action in reverse chronological order
@@ -146,3 +149,5 @@ const timelineEntries = sortedDates.map((date, i) => {
         <SourceBanner />
     </section>
 </Layout>
+
+<script src="/scripts/animate-on-scroll.js" is:inline></script>
