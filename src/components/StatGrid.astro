@@ -56,14 +56,14 @@ const { stats, animated = false } = Astro.props;
     <StatCard
         label="Restitution Abandoned"
         value={formatCurrency(stats.totalRestitutionAbandoned)}
-        variant="default"
+        variant="restitution"
         animated={animated}
         animationDelay={animated ? 5 * 150 : 0}
     />
     <StatCard
         label="Fines Abandoned"
         value={formatCurrency(stats.totalFinesAbandoned)}
-        variant="default"
+        variant="restitution"
         animated={animated}
         animationDelay={animated ? 6 * 150 : 0}
     />

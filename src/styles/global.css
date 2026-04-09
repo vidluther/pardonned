@@ -207,7 +207,9 @@
     border-left-width: 3px;
     border-radius: 0 8px 8px 0;
     padding: 18px 24px;
-    transition: background 0.15s, border-color 0.15s;
+    transition:
+      background 0.15s,
+      border-color 0.15s;
     cursor: pointer;
     position: relative;
   }
@@ -219,7 +221,9 @@
 
   .search-card-chevron {
     color: #d0cec8;
-    transition: color 0.15s, transform 0.15s;
+    transition:
+      color 0.15s,
+      transform 0.15s;
     flex-shrink: 0;
     font-size: 18px;
     line-height: 1;
@@ -276,7 +280,9 @@
     background: #f6f5f0;
     color: #7a7870;
     border: 1px solid #e8e6e0;
-    transition: background 0.15s, color 0.15s;
+    transition:
+      background 0.15s,
+      color 0.15s;
     cursor: pointer;
   }
 
@@ -319,7 +325,9 @@
     border: 1px solid #e8e6e0;
     border-radius: 6px;
     padding: 14px 18px;
-    transition: background 0.15s, border-color 0.15s;
+    transition:
+      background 0.15s,
+      border-color 0.15s;
   }
 
   .source-link:hover {

@@ -37,7 +37,7 @@ async function scrapePresident(slugFilter?: string): Promise<void> {
           // Exact match (e.g., "trump-2" matches "trump-2")
           if (slug === slugFilter) return true;
           // Prefix match only when filter has no term number (e.g., "obama" matches "obama-1", "obama-2")
-          if (!/\-\d+$/.test(slugFilter)) {
+          if (!/-\d+$/.test(slugFilter)) {
             return slug.startsWith(slugFilter + "-") || slug === slugFilter;
           }
           return false;
