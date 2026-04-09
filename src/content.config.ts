@@ -6,9 +6,7 @@ import {
 
 const pardonDetails = defineCollection({
   loader: pardonDetailsLoader({
-    filters: {
-      administration_slug: "eq.trump-2",
-    },
+    administrationSlug: "trump-2",
   }),
   schema: pardonDetailSchema,
 });

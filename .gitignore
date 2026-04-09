@@ -23,3 +23,9 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+
+# data files (produced by scraper, injected at build time)
+data/*.db
+
+# scraper source reference (incorporated into src/)
+scraper/

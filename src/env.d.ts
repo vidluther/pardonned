@@ -1,8 +1,7 @@
 /// <reference types="astro/client" />
 
 interface ImportMetaEnv {
-  readonly PARDONNED_API_HOST: string;
-  readonly PARDONNED_API_KEY: string;
+  readonly PARDONNED_DB: string;
 }
 
 interface ImportMeta {
