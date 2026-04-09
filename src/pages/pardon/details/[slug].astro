@@ -175,9 +175,16 @@ const sources = [
         subtitle: "justice.gov/pardon",
     },
 ].filter((s) => s.url);
+
+const breadcrumbJsonLd = generateBreadcrumbJsonLd([
+    { name: "Home", url: "https://pardonned.com/" },
+    { name: "Search", url: "https://pardonned.com/search" },
+    { name: data.recipient_name, url: `https://pardonned.com/pardon/details/${slugify(data.recipient_name)}` },
+]);
 ---
 
 <Layout title={data.recipient_name} currentPath={currentPath}>
+  <script type="application/ld+json" set:html={breadcrumbJsonLd} />
     <div class="max-w-detail mx-auto px-5 md:px-10 py-6 md:py-10">
         <!-- Breadcrumb -->
         <div class="breadcrumb mb-6 md:mb-10">
