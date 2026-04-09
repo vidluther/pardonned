@@ -6,12 +6,13 @@ import { resolve } from "node:path";
 // Load font files once (cached across invocations during build)
 const fontsDir = resolve(process.cwd(), "src/assets/fonts");
 
-let fontData: { dmSans: Buffer; dmSerif: Buffer } | null = null;
+let fontData: { dmSansRegular: Buffer; dmSansMedium: Buffer; dmSerif: Buffer } | null = null;
 
 function loadFonts() {
   if (!fontData) {
     fontData = {
-      dmSans: readFileSync(resolve(fontsDir, "DMSans-Variable.ttf")),
+      dmSansRegular: readFileSync(resolve(fontsDir, "DMSans-Regular.ttf")),
+      dmSansMedium: readFileSync(resolve(fontsDir, "DMSans-Medium.ttf")),
       dmSerif: readFileSync(resolve(fontsDir, "DMSerifDisplay-Regular.ttf")),
     };
   }
@@ -37,13 +38,13 @@ export async function renderOgImage(data: OgImageData): Promise<Buffer> {
     fonts: [
       {
         name: "DM Sans",
-        data: fonts.dmSans,
+        data: fonts.dmSansRegular,
         weight: 400,
         style: "normal" as const,
       },
       {
         name: "DM Sans",
-        data: fonts.dmSans,
+        data: fonts.dmSansMedium,
         weight: 500,
         style: "normal" as const,
       },
@@ -126,6 +127,7 @@ function buildMarkup(data: OgImageData) {
                 type: "div",
                 props: {
                   style: {
+                    display: "flex",
                     fontFamily: "DM Serif Display",
                     fontSize: "64px",
                     color: "#1A1918",
@@ -140,6 +142,7 @@ function buildMarkup(data: OgImageData) {
                     type: "div",
                     props: {
                       style: {
+                        display: "flex",
                         fontSize: "22px",
                         color: "#6A6860",
                       },
@@ -174,6 +177,7 @@ function buildMarkup(data: OgImageData) {
                           type: "div",
                           props: {
                             style: {
+                              display: "flex",
                               fontFamily: "DM Serif Display",
                               fontSize: "42px",
                               color: accent ? "#C23B22" : "#1A1918",
@@ -187,6 +191,7 @@ function buildMarkup(data: OgImageData) {
                               type: "div",
                               props: {
                                 style: {
+                                  display: "flex",
                                   fontSize: "16px",
                                   color: "#807E76",
                                   textTransform: "uppercase" as const,
@@ -205,12 +210,12 @@ function buildMarkup(data: OgImageData) {
                 type: "div",
                 props: {
                   style: {
+                    display: "flex",
                     width: "80px",
                     height: "4px",
                     backgroundColor: "#C23B22",
                     borderRadius: "2px",
                   },
-                  children: [],
                 },
               },
             ].filter(Boolean),
