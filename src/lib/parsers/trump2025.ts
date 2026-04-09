@@ -1,5 +1,6 @@
 import * as cheerio from "cheerio";
 import type { ParsedGrant } from "./types.js";
+import { resolveUrl } from "./types.js";
 import { categorizeOffense } from "./categorize.js";
 
 /**
@@ -47,7 +48,7 @@ export function parseTrump2025(html: string, sourceUrl: string): ParsedGrant[] {
       if (!name) return;
 
       const link = nameCell.find("a");
-      const warrantUrl = link.length ? link.attr("href") || null : null;
+      const warrantUrl = resolveUrl(link.attr("href"));
 
       const district = cells.eq(1).text().trim() || null;
       const sentence = cells.eq(2).text().trim() || null;

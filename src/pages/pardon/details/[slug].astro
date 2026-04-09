@@ -4,6 +4,7 @@ import StatCard from "../../../components/StatCard.astro";
 import "../../../styles/global.css";
 import { getCollection } from "astro:content";
 import { slugify } from "../../../lib/slugify";
+import { resolveUrl } from "../../../lib/parsers/types";
 
 export async function getStaticPaths() {
     const allPardons = await getCollection("pardonDetails");
@@ -157,13 +158,13 @@ metadata.push({
 
 const sources = [
     {
-        url: data.warrant_url,
+        url: resolveUrl(data.warrant_url),
         icon: "📄",
         title: "Pardon warrant (PDF)",
         subtitle: "DOJ Office of the Pardon Attorney",
     },
     {
-        url: data.source_url,
+        url: resolveUrl(data.source_url),
         icon: "🏛",
         title: "DOJ clemency listing page",
         subtitle: "justice.gov/pardon",

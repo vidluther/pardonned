@@ -1,5 +1,6 @@
 import * as cheerio from "cheerio";
 import type { ParsedGrant } from "./types.js";
+import { resolveUrl } from "./types.js";
 import { categorizeOffense } from "./categorize.js";
 
 /**
@@ -49,7 +50,7 @@ export function parseTableFive(
       if (cells.length >= 5) {
         const disclosureLink = cells.eq(4).find("a");
         if (disclosureLink.length) {
-          warrantUrl = disclosureLink.attr("href") || null;
+          warrantUrl = resolveUrl(disclosureLink.attr("href"));
         }
       }
 

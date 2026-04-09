@@ -1,3 +1,16 @@
+const DOJ_BASE = "https://www.justice.gov";
+
+export function resolveUrl(href: string | null | undefined): string | null {
+  if (!href) return null;
+  if (href.startsWith("http://") || href.startsWith("https://")) {
+    return href;
+  }
+  if (href.startsWith("/")) {
+    return `${DOJ_BASE}${href}`;
+  }
+  return href;
+}
+
 export type OffenseCategory =
   | "violent crime"
   | "fraud"
