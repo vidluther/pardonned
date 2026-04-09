@@ -1,0 +1,110 @@
+name: Scrape, Build & Deploy
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+
+  workflow_dispatch:
+    inputs:
+      president:
+        description: "President slug to scrape (default: all)"
+        required: false
+        default: "all"
+        type: choice
+        options:
+          - all
+          - trump-2
+          - biden-1
+          - trump-1
+          - obama
+          - bush-jr
+
+  push:
+    branches: [main]
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  scrape-build-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Install Playwright Chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Install Playwright system deps
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
+      - name: Create data directory
+        run: mkdir -p data
+
+      - name: Run scraper
+        env:
+          PARDONNED_DB: ./data/pardonned.db
+          PRESIDENT_FILTER: ${{ github.event.inputs.president || 'all' }}
+        run: |
+          echo "Scraping president: ${PRESIDENT_FILTER}"
+          pnpm tsx src/scraper/scrape.ts --president "${PRESIDENT_FILTER}"
+
+      - name: Verify database
+        run: |
+          if [ ! -f data/pardonned.db ]; then
+            echo "::error::Database file was not created"
+            exit 1
+          fi
+          echo "Database size: $(du -h data/pardonned.db | cut -f1)"
+
+      - name: Build site
+        env:
+          PARDONNED_DB: ./data/pardonned.db
+        run: pnpm build
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
