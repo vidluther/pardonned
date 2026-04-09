@@ -8,5 +8,5 @@ export const siteConfig = {
   siteUrl: "https://pardonned.com",
   locale: "en_US",
   twitterHandle: "",
-  defaultOgImage: "/og-image.png",
+  defaultOgImage: "/og/home.png",
 };
