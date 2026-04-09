@@ -29,7 +29,7 @@ const { currentPath = "/" } = Astro.props;
             class:list={[
               "text-nav transition-colors pb-0.5",
               isActive
-                ? "text-text-primary font-medium border-b border-accent"
+                ? "text-text-primary font-medium border-b-2 border-accent"
                 : "text-text-muted hover:text-text-primary"
             ]}
           >
@@ -46,7 +46,7 @@ const { currentPath = "/" } = Astro.props;
       aria-expanded="false"
       id="mobile-nav-toggle"
     >
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
         <line x1="3" y1="6" x2="21" y2="6" />
         <line x1="3" y1="12" x2="21" y2="12" />
         <line x1="3" y1="18" x2="21" y2="18" />
@@ -81,9 +81,32 @@ const { currentPath = "/" } = Astro.props;
     const nav = document.getElementById('mobile-nav');
     if (!toggle || !nav) return;
 
+    function closeNav() {
+      nav.classList.remove('is-open');
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.focus();
+    }
+
+    function openNav() {
+      nav.classList.add('is-open');
+      toggle.setAttribute('aria-expanded', 'true');
+      const firstLink = nav.querySelector('a');
+      if (firstLink) firstLink.focus();
+    }
+
     toggle.addEventListener('click', () => {
-      const isOpen = nav.classList.toggle('is-open');
-      toggle.setAttribute('aria-expanded', String(isOpen));
+      const isOpen = nav.classList.contains('is-open');
+      if (isOpen) {
+        closeNav();
+      } else {
+        openNav();
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && nav.classList.contains('is-open')) {
+        closeNav();
+      }
     });
   });
 </script>
