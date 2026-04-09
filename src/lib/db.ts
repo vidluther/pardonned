@@ -1,6 +1,6 @@
 import "dotenv/config";
-import Database from "better-sqlite3";
-import { drizzle } from "drizzle-orm/better-sqlite3";
+import { createClient } from "@libsql/client";
+import { drizzle } from "drizzle-orm/libsql";
 import { eq, inArray, sql } from "drizzle-orm";
 import * as schema from "../db/schema.js";
 import { administrations, pardons } from "../db/schema.js";
@@ -329,17 +329,17 @@ function getDbPath(): string {
   return dbPath;
 }
 
-const sqlite = new Database(getDbPath());
-sqlite.exec(DDL);
+const client = createClient({ url: "file:" + getDbPath() });
+await client.executeMultiple(DDL);
 
-export const db = drizzle(sqlite, { schema });
+export const db = drizzle(client, { schema });
 
-const adminCount = db
+const adminCount = await db
   .select({ count: sql<number>`count(*)` })
   .from(administrations)
-  .get()!;
-if (adminCount.count === 0) {
-  db.insert(administrations).values(SEED_ADMINISTRATIONS).run();
+  .get();
+if (!adminCount || adminCount.count === 0) {
+  await db.insert(administrations).values(SEED_ADMINISTRATIONS).run();
   console.log(`Seeded ${SEED_ADMINISTRATIONS.length} administrations`);
 }
 
@@ -349,7 +349,7 @@ export async function getTermId(slug: string): Promise<number> {
   const cached = termIdCache.get(slug);
   if (cached !== undefined) return cached;
 
-  const row = db
+  const row = await db
     .select({ id: administrations.id })
     .from(administrations)
     .where(eq(administrations.slug, slug))
@@ -369,7 +369,7 @@ export async function getTermForDate(
 ): Promise<string> {
   if (slugs.length === 1) return slugs[0];
 
-  const data = db
+  const data = await db
     .select({
       id: administrations.id,
       slug: administrations.slug,
@@ -448,7 +448,7 @@ export async function upsertGrants(
     }
 
     try {
-      const result = db
+      const result = await db
         .insert(pardons)
         .values(deduped)
         .onConflictDoUpdate({
@@ -473,7 +473,7 @@ export async function upsertGrants(
         })
         .run();
 
-      inserted += result.changes;
+      inserted += result.rowsAffected;
     } catch (err) {
       console.error(`Error upserting batch at index ${i}:`, err);
       skipped += batch.length;

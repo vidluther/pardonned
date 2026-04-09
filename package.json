@@ -22,8 +22,8 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@libsql/client": "^0.17.2",
     "astro": "^6.1.5",
-    "better-sqlite3": "^12.8.0",
     "cheerio": "^1.2.0",
     "dotenv": "^17.4.1",
     "drizzle-orm": "^0.45.2",
@@ -31,7 +31,6 @@
   },
   "devDependencies": {
     "@astrojs/tailwind": "^6.0.2",
-    "@types/better-sqlite3": "^7.6.13",
     "drizzle-kit": "^0.31.10",
     "oxfmt": "^0.43.0",
     "oxlint": "^1.58.0",

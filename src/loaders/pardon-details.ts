@@ -1,7 +1,7 @@
 import type { Loader } from "astro/loaders";
 import { z } from "astro/zod";
-import Database from "better-sqlite3";
-import { drizzle } from "drizzle-orm/better-sqlite3";
+import { createClient } from "@libsql/client";
+import { drizzle } from "drizzle-orm/libsql";
 import { eq } from "drizzle-orm";
 import { pardons, administrations } from "../db/schema";
 import { resolve } from "node:path";
@@ -69,8 +69,8 @@ export function pardonDetailsLoader(
 
       logger.info(`Opening SQLite database at ${dbPath}`);
 
-      const sqlite = new Database(dbPath, { readonly: true });
-      const db = drizzle(sqlite);
+      const client = createClient({ url: "file:" + dbPath });
+      const db = drizzle(client);
 
       try {
         const query = db
@@ -101,10 +101,10 @@ export function pardonDetailsLoader(
           );
 
         const rows = options.administrationSlug
-          ? query
+          ? await query
               .where(eq(administrations.slug, options.administrationSlug))
               .all()
-          : query.all();
+          : await query.all();
 
         logger.info(`Read ${rows.length} rows from SQLite`);
 
@@ -119,7 +119,7 @@ export function pardonDetailsLoader(
 
         logger.info(`Stored ${rows.length} pardon detail entries`);
       } finally {
-        sqlite.close();
+        client.close();
       }
     },
   } satisfies Loader;
