@@ -16,14 +16,13 @@ interactive data exploration.
 
 ### Tech stack
 
-- **Framework**: Next.js (App Router)
+- **Framework**: AstroJS
 - **Language**: TypeScript (strict)
 - **Styling**: Tailwind CSS — use the config below to define the palette and type scale.
   Avoid arbitrary values (`text-[#C23B22]`) when a Tailwind token exists.
 - **Fonts**: Google Fonts — `DM Serif Display` (headlines) + `DM Sans` (everything else).
-  Load via `next/font/google` for self-hosting and performance.
-- **Database**: Supabase (PostgreSQL). Schema lives in the `pardonned` schema.
-  Use the Supabase JS client for data fetching in server components.
+  Load via standard CSS `@import` or `<link>` tags.
+- **Database**: SQLite via `@libsql/client` with Drizzle ORM
 - **Linting**: oxlint
 - **Package manager**: pnpm
 
@@ -99,27 +98,22 @@ These map to the `offense_category` column in the `pardon` table.
 
 ## 3. Typography
 
-### Font loading (Next.js)
+### Font loading
 
-```typescript
-import { DM_Sans, DM_Serif_Display } from "next/font/google";
+Fonts are loaded via Google Fonts CSS import in the layout:
 
-export const sans = DM_Sans({
-  subsets: ["latin"],
-  variable: "--font-sans",
-  display: "swap",
-});
-
-export const serif = DM_Serif_Display({
-  weight: "400",
-  subsets: ["latin"],
-  variable: "--font-serif",
-  display: "swap",
-});
+```css
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=DM+Serif+Display&display=swap");
 ```
 
-Apply both variables to `<html>` via `className={`${sans.variable} ${serif.variable}`}`.
-Set `font-sans` as the default body font in `tailwind.config.ts`.
+Configure in `tailwind.config.ts`:
+
+```typescript
+fontFamily: {
+  sans: ["DM Sans", "system-ui", "sans-serif"],
+  serif: ["DM Serif Display", "Georgia", "serif"],
+}
+```
 
 ### Type scale
 
@@ -458,7 +452,7 @@ Both are wrapped in a container matching the section `max-width` with `40px` hor
 import type { Config } from "tailwindcss";
 
 export default {
-  content: ["./src/**/*.{ts,tsx}"],
+  content: ["./src/**/*.{astro,html,js,jsx,md,mdx,svelte,ts,tsx,vue}"],
   theme: {
     extend: {
       fontFamily: {
@@ -555,7 +549,7 @@ Keep animation minimal and purposeful. This is a journalism site, not a product 
 - **Search result hover**: `background` transition, 150ms.
 - **Tab switching**: no animation — instant swap.
 - **Timeline**: no scroll-triggered animation. Content is static.
-- **Page transitions**: none. Use Next.js default behavior.
+- **Page transitions**: none. Astro uses standard browser navigation.
 
 ---
 

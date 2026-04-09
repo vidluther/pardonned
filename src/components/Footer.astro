@@ -1,12 +1,36 @@
 ---
 import { siteConfig } from '../config/site';
 import { mainNavigation } from '../config/navigation';
+import { statSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 interface Props {
   showNav?: boolean;
 }
 
 const { showNav = true } = Astro.props;
+
+// Get database file timestamp for "last updated" display
+const dbPath = resolve(process.cwd(), 'data/pardonned.db');
+let lastUpdated: string;
+
+try {
+  const stats = statSync(dbPath);
+  const date = stats.mtime;
+  // Convert to Eastern Time and determine if EST or EDT
+  const easternDate = new Date(date.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  const isDST = easternDate.getTimezoneOffset() < new Date(easternDate.getFullYear(), 0, 1).getTimezoneOffset();
+  const tzAbbr = isDST ? 'EDT' : 'EST';
+
+  const month = easternDate.toLocaleDateString('en-US', { month: 'long', timeZone: 'America/New_York' });
+  const day = easternDate.getDate();
+  const year = easternDate.getFullYear();
+  const hours = String(easternDate.getHours()).padStart(2, '0');
+  const minutes = String(easternDate.getMinutes()).padStart(2, '0');
+  lastUpdated = `${month} ${day}, ${year} @ ${hours}${minutes} hrs ${tzAbbr}`;
+} catch {
+  lastUpdated = 'Unknown';
+}
 ---
 
 <footer class="border-t border-border-DEFAULT mt-16">
@@ -37,6 +61,9 @@ const { showNav = true } = Astro.props;
     <!-- Source Attribution -->
     <p class="text-meta text-text-ghost">
       Data source: {siteConfig.dataSource} · {siteConfig.disclaimer}
+    </p>
+    <p class="text-meta text-text-ghost mt-1">
+      Last updated: {lastUpdated}
     </p>
   </div>
 </footer>
