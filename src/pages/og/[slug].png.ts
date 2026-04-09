@@ -1,7 +1,7 @@
 import type { APIRoute, GetStaticPaths } from "astro";
 import { getCollection } from "astro:content";
 import { slugify } from "../../lib/slugify";
-import { renderOgImage } from "../../lib/og-image";
+import { renderOgImage, type OgImageData } from "../../lib/og-image";
 
 export const prerender = true;
 
@@ -74,9 +74,9 @@ function formatDateShort(dateStr: string): string {
 }
 
 export const GET: APIRoute = async ({ props }) => {
-  const png = await renderOgImage(props);
+  const png = await renderOgImage(props as OgImageData);
 
-  return new Response(png, {
+  return new Response(png as unknown as BodyInit, {
     headers: { "Content-Type": "image/png" },
   });
 };
