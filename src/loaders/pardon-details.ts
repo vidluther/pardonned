@@ -1,14 +1,15 @@
 import type { Loader } from "astro/loaders";
 import { z } from "astro/zod";
+import Database from "better-sqlite3";
+import { drizzle } from "drizzle-orm/better-sqlite3";
+import { eq } from "drizzle-orm";
+import { pardons, administrations } from "../db/schema";
+import { resolve } from "node:path";
 
-/**
- * Schema matching the pardon_details view as returned by PostgREST.
- */
 export const pardonDetailSchema = z.object({
-  id: z.string().uuid(),
-  administration_id: z.string().uuid(),
+  id: z.string(),
   administration_slug: z.string(),
-  grant_date: z.string(), // ISO date from PostgREST
+  grant_date: z.string(),
   clemency_type: z.enum(["pardon", "commutation"]),
   offense: z.string(),
   offense_category: z.enum([
@@ -39,28 +40,18 @@ export type PardonDetail = z.infer<typeof pardonDetailSchema>;
 
 interface PardonDetailsLoaderOptions {
   /**
-   * Override the API host URL (the /v1 base).
-   * Defaults to PARDONNED_API_HOST env var.
+   * Path to the SQLite database file.
+   * Resolved relative to process.cwd() (project root).
+   * Defaults to "data/pardonned.db".
    */
-  apiHost?: string;
+  dbPath?: string;
 
   /**
-   * Override the API key.
-   * Defaults to PARDONNED_API_KEY env var.
+   * Optional administration slug filter.
+   * When set, only pardons for that administration are loaded.
+   * Example: "trump-2"
    */
-  apiKey?: string;
-
-  /**
-   * The PostgREST resource path.
-   * Defaults to "pardon_details".
-   */
-  resource?: string;
-
-  /**
-   * Optional PostgREST query parameters for filtering.
-   * Example: { administration_slug: "eq.trump-2", offense_category: "eq.fraud" }
-   */
-  filters?: Record<string, string>;
+  administrationSlug?: string;
 }
 
 export function pardonDetailsLoader(
@@ -71,57 +62,65 @@ export function pardonDetailsLoader(
     schema: pardonDetailSchema,
 
     async load({ store, logger, parseData, generateDigest }) {
-      const apiHost = options.apiHost ?? import.meta.env.PARDONNED_API_HOST;
-      const apiKey = options.apiKey ?? import.meta.env.PARDONNED_API_KEY;
-      const resource = options.resource ?? "pardon_details";
+      const dbPath = resolve(
+        process.cwd(),
+        options.dbPath ?? "data/pardonned.db",
+      );
 
-      if (!apiHost || !apiKey) {
-        throw new Error(
-          "pardon-details-loader: missing PARDONNED_API_HOST or PARDONNED_API_KEY environment variables.",
-        );
-      }
+      logger.info(`Opening SQLite database at ${dbPath}`);
 
-      // Build URL with optional PostgREST filters
-      const url = new URL(`${apiHost}/${resource}`);
-      if (options.filters) {
-        for (const [key, value] of Object.entries(options.filters)) {
-          url.searchParams.set(key, value);
+      const sqlite = new Database(dbPath, { readonly: true });
+      const db = drizzle(sqlite);
+
+      try {
+        const query = db
+          .select({
+            id: pardons.id,
+            administration_slug: administrations.slug,
+            grant_date: pardons.grant_date,
+            clemency_type: pardons.clemency_type,
+            offense: pardons.offense,
+            offense_category: pardons.offense_category,
+            district: pardons.district,
+            warrant_url: pardons.warrant_url,
+            source_url: pardons.source_url,
+            recipient_name: pardons.recipient_name,
+            sentence_in_months: pardons.sentence_in_months,
+            fine: pardons.fine,
+            restitution: pardons.restitution,
+            original_sentence: pardons.original_sentence,
+            president_name: administrations.president_name,
+            term_number: administrations.term_number,
+            term_start_date: administrations.start_date,
+            term_end_date: administrations.end_date,
+          })
+          .from(pardons)
+          .innerJoin(
+            administrations,
+            eq(pardons.administration, administrations.id),
+          );
+
+        const rows = options.administrationSlug
+          ? query
+              .where(eq(administrations.slug, options.administrationSlug))
+              .all()
+          : query.all();
+
+        logger.info(`Read ${rows.length} rows from SQLite`);
+
+        store.clear();
+
+        for (const row of rows) {
+          const id = String(row.id);
+          const data = await parseData({ id, data: { ...row, id } });
+          const digest = generateDigest(data);
+          store.set({ id, data, digest });
         }
+
+        logger.info(`Stored ${rows.length} pardon detail entries`);
+      } finally {
+        sqlite.close();
       }
-
-      logger.info(`Fetching from ${url.toString()}`);
-
-      const response = await fetch(url.toString(), {
-        headers: {
-          apikey: apiKey,
-          Authorization: `Bearer ${apiKey}`,
-          "Accept-Profile": "pardonned",
-          Accept: "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(
-          `pardon-details-loader: ${response.status} ${response.statusText} from ${url}`,
-        );
-      }
-
-      const rows: unknown[] = await response.json();
-      logger.info(`Received ${rows.length} rows`);
-
-      store.clear();
-
-      for (const row of rows) {
-        const raw = row as Record<string, unknown>;
-        const id = String(raw.id);
-
-        const data = await parseData({ id, data: raw });
-        const digest = generateDigest(data);
-
-        store.set({ id, data, digest });
-      }
-
-      logger.info(`Stored ${rows.length} pardon detail entries`);
     },
   } satisfies Loader;
 }
