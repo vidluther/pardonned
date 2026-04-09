@@ -42,15 +42,15 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v5
         with:
           version: 10
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: pnpm
@@ -79,10 +79,9 @@ jobs:
       - name: Run scraper
         env:
           PARDONNED_DB: ./data/pardonned.db
-          PRESIDENT_FILTER: ${{ github.event.inputs.president || 'all' }}
         run: |
-          echo "Scraping president: ${PRESIDENT_FILTER}"
-          pnpm tsx src/scraper/scrape.ts --president "${PRESIDENT_FILTER}"
+          echo "Scraping pardons for all presidents"
+          pnpm tsx src/scraper/scrape.ts"
 
       - name: Verify database
         run: |
