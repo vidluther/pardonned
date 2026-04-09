@@ -5,6 +5,7 @@ import "../../../styles/global.css";
 import { getCollection } from "astro:content";
 import { slugify } from "../../../lib/slugify";
 import { resolveUrl } from "../../../lib/parsers/types";
+import { generateBreadcrumbJsonLd } from "../../../lib/seo";
 
 export async function getStaticPaths() {
     const allPardons = await getCollection("pardonDetails");
@@ -127,34 +128,38 @@ if (hasRestitution) {
 }
 
 type MetaEntry = { label: string; value: string; emphasis?: boolean };
-const metadata: MetaEntry[] = [
+
+// Group 1: Case details
+const caseDetails: MetaEntry[] = [
     {
         label: "Clemency Type",
         value: clemencyLabels[data.clemency_type] ?? capitalize(data.clemency_type),
     },
     { label: "Grant Date", value: grantDate },
+    {
+        label: "Category",
+        value: categoryLabels[data.offense_category] ?? capitalize(data.offense_category),
+    },
 ];
 
+if (data.district) {
+    caseDetails.push({ label: "District", value: data.district });
+}
+
+// Group 2: Sentencing & financial impact
+const sentencingDetails: MetaEntry[] = [];
+
 if (data.sentence_in_months != null) {
-    metadata.push({ label: "Sentence", value: formattedSentence });
+    sentencingDetails.push({ label: "Sentence", value: formattedSentence });
 }
 
 // Restitution and fine always render — their absence is meaningful
-metadata.push({
+sentencingDetails.push({
     label: "Restitution",
     value: formattedRestitution,
     emphasis: hasRestitution,
 });
-metadata.push({ label: "Fine", value: formattedFine });
-
-if (data.district) {
-    metadata.push({ label: "District", value: data.district });
-}
-
-metadata.push({
-    label: "Category",
-    value: categoryLabels[data.offense_category] ?? capitalize(data.offense_category),
-});
+sentencingDetails.push({ label: "Fine", value: formattedFine });
 
 const sources = [
     {
@@ -188,7 +193,7 @@ const sources = [
         <!-- Header: kicker + name + district -->
         <div class="mb-10">
             <div class="hero-tracking mb-4">
-                {data.clemency_type} · {grantDateShort}
+                {clemencyLabels[data.clemency_type] ?? capitalize(data.clemency_type)} · {grantDateShort}
             </div>
             <h1
                 class="font-serif text-text-primary m-0 mb-3 text-[28px] md:text-detail-name"
@@ -223,16 +228,10 @@ const sources = [
             <ul class="list-none p-0 m-0 flex flex-col gap-3">
                 {
                     offenses.map((offense) => (
-                        <li class="flex gap-4 items-baseline">
-                            <span
-                                class="text-text-faint"
-                                style="font-size: 20px; line-height: 1;"
-                            >
-                                ·
-                            </span>
+                        <li class="offense-item">
                             <span
                                 class="text-text-primary"
-                                style="font-size: 18px; line-height: 1.5;"
+                                style="font-size: 16px; line-height: 1.5;"
                             >
                                 {capitalize(offense)}
                             </span>
@@ -257,32 +256,52 @@ const sources = [
             )
         }
 
-        <!-- Inline metadata grid -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-5 mb-12">
-            {
-                metadata.map((entry) => (
-                    <div>
-                        <div class="tracker-label mb-1">{entry.label}</div>
-                        <div
-                            class:list={[
-                                "text-body",
-                                entry.emphasis
-                                    ? "text-accent font-medium"
-                                    : "text-text-primary",
-                            ]}
-                        >
-                            {entry.value}
-                        </div>
-                    </div>
-                ))
-            }
+        <!-- Metadata groups -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-12" data-animate>
+            <div class="metadata-group">
+                <div class="metadata-group-title">Case Details</div>
+                <div class="flex flex-col gap-4">
+                    {
+                        caseDetails.map((entry) => (
+                            <div>
+                                <div class="tracker-label mb-1">{entry.label}</div>
+                                <div class="text-body text-text-primary">
+                                    {entry.value}
+                                </div>
+                            </div>
+                        ))
+                    }
+                </div>
+            </div>
+            <div class="metadata-group">
+                <div class="metadata-group-title">Sentencing & Impact</div>
+                <div class="flex flex-col gap-4">
+                    {
+                        sentencingDetails.map((entry) => (
+                            <div>
+                                <div class="tracker-label mb-1">{entry.label}</div>
+                                <div
+                                    class:list={[
+                                        "text-body",
+                                        entry.emphasis
+                                            ? "text-accent font-medium"
+                                            : "text-text-primary",
+                                    ]}
+                                >
+                                    {entry.value}
+                                </div>
+                            </div>
+                        ))
+                    }
+                </div>
+            </div>
         </div>
 
         <!-- Divider -->
         <div class="divider-gradient mb-10" />
 
         <!-- Source documents -->
-        <div>
+        <div data-animate>
             <div class="overline">Source Documents</div>
             <div class="flex flex-col gap-3">
                 {
@@ -292,7 +311,7 @@ const sources = [
                                 href={src.url}
                                 target="_blank"
                                 rel="noopener"
-                                class="source-link no-underline hover:bg-muted transition-colors"
+                                class="source-link no-underline"
                             >
                                 <span class="text-xl opacity-50">{src.icon}</span>
                                 <div>
@@ -303,7 +322,7 @@ const sources = [
                                         {src.subtitle}
                                     </div>
                                 </div>
-                                <span class="text-faint ml-auto">↗</span>
+                                <span class="text-faint ml-auto source-link-arrow">↗</span>
                             </a>
                         ))
                     ) : (
@@ -314,5 +333,14 @@ const sources = [
                 }
             </div>
         </div>
+
+        <!-- Bottom navigation -->
+        <div class="mt-12 pt-8 border-t border-border-DEFAULT flex justify-between items-center">
+            <a href="/search" class="load-more-btn inline-block no-underline">
+                ← Back to search
+            </a>
+        </div>
     </div>
 </Layout>
+
+<script src="/scripts/animate-on-scroll.js" is:inline></script>
