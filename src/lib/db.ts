@@ -336,16 +336,27 @@ await client.executeMultiple(DDL);
 // In-place migration: ALTER existing DBs that predate the slug column.
 // SQLite's CREATE TABLE IF NOT EXISTS won't add columns to an existing
 // table, so we check for the column via PRAGMA and ALTER if missing.
+// The pardons_slug_unique index is created unconditionally below, OUTSIDE
+// this block, because including it in the DDL string caused "no such
+// column: slug" errors on existing DBs (CREATE TABLE IF NOT EXISTS is a
+// no-op when the table exists, so the index ran before ALTER TABLE added
+// the column).
 {
   const cols = await client.execute("PRAGMA table_info(pardons)");
+  // PRAGMA table_info returns rows with columns: cid, name, type, notnull, dflt_value, pk.
+  // libsql exposes them as string-indexed properties, so r.name is the "name" column
+  // (the actual column name of the pardon row we're checking for).
   const hasSlug = cols.rows.some((r) => r.name === "slug");
   if (!hasSlug) {
     await client.execute("ALTER TABLE pardons ADD COLUMN slug TEXT");
     console.log("Migrated: added pardons.slug column");
   }
 }
-// Always ensure the unique index exists (idempotent; safe on both fresh
-// and migrated DBs because the slug column is guaranteed present above).
+// Always ensure the unique index exists (idempotent via IF NOT EXISTS).
+// Must stay OUTSIDE the DDL string and OUTSIDE the migration block:
+// on existing DBs the migration block adds the column first, and on
+// fresh DBs the DDL above creates the column. Either way, the index
+// creation here runs after the column is guaranteed to exist.
 await client.execute("CREATE UNIQUE INDEX IF NOT EXISTS pardons_slug_unique ON pardons(slug)");
 
 export const db = drizzle(client, { schema });
