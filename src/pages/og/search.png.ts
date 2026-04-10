@@ -8,7 +8,7 @@ export const GET: APIRoute = async () => {
   const allGrants = await getCollection("pardonDetails");
 
   const png = await renderOgImage({
-    title: "Search Clemency Grants",
+    title: "Search The Pardon Database",
     subtitle: `${allGrants.length} grants searchable by name, type, and category`,
   });
 

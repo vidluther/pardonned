@@ -1,8 +1,8 @@
 export const siteConfig = {
   name: "Pardonned",
-  tagline: "Tracking Pardons by President",
+  tagline: "More Money, More Pardons",
   description:
-    "A public-interest data site tracking presidential clemency grants.",
+    'A public-interest site, tracking pardons "granted" by Donald J Trump',
   dataSource: "DOJ Office of the Pardon Attorney",
   disclaimer: "Not affiliated with the U.S. government",
   siteUrl: "https://pardonned.com",
