@@ -1,5 +1,25 @@
 import { siteConfig } from "../config/site";
 
+export function truncateText(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+
+  // Leave room for the ellipsis character
+  const truncated = text.slice(0, maxLength - 1);
+  const lastSpace = truncated.lastIndexOf(" ");
+
+  let result: string;
+  if (lastSpace > 0) {
+    result = truncated.slice(0, lastSpace);
+  } else {
+    result = truncated;
+  }
+
+  // Remove trailing punctuation before adding ellipsis
+  result = result.replace(/[.,;:!\s]+$/, "");
+
+  return result + "…";
+}
+
 export interface SeoOptions {
   title: string;
   description: string;
