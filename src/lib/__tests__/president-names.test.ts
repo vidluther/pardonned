@@ -1,8 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  formatAdministrationDisplayName,
-  getAdministrationIndex,
-} from "../president-names";
+import { formatAdministrationDisplayName, getAdministrationIndex } from "../president-names";
 
 describe("formatAdministrationDisplayName", () => {
   it("returns just the name for a single-term president", () => {
@@ -151,9 +148,7 @@ describe("getAdministrationIndex", () => {
   it("renders multi-term presidents with an ordinal suffix", () => {
     const index = getAdministrationIndex(fixture);
     expect(index.get("trump-1")!.displayName).toBe("Donald Trump (First Term)");
-    expect(index.get("trump-2")!.displayName).toBe(
-      "Donald Trump (Second Term)",
-    );
+    expect(index.get("trump-2")!.displayName).toBe("Donald Trump (Second Term)");
   });
 
   it("carries the raw president name and term number through unchanged", () => {

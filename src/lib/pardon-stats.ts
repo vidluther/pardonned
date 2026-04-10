@@ -85,13 +85,9 @@ export function computeStats(entries: CollectionEntry[]): PardonStats {
     stats.byType[d.clemency_type] = (stats.byType[d.clemency_type] ?? 0) + 1;
 
     // Category counts
-    stats.byCategory[d.offense_category] =
-      (stats.byCategory[d.offense_category] ?? 0) + 1;
+    stats.byCategory[d.offense_category] = (stats.byCategory[d.offense_category] ?? 0) + 1;
 
-    if (
-      d.offense_category === "fraud" ||
-      d.offense_category === "financial crime"
-    ) {
+    if (d.offense_category === "fraud" || d.offense_category === "financial crime") {
       stats.fraudCount++;
     }
 

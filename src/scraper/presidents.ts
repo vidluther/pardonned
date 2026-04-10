@@ -8,29 +8,25 @@ export const PRESIDENT_SOURCES: PresidentSource[] = [
   },
   {
     slugs: ["biden-1"],
-    pardons:
-      "https://www.justice.gov/pardon/pardons-granted-president-joseph-biden-2021-2025",
+    pardons: "https://www.justice.gov/pardon/pardons-granted-president-joseph-biden-2021-2025",
     commutations:
       "https://www.justice.gov/pardon/commutations-granted-president-joseph-biden-2021-2025",
   },
   {
     slugs: ["trump-1"],
-    pardons:
-      "https://www.justice.gov/pardon/pardons-granted-president-donald-j-trump-2017-2021",
+    pardons: "https://www.justice.gov/pardon/pardons-granted-president-donald-j-trump-2017-2021",
     commutations:
       "https://www.justice.gov/pardon/commutations-granted-president-donald-j-trump-2017-2021",
   },
   {
     slugs: ["obama-1", "obama-2"],
-    pardons:
-      "https://www.justice.gov/pardon/pardons-granted-president-barack-h-obama-2009-2017",
+    pardons: "https://www.justice.gov/pardon/pardons-granted-president-barack-h-obama-2009-2017",
     commutations:
       "https://www.justice.gov/pardon/commutations-granted-president-barack-h-obama-2009-2017",
   },
   {
     slugs: ["bush-jr-1", "bush-jr-2"],
-    pardons:
-      "https://www.justice.gov/pardon/pardons-granted-president-george-w-bush-2001-2009",
+    pardons: "https://www.justice.gov/pardon/pardons-granted-president-george-w-bush-2001-2009",
     commutations:
       "https://www.justice.gov/pardon/commutations-granted-president-george-w-bush-2001-2009",
   },

@@ -51,42 +51,31 @@ export const PARDON_SLUG_OVERRIDES: Record<string, string> = {
   // Editorial: strips the parenthetical "*(condition declined, commutation
   // not effectuated)" note, which is meaningful metadata but belongs on
   // the detail page body, not the URL.
-  "Arnold Ray Jones *(condition declined, commutation not effectuated)":
-    "arnold-ray-jones",
+  "Arnold Ray Jones *(condition declined, commutation not effectuated)": "arnold-ray-jones",
 
-  "Octavio Joaquin Armenteros, aka Octavio Joaquin Armenteros-Iglesias":
-    "octavio-armenteros",
+  "Octavio Joaquin Armenteros, aka Octavio Joaquin Armenteros-Iglesias": "octavio-armenteros",
 
-  "Bashir Noorzai,\u00A0also known as Basheer Ahmad and Haji Bashir Noorzai":
-    "bashir-noorzai",
+  "Bashir Noorzai,\u00A0also known as Basheer Ahmad and Haji Bashir Noorzai": "bashir-noorzai",
 
-  "Erica Renee Ramos, fka Erica Renee DeVore, fka Erica Renee Ramirez":
-    "erica-renee-ramos",
+  "Erica Renee Ramos, fka Erica Renee DeVore, fka Erica Renee Ramirez": "erica-renee-ramos",
 
   // Editorial: uses the non-primary alias "Scooter" (trump-1, Plame leak
   // case) because it's how this pardon is historically known. The smart
   // quotes in "\u201CScooter\u201D" are U+201C/U+201D and must match the
   // DB bytes exactly.
-  "I. Lewis Libby, aka Scooter Libby, aka Irve Lewis \u201CScooter\u201D Libby":
-    "scooter-libby",
+  "I. Lewis Libby, aka Scooter Libby, aka Irve Lewis \u201CScooter\u201D Libby": "scooter-libby",
 
-  "Claude Nathalie Eyamba Fenno, fka Claude-Nathalie Ebehedi Eyamba":
-    "claude-eyamba-fenno",
+  "Claude Nathalie Eyamba Fenno, fka Claude-Nathalie Ebehedi Eyamba": "claude-eyamba-fenno",
 
-  "Kristi Lynn Coe, aka Kristi Lynn Coe-Hagan, fka Kristi Hinshaw":
-    "kristi-lynn-coe",
+  "Kristi Lynn Coe, aka Kristi Lynn Coe-Hagan, fka Kristi Hinshaw": "kristi-lynn-coe",
 
-  "Lehi Victoria Dickey, aka Lahi Dickey, fka Lehi Dickey Bryant":
-    "lehi-victoria-dickey",
+  "Lehi Victoria Dickey, aka Lahi Dickey, fka Lehi Dickey Bryant": "lehi-victoria-dickey",
 
-  "Richard D. Reid, aka Abdul H. Shabazz, aka Hakeem A. Shabazz":
-    "richard-d-reid",
+  "Richard D. Reid, aka Abdul H. Shabazz, aka Hakeem A. Shabazz": "richard-d-reid",
 
-  "Alejandro Enrique Ramirez Uma\u00F1a, aka Alejandro Enrique Umana":
-    "alejandro-ramirez-umana",
+  "Alejandro Enrique Ramirez Uma\u00F1a, aka Alejandro Enrique Umana": "alejandro-ramirez-umana",
 
-  "Cynthia Ann Raffensparger, fka Cynthia Ann Grange Hansen":
-    "cynthia-raffensparger",
+  "Cynthia Ann Raffensparger, fka Cynthia Ann Grange Hansen": "cynthia-raffensparger",
 
   // Editorial: drops the middle name "Charles" and suffix "II" for a
   // shorter, more memorable slug. Biden-1 first-degree murder commutation.
@@ -100,6 +89,5 @@ export const PARDON_SLUG_OVERRIDES: Record<string, string> = {
 
   "Tietti Onette Chandler, aka Tietti Chandler-Shelton": "tietti-chandler",
 
-  "William C. Robertson, Sr., aka William C. Robertson":
-    "william-c-robertson-sr",
+  "William C. Robertson, Sr., aka William C. Robertson": "william-c-robertson-sr",
 };

@@ -386,12 +386,7 @@
 
   .divider-gradient {
     height: 1px;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      rgba(194, 59, 34, 0.2),
-      transparent
-    );
+    background: linear-gradient(90deg, transparent, rgba(194, 59, 34, 0.2), transparent);
   }
 
   .divider-flat {

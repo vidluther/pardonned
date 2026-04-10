@@ -50,13 +50,7 @@ export function parseKeyValue(
 
       const betweenTables = $(heading).nextUntil("h2").filter("table");
       betweenTables.each((_ti, tbl) => {
-        const tableGrants = parseTable(
-          $,
-          $(tbl),
-          pardonType,
-          sourceUrl,
-          dateStr,
-        );
+        const tableGrants = parseTable($, $(tbl), pardonType, sourceUrl, dateStr);
         grants.push(...tableGrants);
       });
       matched += betweenTables.length;
@@ -66,9 +60,7 @@ export function parseKeyValue(
   }
 
   // Fallback: process all tables directly (handles single-table with in-line dates)
-  console.log(
-    `    [key-value] Fallback: processing ${tables.length} tables with inline dates`,
-  );
+  console.log(`    [key-value] Fallback: processing ${tables.length} tables with inline dates`);
   for (const table of tables) {
     const tableGrants = parseTable(
       $,
@@ -110,9 +102,7 @@ function parseTable(
           if (name && isNameValue(name)) {
             // Flush previous person
             if (current?.name && currentDate) {
-              grants.push(
-                buildGrant(current, pardonType, currentDate, sourceUrl),
-              );
+              grants.push(buildGrant(current, pardonType, currentDate, sourceUrl));
             }
             current = {
               name,
@@ -200,10 +190,7 @@ function parseTable(
       } else if (normalizedLabel === "sentenced") {
         current.sentence = value;
         lastField = "sentence";
-      } else if (
-        normalizedLabel === "termsofgrant" ||
-        normalizedLabel === "terms"
-      ) {
+      } else if (normalizedLabel === "termsofgrant" || normalizedLabel === "terms") {
         current.terms = value;
         lastField = "terms";
       }
@@ -237,35 +224,23 @@ function isNameValue(value: string): boolean {
   // Sentence-like continuations that start with lowercase or special chars
   if (/^[a-z(]/.test(value)) return false;
   // Values that look like sentences (contain common sentence keywords right at start)
-  if (
-    /^(?:Life|Time served|No punishment)/i.test(value) &&
-    !value.includes(",")
-  ) {
+  if (/^(?:Life|Time served|No punishment)/i.test(value) && !value.includes(",")) {
     // Could be a name like "Life" or a sentence — check for imprisonment keywords
-    if (/imprisonment|probation|supervised|confinement/i.test(value))
-      return false;
+    if (/imprisonment|probation|supervised|confinement/i.test(value)) return false;
   }
   return true;
 }
 
-function appendToField(
-  person: PersonRecord,
-  field: string,
-  value: string,
-): void {
+function appendToField(person: PersonRecord, field: string, value: string): void {
   switch (field) {
     case "offense":
       person.offense = person.offense ? `${person.offense}; ${value}` : value;
       break;
     case "sentence":
-      person.sentence = person.sentence
-        ? `${person.sentence}; ${value}`
-        : value;
+      person.sentence = person.sentence ? `${person.sentence}; ${value}` : value;
       break;
     case "district":
-      person.district = person.district
-        ? `${person.district}; ${value}`
-        : value;
+      person.district = person.district ? `${person.district}; ${value}` : value;
       break;
     case "terms":
       person.terms = person.terms ? `${person.terms}; ${value}` : value;

@@ -22,14 +22,10 @@ export const getStaticPaths: GetStaticPaths = async () => {
       accent = true;
     } else if (d.sentence_in_months && d.sentence_in_months > 0) {
       stat = formatSentence(d.sentence_in_months);
-      statLabel =
-        d.clemency_type === "commutation"
-          ? "Sentence commuted"
-          : "Prison sentence";
+      statLabel = d.clemency_type === "commutation" ? "Sentence commuted" : "Prison sentence";
     }
 
-    const clemencyLabel =
-      d.clemency_type === "pardon" ? "Pardon" : "Commutation";
+    const clemencyLabel = d.clemency_type === "pardon" ? "Pardon" : "Commutation";
     const dateShort = formatDateShort(d.grant_date);
 
     return {
@@ -46,8 +42,7 @@ export const getStaticPaths: GetStaticPaths = async () => {
 };
 
 function formatCurrency(amount: number): string {
-  if (amount >= 1_000_000_000)
-    return `$${(amount / 1_000_000_000).toFixed(1)}B`;
+  if (amount >= 1_000_000_000) return `$${(amount / 1_000_000_000).toFixed(1)}B`;
   if (amount >= 1_000_000) return `$${(amount / 1_000_000).toFixed(1)}M`;
   if (amount >= 1_000) return `$${(amount / 1_000).toFixed(1)}K`;
   return `$${amount.toLocaleString()}`;
@@ -63,14 +58,11 @@ function formatSentence(months: number): string {
 
 function formatDateShort(dateStr: string): string {
   const [y, m, d] = dateStr.split("-");
-  return new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString(
-    "en-US",
-    {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    },
-  );
+  return new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
 }
 
 export const GET: APIRoute = async ({ props }) => {

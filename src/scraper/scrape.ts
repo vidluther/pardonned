@@ -47,10 +47,7 @@ async function scrapePresident(slugFilter?: string): Promise<void> {
 
   if (sources.length === 0) {
     console.error(`No sources found for "${slugFilter}".`);
-    console.error(
-      "Available:",
-      PRESIDENT_SOURCES.flatMap((s) => s.slugs).join(", "),
-    );
+    console.error("Available:", PRESIDENT_SOURCES.flatMap((s) => s.slugs).join(", "));
     process.exit(1);
   }
 

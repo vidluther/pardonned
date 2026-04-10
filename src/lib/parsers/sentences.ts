@@ -12,9 +12,7 @@ export interface ParsedSentenceComponents {
  * Parse a sentence string and extract structured components
  * Returns multiple parsed sentences for multi-count cases
  */
-export function parseSentence(
-  sentenceText: string,
-): ParsedSentenceComponents[] {
+export function parseSentence(sentenceText: string): ParsedSentenceComponents[] {
   if (!sentenceText) return [];
 
   // Check for multi-count patterns (e.g., "1. ... 2. ...")
@@ -29,8 +27,7 @@ export function parseSentence(
   const counts: string[] = [];
   for (let i = 0; i < matches.length; i++) {
     const startIdx = matches[i].index + matches[i].length;
-    const endIdx =
-      i + 1 < matches.length ? matches[i + 1].index : sentenceText.length;
+    const endIdx = i + 1 < matches.length ? matches[i + 1].index : sentenceText.length;
     counts.push(sentenceText.slice(startIdx, endIdx).trim());
   }
 

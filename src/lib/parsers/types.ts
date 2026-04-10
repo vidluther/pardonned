@@ -33,11 +33,7 @@ export interface ParsedGrant {
   source_url: string;
 }
 
-export type PageFormat =
-  | "trump2025"
-  | "table-five"
-  | "table-four"
-  | "key-value";
+export type PageFormat = "trump2025" | "table-five" | "table-four" | "key-value";
 
 export interface PresidentSource {
   slugs: string[];
