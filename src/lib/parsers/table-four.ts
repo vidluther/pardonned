@@ -37,6 +37,11 @@ export function parseTableFour(
 
       const name = cells.eq(0).text().trim();
       if (!name) return;
+      // Defensive: skip header rows that use <td> instead of <th>. Obama-era
+      // DOJ HTML is inconsistent — the first table on a page often has proper
+      // <th> headers (caught by the :has(th) filter above), but later tables
+      // on the same page reuse <td> for their header rows and slip through.
+      if (name.toUpperCase() === "NAME") return;
 
       const district = cells.eq(1).text().trim() || null;
       const sentence = cells.eq(2).text().trim() || null;
