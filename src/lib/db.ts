@@ -363,10 +363,7 @@ export async function getTermId(slug: string): Promise<number> {
   return row.id;
 }
 
-export async function getTermForDate(
-  slugs: string[],
-  grantDate: string,
-): Promise<string> {
+export async function getTermForDate(slugs: string[], grantDate: string): Promise<string> {
   if (slugs.length === 1) return slugs[0];
 
   const data = await db
@@ -442,9 +439,7 @@ export async function upsertGrants(
     });
 
     if (deduped.length < rows.length) {
-      console.log(
-        `  Deduped batch at index ${i}: ${rows.length} → ${deduped.length}`,
-      );
+      console.log(`  Deduped batch at index ${i}: ${rows.length} → ${deduped.length}`);
     }
 
     try {

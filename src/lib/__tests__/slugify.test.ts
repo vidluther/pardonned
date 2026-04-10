@@ -42,18 +42,14 @@ describe("slugify", () => {
 
     it("resolves I. Lewis Libby (with smart quotes) to scooter-libby", () => {
       expect(
-        slugify(
-          "I. Lewis Libby, aka Scooter Libby, aka Irve Lewis \u201CScooter\u201D Libby",
-        ),
+        slugify("I. Lewis Libby, aka Scooter Libby, aka Irve Lewis \u201CScooter\u201D Libby"),
       ).toBe("scooter-libby");
     });
 
     it("resolves Alejandro Enrique Ramirez Umaña (with ñ) to alejandro-ramirez-umana", () => {
-      expect(
-        slugify(
-          "Alejandro Enrique Ramirez Uma\u00F1a, aka Alejandro Enrique Umana",
-        ),
-      ).toBe("alejandro-ramirez-umana");
+      expect(slugify("Alejandro Enrique Ramirez Uma\u00F1a, aka Alejandro Enrique Umana")).toBe(
+        "alejandro-ramirez-umana",
+      );
     });
   });
 
@@ -78,8 +74,7 @@ describe("slugify", () => {
     });
 
     it("the fallback slug for the same input is deterministic", () => {
-      const longName =
-        "some very very very very very very very very very very long name";
+      const longName = "some very very very very very very very very very very long name";
       expect(slugify(longName)).toBe(slugify(longName));
     });
   });

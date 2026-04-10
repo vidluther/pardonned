@@ -34,10 +34,7 @@ function buildUrl(path: string, siteUrl: string): string {
   return `${siteUrl}${path}`;
 }
 
-export function generateMetaTags(
-  options: SeoOptions,
-  url?: URL,
-): Record<string, string> {
+export function generateMetaTags(options: SeoOptions, url?: URL): Record<string, string> {
   const {
     title,
     description,
@@ -50,9 +47,7 @@ export function generateMetaTags(
 
   const siteUrl = siteConfig.siteUrl;
   const pageUrl = canonicalUrl || (url ? url.toString() : siteUrl);
-  const imageUrl = ogImage.startsWith("http")
-    ? ogImage
-    : buildUrl(ogImage, siteUrl);
+  const imageUrl = ogImage.startsWith("http") ? ogImage : buildUrl(ogImage, siteUrl);
 
   const tags: Record<string, string> = {
     "og:title": title,
@@ -119,9 +114,7 @@ export function generateJsonLd(options: SeoOptions, url?: URL): string {
   return JSON.stringify([websiteSchema, webpageSchema, organizationSchema]);
 }
 
-export function generateBreadcrumbJsonLd(
-  items: { name: string; url: string }[],
-): string {
+export function generateBreadcrumbJsonLd(items: { name: string; url: string }[]): string {
   return JSON.stringify({
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",

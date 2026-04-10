@@ -54,18 +54,13 @@ interface PardonDetailsLoaderOptions {
   administrationSlug?: string;
 }
 
-export function pardonDetailsLoader(
-  options: PardonDetailsLoaderOptions = {},
-): Loader {
+export function pardonDetailsLoader(options: PardonDetailsLoaderOptions = {}): Loader {
   return {
     name: "pardon-details-loader",
     schema: pardonDetailSchema,
 
     async load({ store, logger, parseData, generateDigest }) {
-      const dbPath = resolve(
-        process.cwd(),
-        options.dbPath ?? "data/pardonned.db",
-      );
+      const dbPath = resolve(process.cwd(), options.dbPath ?? "data/pardonned.db");
 
       logger.info(`Opening SQLite database at ${dbPath}`);
 
@@ -95,15 +90,10 @@ export function pardonDetailsLoader(
             term_end_date: administrations.end_date,
           })
           .from(pardons)
-          .innerJoin(
-            administrations,
-            eq(pardons.administration, administrations.id),
-          );
+          .innerJoin(administrations, eq(pardons.administration, administrations.id));
 
         const rows = options.administrationSlug
-          ? await query
-              .where(eq(administrations.slug, options.administrationSlug))
-              .all()
+          ? await query.where(eq(administrations.slug, options.administrationSlug)).all()
           : await query.all();
 
         logger.info(`Read ${rows.length} rows from SQLite`);

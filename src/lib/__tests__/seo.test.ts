@@ -33,10 +33,7 @@ describe("truncateText", () => {
   });
 
   it("does not double-punctuate when truncated near a period", () => {
-    const result = truncateText(
-      "Some sentence. Another sentence that is long.",
-      20,
-    );
+    const result = truncateText("Some sentence. Another sentence that is long.", 20);
     expect(result).not.toMatch(/\.…$/);
   });
 });
