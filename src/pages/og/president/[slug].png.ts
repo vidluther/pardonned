@@ -1,6 +1,9 @@
 import type { APIRoute, GetStaticPaths } from "astro";
 import { getCollection } from "astro:content";
-import { computeStats, filterByAdministration } from "../../../lib/pardon-stats";
+import {
+  computeStats,
+  filterByAdministration,
+} from "../../../lib/pardon-stats";
 import { getAdministrationIndex } from "../../../lib/president-names";
 import { renderOgImage } from "../../../lib/og-image";
 
