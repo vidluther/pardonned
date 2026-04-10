@@ -11,6 +11,7 @@
     "preview": "astro preview",
     "astro": "astro",
     "format": "oxfmt",
+    "test": "vitest run",
     "lint": "oxlint",
     "scrape": "tsx src/scraper/scrape.ts --president all",
     "scrape:trump2": "tsx src/scraper/scrape.ts --president trump-2",

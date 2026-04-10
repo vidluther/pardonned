@@ -15,7 +15,7 @@ export function truncateText(text: string, maxLength: number): string {
   }
 
   // Remove trailing punctuation before adding ellipsis
-  result = result.replace(/[.,;:!\s]+$/, "");
+  result = result.replace(/[.,;:!?\s]+$/, "");
 
   return result + "…";
 }
