@@ -917,12 +917,248 @@
     color: #c23b22;
   }
 
+  /* Mobile-only: sticky search bar and president chip rail */
+  .search-sticky-bar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: #fafaf7;
+    margin: 0 -20px 18px;
+    padding: 12px 20px 14px;
+    border-bottom: 1px solid #e8e6e0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  @media (min-width: 1024px) {
+    .search-sticky-bar {
+      display: none;
+    }
+  }
+
+  .search-input-sticky {
+    width: 100%;
+    background: #ffffff;
+    border: 1px solid #e8e6e0;
+    border-radius: 6px;
+    padding: 12px 12px 12px 38px;
+    font-size: 16px;
+  }
+
+  .search-input-sticky:focus-visible {
+    outline: 2px solid #c23b22;
+    outline-offset: 2px;
+  }
+
+  .search-sticky-meta {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .search-sticky-count {
+    font-family: "DM Serif Display", Georgia, serif;
+    font-size: 22px;
+    color: #1a1918;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .search-sticky-count-total {
+    color: #807e76;
+    font-size: 12px;
+  }
+
+  .search-sticky-count-label {
+    color: #807e76;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 11px;
+  }
+
+  .search-sticky-clear {
+    margin-left: auto;
+    background: transparent;
+    border: none;
+    color: #c23b22;
+    font-size: 12px;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+    padding: 4px 2px;
+  }
+
+  .search-sticky-clear:hover {
+    color: #1a1918;
+  }
+
+  .president-chip-rail {
+    margin: 0 -20px 18px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .president-chip-rail::-webkit-scrollbar {
+    display: none;
+  }
+
+  .president-chip-rail-inner {
+    display: flex;
+    gap: 8px;
+    padding: 0 20px;
+    width: max-content;
+  }
+
+  @media (min-width: 1024px) {
+    .president-chip-rail {
+      display: none;
+    }
+  }
+
+  .president-chip {
+    flex-shrink: 0;
+    cursor: pointer;
+    user-select: none;
+    margin: 0;
+  }
+
+  .president-chip-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px;
+    border: 1px solid #d0cec8;
+    border-radius: 999px;
+    background: #ffffff;
+    font-size: 13px;
+    color: #4a4840;
+    white-space: nowrap;
+    transition:
+      background 0.15s,
+      border-color 0.15s,
+      color 0.15s;
+  }
+
+  .president-chip input:checked + .president-chip-label {
+    background: #1a1918;
+    color: #fafaf7;
+    border-color: #1a1918;
+  }
+
+  .president-chip input:focus-visible + .president-chip-label {
+    outline: 2px solid #c23b22;
+    outline-offset: 2px;
+  }
+
+  .president-chip-count {
+    font-size: 11px;
+    opacity: 0.7;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .president-chip-disabled .president-chip-label {
+    opacity: 0.45;
+  }
+
+  /* Hide sections inside the filter panel that are promoted to the sticky bar / chip rail on mobile */
+  @media (max-width: 1023px) {
+    .search-sidebar-section[data-mobile-hidden] {
+      display: none;
+    }
+  }
+
   .results-swap {
     transition: opacity 0.12s;
   }
 
   .results-swap.is-swapping {
     opacity: 0.55;
+  }
+
+  .pagination {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin: 32px 0 16px;
+    padding-top: 24px;
+    border-top: 1px solid #e8e6e0;
+  }
+
+  .pagination[hidden] {
+    display: none;
+  }
+
+  .pagination-button,
+  .pagination-page {
+    font-family: inherit;
+    font-size: 13px;
+    line-height: 1;
+    color: #4a4840;
+    background: #ffffff;
+    border: 1px solid #e8e6e0;
+    border-radius: 6px;
+    padding: 9px 12px;
+    cursor: pointer;
+    min-width: 38px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    transition:
+      background 0.15s,
+      border-color 0.15s,
+      color 0.15s;
+  }
+
+  .pagination-button:hover:not(:disabled),
+  .pagination-page:hover:not(.is-active) {
+    background: #f6f5f0;
+    border-color: #d0cec8;
+    color: #1a1918;
+  }
+
+  .pagination-button:focus-visible,
+  .pagination-page:focus-visible {
+    outline: 2px solid #c23b22;
+    outline-offset: 2px;
+  }
+
+  .pagination-button:disabled {
+    color: #b8b6ae;
+    cursor: not-allowed;
+    background: #fafaf7;
+  }
+
+  .pagination-page.is-active {
+    background: #1a1918;
+    color: #fafaf7;
+    border-color: #1a1918;
+    cursor: default;
+  }
+
+  .pagination-ellipsis {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    color: #807e76;
+    font-size: 13px;
+    user-select: none;
+  }
+
+  @media (max-width: 640px) {
+    .pagination {
+      gap: 4px;
+    }
+    .pagination-button,
+    .pagination-page {
+      padding: 9px 10px;
+      font-size: 12px;
+      min-width: 34px;
+    }
   }
 }
 

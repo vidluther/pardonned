@@ -1,6 +1,7 @@
 ---
 import { siteConfig } from '../config/site';
 import { mainNavigation } from '../config/navigation';
+import { socialLinks } from '../config/social';
 import { statSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -58,12 +59,44 @@ try {
       </nav>
     )}
 
+    <!-- Social / Source Links -->
+    <nav class="flex flex-wrap gap-2 mb-4 -ml-2" aria-label="Social and source">
+      {socialLinks.map((link) => (
+        <a
+          href={link.href}
+          rel={link.rel ? `${link.rel} noopener` : 'noopener'}
+          target="_blank"
+          aria-label={`${link.label} — ${link.handle}`}
+          title={link.handle}
+          class="inline-flex items-center justify-center p-2 rounded-md text-text-muted hover:text-text-primary hover:bg-muted transition-colors"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            width="20"
+            height="20"
+            fill="currentColor"
+          >
+            <path d={link.iconPath} />
+          </svg>
+        </a>
+      ))}
+    </nav>
+
     <!-- Source Attribution -->
     <p class="text-meta text-text-ghost">
       Data source: {siteConfig.dataSource} · {siteConfig.disclaimer}
     </p>
     <p class="text-meta text-text-ghost mt-1">
       Last updated: {lastUpdated}
+    </p>
+    <p class="text-meta text-text-ghost mt-1">
+      Site built by <a
+        href="https://luther.io"
+        rel="author noopener"
+        target="_blank"
+        class="text-text-muted hover:text-text-primary transition-colors underline-offset-2 hover:underline"
+      >Vid Luther</a> and AI
     </p>
   </div>
 </footer>
