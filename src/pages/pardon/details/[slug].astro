@@ -193,7 +193,7 @@ const ogImagePath = `/og/${slugify(data.recipient_name)}.png`;
 ---
 
 <Layout title={data.recipient_name} description={ogDescription} ogImage={ogImagePath} currentPath={currentPath}>
-  <script type="application/ld+json" set:html={breadcrumbJsonLd} />
+  <script type="application/ld+json" set:html={breadcrumbJsonLd}></script>
     <div class="max-w-detail mx-auto px-5 md:px-10 py-6 md:py-10">
         <!-- Breadcrumb -->
         <div class="breadcrumb mb-6 md:mb-10">
