@@ -1,10 +1,8 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import FilterPill from '../components/FilterPill.astro';
 import '../styles/global.css';
 
 import { getCollection } from "astro:content";
-import { slugify } from "../lib/slugify";
 import { getAdministrationIndex } from "../lib/president-names";
 
 const currentPath = Astro.url.pathname;
@@ -49,16 +47,21 @@ function formatSentence(months: number | null, originalSentence: string | null):
     return "";
 }
 
-const searchResults = allGrants.map((entry) => {
+const sortedGrants = allGrants
+    .slice()
+    .sort((a, b) => b.data.grant_date.localeCompare(a.data.grant_date));
+
+const searchResults = sortedGrants.map((entry) => {
     const d = entry.data;
     return {
-        slug: slugify(d.recipient_name),
+        slug: d.slug,
         name: d.recipient_name,
         clemencyType: d.clemency_type,
         category: d.offense_category,
         offense: d.offense,
         district: d.district ?? "",
         sentence: formatSentence(d.sentence_in_months, d.original_sentence),
+        grantDate: d.grant_date,
         date: formatDate(d.grant_date),
         restitution: d.restitution ?? 0,
         fine: d.fine ?? 0,
@@ -70,6 +73,9 @@ const categoryCounts: Record<string, number> = {};
 for (const grant of searchResults) {
     categoryCounts[grant.category] = (categoryCounts[grant.category] ?? 0) + 1;
 }
+const sortedCategories = Object.entries(categoryCounts)
+    .sort(([, a], [, b]) => b - a)
+    .map(([key]) => key);
 ---
 
 <Layout
@@ -85,84 +91,158 @@ for (const grant of searchResults) {
       Filter and search through all clemency grants.
     </p>
 
-    <!-- Filter Bar -->
-    <div class="filter-bar mb-4">
-      <div class="flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-center">
-        <div class="search-input-wrapper">
-          <svg aria-hidden="true" class="search-input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-          <label for="search-input" class="sr-only">Search grants by name or offense</label>
-          <input
-            id="search-input"
-            type="text"
-            placeholder="Search by name or offense..."
-            class="filter-input w-full"
-          />
+    <div class="search-layout">
+      <aside class="search-sidebar">
+        <details class="search-sidebar-disclosure" id="sidebar-disclosure" open>
+          <summary class="search-sidebar-summary">
+            <span>Filters <span id="sidebar-active-count" class="text-text-faint"></span></span>
+            <span class="search-sidebar-summary-caret" aria-hidden="true"></span>
+          </summary>
+
+          <div class="search-sidebar-body">
+            <div class="search-sidebar-section">
+              <p class="overline">President</p>
+              <fieldset id="president-facets">
+                <legend class="sr-only">Filter by administration</legend>
+                <label class="facet-row" data-president="all">
+                  <span class="facet-row-label">
+                    <input type="radio" name="president" value="all" checked />
+                    <span>All</span>
+                  </span>
+                  <span class="facet-row-count" data-count-for="all">{searchResults.length.toLocaleString()}</span>
+                </label>
+                {sortedAdmins.map((admin) => (
+                  <label class="facet-row" data-president={admin.slug}>
+                    <span class="facet-row-label">
+                      <input type="radio" name="president" value={admin.slug} />
+                      <span>{admin.displayName}</span>
+                    </span>
+                    <span class="facet-row-count" data-count-for={admin.slug}>{admin.count.toLocaleString()}</span>
+                  </label>
+                ))}
+              </fieldset>
+            </div>
+
+            <div class="search-sidebar-section">
+              <p class="overline">Search</p>
+              <div class="search-input-wrapper">
+                <svg aria-hidden="true" class="search-input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+                <label for="search-input" class="sr-only">Search grants by name or offense</label>
+                <input
+                  id="search-input"
+                  type="text"
+                  placeholder="Name or offense…"
+                  class="search-input-sidebar"
+                  autocomplete="off"
+                />
+              </div>
+            </div>
+
+            <div class="search-sidebar-section">
+              <p class="overline">Grant Type</p>
+              <fieldset id="type-segmented" class="type-segmented">
+                <legend class="sr-only">Filter by grant type</legend>
+                <label>
+                  <input type="radio" name="type" value="" class="sr-only" checked />
+                  <span class="type-segmented-option">All</span>
+                </label>
+                <label>
+                  <input type="radio" name="type" value="pardon" class="sr-only" />
+                  <span class="type-segmented-option">Pardon</span>
+                </label>
+                <label>
+                  <input type="radio" name="type" value="commutation" class="sr-only" />
+                  <span class="type-segmented-option">Commutation</span>
+                </label>
+              </fieldset>
+            </div>
+
+            <div class="search-sidebar-section">
+              <p class="overline">Category</p>
+              <fieldset id="category-facets">
+                <legend class="sr-only">Filter by offense category</legend>
+                {sortedCategories.map((key) => (
+                  <label class="facet-row" data-category={key}>
+                    <span class="facet-row-label">
+                      <input type="checkbox" name="category" value={key} />
+                      <span>{formatCategoryName(key)}</span>
+                    </span>
+                    <span class="facet-row-count" data-count-for-category={key}>{categoryCounts[key].toLocaleString()}</span>
+                  </label>
+                ))}
+              </fieldset>
+            </div>
+          </div>
+        </details>
+      </aside>
+
+      <section class="search-main min-w-0">
+        <div id="filter-summary" class="filter-summary">
+          <span>
+            <span id="filter-summary-count" class="filter-summary-count">{searchResults.length.toLocaleString()}</span>
+            <span class="filter-summary-total">of {searchResults.length.toLocaleString()} grants</span>
+          </span>
+          <span class="filter-summary-sep" aria-hidden="true"></span>
+          <div id="filter-summary-chips" class="flex flex-wrap items-center gap-2"></div>
+          <button type="button" id="filter-summary-clear" class="filter-summary-clear" hidden>Clear all</button>
         </div>
-        <label for="type-select" class="sr-only">Filter by clemency type</label>
-        <select id="type-select" class="filter-input !py-2 !px-3 !w-auto">
-          <option value="">All Types</option>
-          <option value="pardon">Pardon</option>
-          <option value="commutation">Commutation</option>
-        </select>
-      </div>
-    </div>
 
-    <!-- President Pills -->
-    <div id="president-pills" class="flex flex-wrap gap-2 mb-4">
-        <FilterPill label="All Presidents" active={true} count={searchResults.length} data-president="all" />
-        {sortedAdmins.map((admin) => (
-            <FilterPill
-                label={admin.displayName}
-                count={admin.count}
-                data-president={admin.slug}
-            />
-        ))}
-    </div>
+        <div id="a11y-results-announce" class="sr-only" aria-live="polite" role="status"></div>
 
-    <!-- Category Pills -->
-    <div id="category-pills" class="flex flex-wrap gap-2 mb-8">
-      <FilterPill label="All" active={true} count={searchResults.length} data-category="all" />
-      {Object.entries(categoryCounts)
-          .sort(([, a], [, b]) => b - a)
-          .map(([key, count]) => (
-          <FilterPill label={formatCategoryName(key)} count={count} data-category={key} />
-      ))}
-    </div>
+        <div id="results-list" class="results-swap"></div>
 
-    <!-- Results Count -->
-    <p id="results-count" class="text-meta text-text-faint mb-4" aria-live="polite" role="status">Showing {searchResults.length.toLocaleString()} results</p>
-
-    <!-- Results List (rendered client-side) -->
-    <div id="results-list"></div>
-
-    <!-- Empty State -->
-    <div id="empty-state" class="hidden text-center py-16">
-      <p class="text-faint text-lg mb-2">No results found</p>
-      <p class="text-faint">Try adjusting your filters or search terms.</p>
+        <div id="empty-state" class="hidden text-center py-16">
+          <p class="text-text-faint text-lg mb-2">No results found</p>
+          <p class="text-text-faint text-sm">Try adjusting your filters or search terms.</p>
+        </div>
+      </section>
     </div>
   </div>
 
   <script is:inline>
     document.addEventListener('DOMContentLoaded', () => {
-      const grantsData = document.getElementById('grants-data');
-      const colorsData = document.getElementById('category-colors');
-      if (!grantsData || !colorsData) return;
+      const grantsDataEl = document.getElementById('grants-data');
+      const colorsDataEl = document.getElementById('category-colors');
+      if (!grantsDataEl || !colorsDataEl) return;
 
-      const grants = JSON.parse(grantsData.textContent);
-      const categoryColors = JSON.parse(colorsData.textContent);
+      const grants = JSON.parse(grantsDataEl.textContent);
+      const categoryColors = JSON.parse(colorsDataEl.textContent);
+      const TOTAL = grants.length;
 
       const searchInput = document.getElementById('search-input');
-      const typeSelect = document.getElementById('type-select');
+      const typeSegmented = document.getElementById('type-segmented');
+      const presidentFacets = document.getElementById('president-facets');
+      const categoryFacets = document.getElementById('category-facets');
       const resultsList = document.getElementById('results-list');
       const emptyState = document.getElementById('empty-state');
-      const resultsCount = document.getElementById('results-count');
-      const categoryPills = document.getElementById('category-pills');
+      const filterSummary = document.getElementById('filter-summary');
+      const filterSummaryCount = document.getElementById('filter-summary-count');
+      const filterSummaryChips = document.getElementById('filter-summary-chips');
+      const filterSummaryClear = document.getElementById('filter-summary-clear');
+      const sidebarActiveCount = document.getElementById('sidebar-active-count');
+      const a11yAnnounce = document.getElementById('a11y-results-announce');
+      const sidebarDisclosure = document.getElementById('sidebar-disclosure');
 
-      let activeCategory = 'all';
-      let activePresident = 'all';
+      const presidentLabels = { all: 'All' };
+      presidentFacets.querySelectorAll('label[data-president]').forEach((label) => {
+        const slug = label.dataset.president;
+        const textSpan = label.querySelector('.facet-row-label > span:last-child');
+        if (textSpan) presidentLabels[slug] = textSpan.textContent;
+      });
+
+      const state = {
+        search: '',
+        type: '',
+        president: 'all',
+        categories: new Set(),
+      };
+
+      function formatCategoryName(key) {
+        return key.replace(/\b\w/g, (c) => c.toUpperCase());
+      }
 
       function formatRestitution(value) {
         if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
@@ -170,227 +250,469 @@ for (const grant of searchResults) {
         return `$${value.toLocaleString()}`;
       }
 
-      function formatCategoryName(key) {
-        return key.replace(/\b\w/g, (c) => c.toUpperCase());
+      function findInputByValue(root, name, value) {
+        const inputs = root.querySelectorAll(`input[name="${name}"]`);
+        for (const el of inputs) {
+          if (el.value === value) return el;
+        }
+        return null;
+      }
+
+      function grantMatches(grant, skip) {
+        if (!skip?.search && state.search) {
+          const s = state.search.toLowerCase();
+          if (!grant.name.toLowerCase().includes(s) && !grant.offense.toLowerCase().includes(s)) {
+            return false;
+          }
+        }
+        if (!skip?.type && state.type && grant.clemencyType !== state.type) {
+          return false;
+        }
+        if (!skip?.president && state.president !== 'all' && grant.administrationSlug !== state.president) {
+          return false;
+        }
+        if (!skip?.categories && state.categories.size > 0 && !state.categories.has(grant.category)) {
+          return false;
+        }
+        return true;
+      }
+
+      function getFilteredGrants() {
+        return grants.filter((g) => grantMatches(g));
+      }
+
+      function computeFilteredCounts() {
+        const byPresident = { all: 0 };
+        const byCategory = {};
+
+        for (const g of grants) {
+          if (grantMatches(g, { president: true })) {
+            byPresident.all += 1;
+            byPresident[g.administrationSlug] = (byPresident[g.administrationSlug] ?? 0) + 1;
+          }
+          if (grantMatches(g, { categories: true })) {
+            byCategory[g.category] = (byCategory[g.category] ?? 0) + 1;
+          }
+        }
+        return { byPresident, byCategory };
+      }
+
+      function renderSidebarCounts(counts) {
+        presidentFacets.querySelectorAll('label[data-president]').forEach((label) => {
+          const slug = label.dataset.president;
+          const count = counts.byPresident[slug] ?? 0;
+          const countEl = label.querySelector('.facet-row-count');
+          if (countEl) countEl.textContent = count.toLocaleString();
+          const isCurrent = state.president === slug;
+          if (count === 0 && !isCurrent) {
+            label.classList.add('facet-row-disabled');
+          } else {
+            label.classList.remove('facet-row-disabled');
+          }
+        });
+
+        categoryFacets.querySelectorAll('label[data-category]').forEach((label) => {
+          const key = label.dataset.category;
+          const count = counts.byCategory[key] ?? 0;
+          const countEl = label.querySelector('.facet-row-count');
+          if (countEl) countEl.textContent = count.toLocaleString();
+          const isChecked = state.categories.has(key);
+          if (count === 0 && !isChecked) {
+            label.classList.add('facet-row-disabled');
+          } else {
+            label.classList.remove('facet-row-disabled');
+          }
+        });
+      }
+
+      function makeChip(label, action) {
+        const el = document.createElement('span');
+        el.className = 'filter-chip';
+        el.textContent = label + ' ';
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'filter-chip-remove';
+        btn.setAttribute('aria-label', `Remove ${label} filter`);
+        btn.dataset.action = action;
+        btn.textContent = '\u00D7';
+        el.appendChild(btn);
+        return el;
+      }
+
+      function renderFilterSummary(filtered) {
+        filterSummaryCount.textContent = filtered.length.toLocaleString();
+
+        const chips = [];
+        if (state.search) {
+          chips.push({ label: `"${state.search}"`, action: 'clear-search' });
+        }
+        if (state.type) {
+          chips.push({
+            label: state.type === 'pardon' ? 'Pardon' : 'Commutation',
+            action: 'clear-type',
+          });
+        }
+        if (state.president !== 'all') {
+          chips.push({
+            label: presidentLabels[state.president] ?? state.president,
+            action: 'clear-president',
+          });
+        }
+        for (const cat of state.categories) {
+          chips.push({
+            label: formatCategoryName(cat),
+            action: 'clear-category:' + cat,
+          });
+        }
+
+        filterSummaryChips.textContent = '';
+        for (const chip of chips) {
+          filterSummaryChips.appendChild(makeChip(chip.label, chip.action));
+        }
+
+        filterSummaryClear.hidden = chips.length === 0;
+        const sep = filterSummary.querySelector('.filter-summary-sep');
+        if (sep) sep.hidden = chips.length === 0;
+        sidebarActiveCount.textContent = chips.length > 0 ? `(${chips.length} active)` : '';
+
+        const chipText = chips.map((c) => c.label).join(', ');
+        a11yAnnounce.textContent =
+          `${filtered.length.toLocaleString()} of ${TOTAL.toLocaleString()} results` +
+          (chipText ? `, filtered by ${chipText}` : '');
       }
 
       function renderResults(filtered) {
-        if (filtered.length === 0) {
+        resultsList.classList.add('is-swapping');
+
+        requestAnimationFrame(() => {
+          if (filtered.length === 0) {
+            resultsList.textContent = '';
+            emptyState.classList.remove('hidden');
+            resultsList.classList.remove('is-swapping');
+            return;
+          }
+
+          emptyState.classList.add('hidden');
           resultsList.textContent = '';
-          emptyState.classList.remove('hidden');
-          resultsCount.textContent = 'No results';
-          return;
+
+          filtered.forEach((grant, i) => {
+            const catLabel = formatCategoryName(grant.category);
+            const catColor = categoryColors[grant.category] || '#7A7870';
+            const typeLabel = grant.clemencyType === 'pardon' ? 'Pardon' : 'Commutation';
+
+            const card = document.createElement('a');
+            card.href = '/pardon/details/' + grant.slug;
+            card.className = 'search-card block no-underline mb-3' + (i < 10 ? ' animate-fade-in' : '');
+            card.style.borderLeftColor = catColor;
+            if (i < 10) card.style.animationDelay = (i * 35) + 'ms';
+
+            const outer = document.createElement('div');
+            outer.className = 'flex items-start gap-3';
+
+            const content = document.createElement('div');
+            content.className = 'flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 flex-1 min-w-0';
+
+            const left = document.createElement('div');
+            left.className = 'flex-1 min-w-0';
+
+            const nameEl = document.createElement('div');
+            nameEl.className = 'font-serif text-text-primary mb-1';
+            nameEl.style.fontSize = '17px';
+            nameEl.style.lineHeight = '1.25';
+            nameEl.textContent = grant.name;
+            left.appendChild(nameEl);
+
+            const metaLine = document.createElement('div');
+            metaLine.className = 'flex items-center gap-2 mb-2';
+            metaLine.style.fontSize = '11px';
+            metaLine.style.textTransform = 'uppercase';
+            metaLine.style.letterSpacing = '0.06em';
+
+            const typeEl = document.createElement('span');
+            typeEl.textContent = typeLabel;
+            typeEl.style.color = grant.clemencyType === 'pardon' ? '#c23b22' : '#2a6a7a';
+            typeEl.style.fontWeight = '500';
+            metaLine.appendChild(typeEl);
+
+            const sepEl = document.createElement('span');
+            sepEl.textContent = '\u00B7';
+            sepEl.style.color = '#b8b6ae';
+            metaLine.appendChild(sepEl);
+
+            const catEl = document.createElement('span');
+            catEl.textContent = catLabel;
+            catEl.style.color = catColor;
+            metaLine.appendChild(catEl);
+
+            left.appendChild(metaLine);
+
+            const offense = document.createElement('p');
+            offense.className = 'text-card-offense text-text-secondary line-clamp-2';
+            offense.textContent = grant.offense;
+            left.appendChild(offense);
+
+            if (grant.district || grant.sentence) {
+              const meta = document.createElement('div');
+              meta.className = 'flex flex-wrap gap-3 text-meta text-text-faint mt-1';
+              if (grant.district) {
+                const d = document.createElement('span');
+                d.textContent = grant.district;
+                meta.appendChild(d);
+              }
+              if (grant.sentence) {
+                const s = document.createElement('span');
+                s.textContent = grant.sentence;
+                meta.appendChild(s);
+              }
+              left.appendChild(meta);
+            }
+
+            content.appendChild(left);
+
+            const right = document.createElement('div');
+            right.className = 'flex sm:flex-col sm:text-right gap-3 sm:gap-0 sm:ml-4 flex-shrink-0 items-center sm:items-end';
+
+            const dateDiv = document.createElement('div');
+            dateDiv.className = 'text-meta text-text-faint sm:mb-1';
+            dateDiv.style.fontVariantNumeric = 'tabular-nums';
+            dateDiv.textContent = grant.date;
+            right.appendChild(dateDiv);
+
+            if (grant.restitution) {
+              const restVal = document.createElement('div');
+              restVal.className = 'text-body font-medium text-accent';
+              restVal.textContent = formatRestitution(grant.restitution);
+              right.appendChild(restVal);
+
+              const restLabel = document.createElement('div');
+              restLabel.className = 'text-badge text-text-faint';
+              restLabel.textContent = 'restitution';
+              right.appendChild(restLabel);
+            }
+
+            content.appendChild(right);
+            outer.appendChild(content);
+
+            const chevron = document.createElement('span');
+            chevron.className = 'search-card-chevron hidden sm:block';
+            chevron.textContent = '\u203A';
+            outer.appendChild(chevron);
+
+            card.appendChild(outer);
+            resultsList.appendChild(card);
+          });
+
+          resultsList.classList.remove('is-swapping');
+        });
+      }
+
+      function syncUrl() {
+        const params = new URLSearchParams();
+        if (state.search) params.set('q', state.search);
+        if (state.type) params.set('type', state.type);
+        if (state.president !== 'all') params.set('president', state.president);
+        if (state.categories.size > 0) params.set('categories', Array.from(state.categories).join(','));
+
+        const qs = params.toString();
+        const next = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
+        const current = window.location.pathname + window.location.search;
+        if (next !== current) {
+          history.replaceState(null, '', next);
         }
-
-        emptyState.classList.add('hidden');
-        resultsCount.textContent = `Showing ${filtered.length.toLocaleString()} results`;
-
-        // Clear previous results
-        resultsList.textContent = '';
-
-        filtered.forEach((grant, i) => {
-          const catLabel = formatCategoryName(grant.category);
-          const catColor = categoryColors[grant.category] || '#7A7870';
-          const typeLabel = grant.clemencyType === 'pardon' ? 'Pardon' : 'Commutation';
-          const typeBadgeClass = grant.clemencyType === 'pardon' ? 'badge-pardon' : 'badge-commutation';
-
-          const card = document.createElement('a');
-          card.href = '/pardon/details/' + grant.slug;
-          card.className = 'search-card block no-underline mb-3' + (i < 10 ? ' animate-fade-in' : '');
-          card.style.borderLeftColor = catColor;
-          if (i < 10) card.style.animationDelay = (i * 40) + 'ms';
-
-          // Outer flex container
-          const outer = document.createElement('div');
-          outer.className = 'flex items-center gap-3';
-
-          // Content area
-          const content = document.createElement('div');
-          content.className = 'flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 flex-1 min-w-0';
-
-          // Left side
-          const left = document.createElement('div');
-          left.className = 'flex-1 min-w-0';
-
-          // Name row
-          const nameRow = document.createElement('div');
-          nameRow.className = 'flex items-center gap-2 sm:gap-3 mb-2 flex-wrap';
-
-          const nameSpan = document.createElement('span');
-          nameSpan.className = 'font-serif text-text-primary';
-          nameSpan.style.fontSize = '17px';
-          nameSpan.textContent = grant.name;
-
-          const typeBadge = document.createElement('span');
-          typeBadge.className = 'badge ' + typeBadgeClass;
-          typeBadge.textContent = typeLabel;
-
-          const catBadge = document.createElement('span');
-          catBadge.className = 'badge badge-category';
-          catBadge.style.color = catColor;
-          catBadge.textContent = catLabel;
-
-          nameRow.appendChild(nameSpan);
-          nameRow.appendChild(typeBadge);
-          nameRow.appendChild(catBadge);
-          left.appendChild(nameRow);
-
-          // Offense
-          const offense = document.createElement('p');
-          offense.className = 'text-card-offense text-text-secondary mb-1 line-clamp-2';
-          offense.textContent = grant.offense;
-          left.appendChild(offense);
-
-          // Meta row
-          if (grant.district || grant.sentence) {
-            const meta = document.createElement('div');
-            meta.className = 'flex gap-4 text-meta text-text-faint mt-1';
-            if (grant.district) {
-              const d = document.createElement('span');
-              d.textContent = grant.district;
-              meta.appendChild(d);
-            }
-            if (grant.sentence) {
-              const s = document.createElement('span');
-              s.textContent = grant.sentence;
-              meta.appendChild(s);
-            }
-            left.appendChild(meta);
-          }
-
-          content.appendChild(left);
-
-          // Right side
-          const right = document.createElement('div');
-          right.className = 'flex sm:flex-col sm:text-right gap-3 sm:gap-0 sm:ml-4 flex-shrink-0 items-center sm:items-end';
-
-          const dateDiv = document.createElement('div');
-          dateDiv.className = 'text-meta text-text-faint sm:mb-1';
-          dateDiv.textContent = grant.date;
-          right.appendChild(dateDiv);
-
-          if (grant.restitution) {
-            const restVal = document.createElement('div');
-            restVal.className = 'text-body font-medium text-accent';
-            restVal.textContent = formatRestitution(grant.restitution);
-            right.appendChild(restVal);
-
-            const restLabel = document.createElement('div');
-            restLabel.className = 'text-badge text-text-faint';
-            restLabel.textContent = 'restitution';
-            right.appendChild(restLabel);
-          }
-
-          content.appendChild(right);
-          outer.appendChild(content);
-
-          // Chevron
-          const chevron = document.createElement('span');
-          chevron.className = 'search-card-chevron hidden sm:block';
-          chevron.innerHTML = '&#8250;';
-          outer.appendChild(chevron);
-
-          card.appendChild(outer);
-          resultsList.appendChild(card);
-        });
       }
 
-      function filterGrants() {
-        const searchTerm = searchInput.value.toLowerCase();
-        const typeFilter = typeSelect.value;
-
-        let filtered = grants.filter((grant) => {
-          const matchesSearch = !searchTerm || grant.name.toLowerCase().includes(searchTerm) || grant.offense.toLowerCase().includes(searchTerm);
-          const matchesType = !typeFilter || grant.clemencyType === typeFilter;
-          const matchesCategory = activeCategory === 'all' || grant.category === activeCategory;
-          const matchesPresident = activePresident === 'all' || grant.administrationSlug === activePresident;
-          return matchesSearch && matchesType && matchesCategory && matchesPresident;
-        });
-
+      function applyState() {
+        const filtered = getFilteredGrants();
         renderResults(filtered);
+        const counts = computeFilteredCounts();
+        renderSidebarCounts(counts);
+        renderFilterSummary(filtered);
+        syncUrl();
       }
 
-      function setActivePill(pill, containerId) {
-        const container = document.getElementById(containerId);
-        container.querySelectorAll('button, a').forEach((p) => {
-          p.classList.remove('filter-pill-active');
-          p.classList.add('filter-pill-inactive');
-        });
-        pill.classList.remove('filter-pill-inactive');
-        pill.classList.add('filter-pill-active');
-      }
-
-      // Debounced search tracking
       let searchDebounce;
       searchInput.addEventListener('input', () => {
-        filterGrants();
+        state.search = searchInput.value.trim();
+        applyState();
         clearTimeout(searchDebounce);
         searchDebounce = setTimeout(() => {
-          const term = searchInput.value.trim();
-          if (term) {
-            window.posthog?.capture('search_performed', { query: term });
+          if (state.search) {
+            const resultsCount = getFilteredGrants().length;
+            window.posthog?.capture('search_performed', {
+              query: state.search,
+              results_count: resultsCount,
+              has_results: resultsCount > 0,
+              active_filters: {
+                type: state.type || null,
+                president: state.president !== 'all' ? state.president : null,
+                categories_count: state.categories.size,
+              },
+            });
           }
         }, 600);
       });
 
-      typeSelect.addEventListener('change', () => {
-        filterGrants();
-        if (typeSelect.value) {
-          window.posthog?.capture('type_filter_applied', { type: typeSelect.value });
+      typeSegmented.addEventListener('change', (e) => {
+        const t = e.target;
+        if (t && t.name === 'type') {
+          state.type = t.value;
+          applyState();
+          if (state.type) {
+            window.posthog?.capture('type_filter_applied', { type: state.type });
+          }
         }
       });
 
-      categoryPills.addEventListener('click', (e) => {
-        const pill = e.target.closest('button, a');
-        if (!pill) return;
-
-        activeCategory = pill.dataset.category || 'all';
-        setActivePill(pill, 'category-pills');
-        filterGrants();
-        window.posthog?.capture('category_filter_applied', { category: activeCategory });
+      presidentFacets.addEventListener('change', (e) => {
+        const t = e.target;
+        if (t && t.name === 'president') {
+          state.president = t.value;
+          applyState();
+          if (state.president !== 'all') {
+            window.posthog?.capture('president_filter_applied', { president: state.president });
+          }
+        }
       });
 
-      const presidentPills = document.getElementById('president-pills');
-      presidentPills.addEventListener('click', (e) => {
-        const pill = e.target.closest('button, a');
-        if (!pill) return;
-
-        activePresident = pill.dataset.president || 'all';
-        setActivePill(pill, 'president-pills');
-        filterGrants();
-        window.posthog?.capture('president_filter_applied', { president: activePresident });
+      categoryFacets.addEventListener('change', (e) => {
+        const t = e.target;
+        if (t && t.name === 'category') {
+          if (t.checked) {
+            state.categories.add(t.value);
+          } else {
+            state.categories.delete(t.value);
+          }
+          applyState();
+          window.posthog?.capture('category_filter_applied', { category: t.value, checked: t.checked });
+        }
       });
 
-      // Track search result clicks
+      filterSummary.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-action]');
+        if (!btn) return;
+        const action = btn.dataset.action;
+        if (action === 'clear-search') {
+          state.search = '';
+          searchInput.value = '';
+        } else if (action === 'clear-type') {
+          state.type = '';
+          const allTypeRadio = findInputByValue(typeSegmented, 'type', '');
+          if (allTypeRadio) allTypeRadio.checked = true;
+        } else if (action === 'clear-president') {
+          state.president = 'all';
+          const allPresRadio = findInputByValue(presidentFacets, 'president', 'all');
+          if (allPresRadio) allPresRadio.checked = true;
+        } else if (action && action.startsWith('clear-category:')) {
+          const key = action.slice('clear-category:'.length);
+          state.categories.delete(key);
+          const cb = findInputByValue(categoryFacets, 'category', key);
+          if (cb) cb.checked = false;
+        }
+        applyState();
+        window.posthog?.capture('search_filters_cleared', {
+          source: 'chip_remove',
+          filter_type: action,
+        });
+      });
+
+      filterSummaryClear.addEventListener('click', () => {
+        const priorFilterCount =
+          (state.search ? 1 : 0) +
+          (state.type ? 1 : 0) +
+          (state.president !== 'all' ? 1 : 0) +
+          state.categories.size;
+
+        state.search = '';
+        state.type = '';
+        state.president = 'all';
+        state.categories.clear();
+
+        searchInput.value = '';
+        const allType = findInputByValue(typeSegmented, 'type', '');
+        if (allType) allType.checked = true;
+        const allPres = findInputByValue(presidentFacets, 'president', 'all');
+        if (allPres) allPres.checked = true;
+        categoryFacets.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
+          cb.checked = false;
+        });
+
+        applyState();
+        window.posthog?.capture('search_filters_cleared', {
+          source: 'clear_all_button',
+          filter_count: priorFilterCount,
+        });
+      });
+
       resultsList.addEventListener('click', (e) => {
         const card = e.target.closest('a.search-card');
         if (!card) return;
         const slug = card.href.split('/pardon/details/')[1];
-        window.posthog?.capture('search_result_clicked', { slug });
+        const cards = Array.from(resultsList.children);
+        window.posthog?.capture('search_result_clicked', {
+          slug,
+          query: state.search || null,
+          position: cards.indexOf(card),
+          total_results: cards.length,
+          has_active_filters:
+            Boolean(state.search) ||
+            Boolean(state.type) ||
+            state.president !== 'all' ||
+            state.categories.size > 0,
+        });
       });
 
-      // Apply URL params as initial filters
+      const desktopMq = window.matchMedia('(min-width: 1024px)');
+      const enforceDesktopOpen = () => {
+        if (desktopMq.matches && sidebarDisclosure && !sidebarDisclosure.open) {
+          sidebarDisclosure.open = true;
+        }
+      };
+      enforceDesktopOpen();
+      desktopMq.addEventListener('change', enforceDesktopOpen);
+
       const urlParams = new URLSearchParams(window.location.search);
 
-      const initialPresident = urlParams.get('president');
-      if (initialPresident) {
-        const matchingPill = presidentPills.querySelector(`[data-president="${initialPresident}"]`);
-        if (matchingPill) {
-          activePresident = initialPresident;
-          setActivePill(matchingPill, 'president-pills');
+      const qParam = urlParams.get('q');
+      if (qParam) {
+        state.search = qParam.trim();
+        searchInput.value = state.search;
+      }
+
+      const typeParam = urlParams.get('type');
+      if (typeParam === 'pardon' || typeParam === 'commutation') {
+        state.type = typeParam;
+        const radio = findInputByValue(typeSegmented, 'type', typeParam);
+        if (radio) radio.checked = true;
+      }
+
+      const presParam = urlParams.get('president');
+      if (presParam) {
+        const pradio = findInputByValue(presidentFacets, 'president', presParam);
+        if (pradio) {
+          state.president = presParam;
+          pradio.checked = true;
         }
       }
 
-      const initialCategory = urlParams.get('category');
-      if (initialCategory) {
-        const matchingPill = categoryPills.querySelector(`[data-category="${initialCategory}"]`);
-        if (matchingPill) {
-          activeCategory = initialCategory;
-          setActivePill(matchingPill, 'category-pills');
+      const catsParam = urlParams.get('categories');
+      const legacyCatParam = urlParams.get('category');
+      const catsToApply = catsParam
+        ? catsParam.split(',')
+        : legacyCatParam
+          ? [legacyCatParam]
+          : [];
+      catsToApply.forEach((c) => {
+        const key = c.trim();
+        if (!key) return;
+        const cb = findInputByValue(categoryFacets, 'category', key);
+        if (cb) {
+          state.categories.add(key);
+          cb.checked = true;
         }
-      }
+      });
 
-      filterGrants();
+      applyState();
     });
   </script>
 

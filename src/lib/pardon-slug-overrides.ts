@@ -6,6 +6,16 @@
  * The slug resolver in src/lib/slugify.ts checks this map first and falls
  * back to the computed slug path only if there's no override.
  *
+ * Role in the slug pipeline: this map is the EDITORIAL base-slug layer,
+ * consulted by slugify() at scrape time via src/lib/slug-assigner.ts when
+ * assigning the canonical slug for each row. Collision uniqueness is then
+ * enforced on top of the base slug by the assigner's escalation chain,
+ * and the final slug is stored in the pardons.slug column. The override
+ * map controls the *editorial* short form (e.g. "january-6th-committee")
+ * while the assigner controls *uniqueness* (e.g. "alice-marie-johnson"
+ * vs "alice-marie-johnson-2018-06-06"). These are intentionally separate
+ * concerns — don't move collision resolution into this map.
+ *
  * Rationale: about 21 pardon records have recipient_name values longer
  * than 50 characters — mostly because they include multiple "aka"/"fka"
  * aliases, or describe group clemency actions (e.g. the January 6 Select
@@ -27,7 +37,7 @@
  * fall through to the hash-suffixed fallback path. Do not add implicit
  * normalization inside slugify() — either update the caller to pass raw
  * values, or add the normalized form as an additional key alongside the
- * raw form. The longer-term fix is the planned DB-backed slug column.
+ * raw form.
  */
 export const PARDON_SLUG_OVERRIDES: Record<string, string> = {
   // Group clemency (biden-1): the 374-char full description of the Jan 6

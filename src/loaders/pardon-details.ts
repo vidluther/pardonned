@@ -8,6 +8,7 @@ import { resolve } from "node:path";
 
 export const pardonDetailSchema = z.object({
   id: z.string(),
+  slug: z.string(),
   administration_slug: z.string(),
   grant_date: z.string(),
   clemency_type: z.enum(["pardon", "commutation"]),
@@ -71,6 +72,7 @@ export function pardonDetailsLoader(options: PardonDetailsLoaderOptions = {}): L
         const query = db
           .select({
             id: pardons.id,
+            slug: pardons.slug,
             administration_slug: administrations.slug,
             grant_date: pardons.grant_date,
             clemency_type: pardons.clemency_type,

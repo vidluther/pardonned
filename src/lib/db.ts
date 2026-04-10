@@ -8,6 +8,7 @@ import type { ParsedGrant } from "./parsers/types.js";
 import { parseSentence } from "./parsers/sentences.js";
 import { mkdirSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
+import { assignSlugs } from "./slug-assigner.js";
 
 const DDL = `
 CREATE TABLE IF NOT EXISTS administrations (
@@ -25,6 +26,7 @@ CREATE TABLE IF NOT EXISTS pardons (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   administration INTEGER NOT NULL REFERENCES administrations(id),
   recipient_name TEXT NOT NULL,
+  slug TEXT,
   clemency_type TEXT NOT NULL CHECK(clemency_type IN ('pardon','commutation')),
   grant_date TEXT NOT NULL,
   warrant_url TEXT,
@@ -332,6 +334,32 @@ function getDbPath(): string {
 const client = createClient({ url: "file:" + getDbPath() });
 await client.executeMultiple(DDL);
 
+// In-place migration: ALTER existing DBs that predate the slug column.
+// SQLite's CREATE TABLE IF NOT EXISTS won't add columns to an existing
+// table, so we check for the column via PRAGMA and ALTER if missing.
+// The pardons_slug_unique index is created unconditionally below, OUTSIDE
+// this block, because including it in the DDL string caused "no such
+// column: slug" errors on existing DBs (CREATE TABLE IF NOT EXISTS is a
+// no-op when the table exists, so the index ran before ALTER TABLE added
+// the column).
+{
+  const cols = await client.execute("PRAGMA table_info(pardons)");
+  // PRAGMA table_info returns rows with columns: cid, name, type, notnull, dflt_value, pk.
+  // libsql exposes them as string-indexed properties, so r.name is the "name" column
+  // (the actual column name of the pardon row we're checking for).
+  const hasSlug = cols.rows.some((r) => r.name === "slug");
+  if (!hasSlug) {
+    await client.execute("ALTER TABLE pardons ADD COLUMN slug TEXT");
+    console.log("Migrated: added pardons.slug column");
+  }
+}
+// Always ensure the unique index exists (idempotent via IF NOT EXISTS).
+// Must stay OUTSIDE the DDL string and OUTSIDE the migration block:
+// on existing DBs the migration block adds the column first, and on
+// fresh DBs the DDL above creates the column. Either way, the index
+// creation here runs after the column is guaranteed to exist.
+await client.execute("CREATE UNIQUE INDEX IF NOT EXISTS pardons_slug_unique ON pardons(slug)");
+
 export const db = drizzle(client, { schema });
 
 const adminCount = await db
@@ -476,4 +504,70 @@ export async function upsertGrants(
   }
 
   return { inserted, skipped };
+}
+
+/**
+ * Load every pardon row, run them through the pure `assignSlugs` collision
+ * resolver, and write the results back to the `pardons.slug` column in a
+ * single transaction.
+ *
+ * Always operates on the full dataset, even when called from a single-
+ * president scrape (`pnpm scrape:trump2` etc.). This is deliberate:
+ * collision resolution needs to see every row, not just the subset that
+ * was freshly scraped, because a new trump-2 row can collide with an
+ * existing obama row by name.
+ *
+ * Returns `{ assigned, collisionsResolved }`:
+ * - `assigned` equals `slugMap.size`, which equals the total pardons row
+ *   count. The assigner algorithm is total (every row gets a slug), so
+ *   this is never a subset — treat it as a "rows the algorithm ran over"
+ *   counter, not "rows that changed."
+ * - `collisionsResolved` is a heuristic count of rows whose final slug
+ *   was escalated past the base form (see the comment on the counter
+ *   loop below for accuracy caveats).
+ */
+export async function assignAllPardonSlugs(): Promise<{
+  assigned: number;
+  collisionsResolved: number;
+}> {
+  const rows = await db
+    .select({
+      id: pardons.id,
+      recipient_name: pardons.recipient_name,
+      grant_date: pardons.grant_date,
+      clemency_type: pardons.clemency_type,
+    })
+    .from(pardons)
+    .all();
+
+  const slugMap = assignSlugs(rows);
+
+  // Count how many rows got anything other than a pure base slug — useful
+  // as a scrape-log signal to notice regressions in the collision count.
+  // Rough signal, not a proof: matches any slug containing a YYYY-MM-DD
+  // pattern (covers base-date and base-date-type escalations) but MISSES
+  // rows that escalated all the way to `base-<id>` (which end in `-N`,
+  // not a date). The `-<id>` fallback is unreachable in current data but
+  // could happen in the future — don't trust this counter as exact.
+  let collisionsResolved = 0;
+  for (const row of rows) {
+    const assigned = slugMap.get(row.id);
+    if (assigned && /-\d{4}-\d{2}-\d{2}/.test(assigned)) {
+      collisionsResolved += 1;
+    }
+  }
+
+  // Write back in one transaction. Drizzle's libsql driver runs these as
+  // individual UPDATE statements inside a transaction; for ~2,500 rows
+  // this is fast enough (sub-second on an M-series Mac). On any error
+  // (e.g., a UNIQUE constraint violation from a bug in assignSlugs),
+  // Drizzle rolls back the entire transaction — slugs are either all
+  // written or all left as NULL, never partially populated.
+  await db.transaction(async (tx) => {
+    for (const [id, slug] of slugMap) {
+      await tx.update(pardons).set({ slug }).where(eq(pardons.id, id)).run();
+    }
+  });
+
+  return { assigned: slugMap.size, collisionsResolved };
 }

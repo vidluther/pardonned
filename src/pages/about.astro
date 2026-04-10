@@ -1,0 +1,22 @@
+---
+import Layout from "../layouts/Layout.astro";
+import "../styles/global.css";
+import { getCollection, render } from "astro:content";
+
+const currentPath = Astro.url.pathname;
+const aboutEntries = await getCollection("pages", ({ id }) => id === "about");
+const about = aboutEntries[0];
+const { Content } = await render(about);
+---
+
+<Layout
+    title={about.data.title}
+    description={about.data.description}
+    currentPath={currentPath}
+>
+    <section class="max-w-home mx-auto px-5 md:px-10 py-10 md:py-section">
+        <div class="max-w-source prose-content">
+            <Content />
+        </div>
+    </section>
+</Layout>

@@ -10,7 +10,6 @@ import "../../styles/global.css";
 import { getCollection } from "astro:content";
 import { computeStats, filterByAdministration } from "../../lib/pardon-stats";
 import { getAdministrationIndex } from "../../lib/president-names";
-import { slugify } from "../../lib/slugify";
 
 const categoryColors: Record<string, string> = {
     fraud: "#8A6B1E",
@@ -76,7 +75,7 @@ const timelineEntries = sortedDates.map((date, i) => {
     const hrefs = grants.reduce(
         (acc, grant) => {
             acc[grant.recipient_name] =
-                `/pardon/details/${slugify(grant.recipient_name)}`;
+                `/pardon/details/${grant.slug}`;
             return acc;
         },
         {} as Record<string, string>,

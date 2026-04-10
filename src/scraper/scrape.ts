@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { fetchPageHtml, closeBrowser } from "./browser.js";
-import { upsertGrants } from "../lib/db.js";
+import { upsertGrants, assignAllPardonSlugs } from "../lib/db.js";
 import { PRESIDENT_SOURCES } from "./presidents.js";
 import { detectFormat } from "../lib/parsers/detect.js";
 import { parseTrump2025 } from "../lib/parsers/trump2025.js";
@@ -97,6 +97,13 @@ async function main(): Promise<void> {
     } else {
       await scrapePresident(presidentFilter);
     }
+
+    // Always runs across ALL pardon rows, not just the president that
+    // was scraped — collision resolution needs the full dataset to be
+    // correct. So `pnpm scrape:trump2` will still log ~2,500 assigned.
+    console.log("\nAssigning slugs...");
+    const { assigned, collisionsResolved } = await assignAllPardonSlugs();
+    console.log(`  Assigned ${assigned} slugs (${collisionsResolved} collision-resolved)`);
   } finally {
     await closeBrowser();
   }

@@ -1,6 +1,5 @@
 import type { APIRoute, GetStaticPaths } from "astro";
 import { getCollection } from "astro:content";
-import { slugify } from "../../lib/slugify";
 import { renderOgImage, type OgImageData } from "../../lib/og-image";
 
 export const prerender = true;
@@ -29,7 +28,7 @@ export const getStaticPaths: GetStaticPaths = async () => {
     const dateShort = formatDateShort(d.grant_date);
 
     return {
-      params: { slug: slugify(d.recipient_name) },
+      params: { slug: d.slug },
       props: {
         title: d.recipient_name,
         subtitle: `${clemencyLabel} · ${dateShort}`,

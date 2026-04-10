@@ -3,7 +3,6 @@ import Layout from "../../../layouts/Layout.astro";
 import StatCard from "../../../components/StatCard.astro";
 import "../../../styles/global.css";
 import { getCollection } from "astro:content";
-import { slugify } from "../../../lib/slugify";
 import { resolveUrl } from "../../../lib/parsers/types";
 import { generateBreadcrumbJsonLd } from "../../../lib/seo";
 
@@ -11,7 +10,7 @@ export async function getStaticPaths() {
     const allPardons = await getCollection("pardonDetails");
 
     return allPardons.map((grant) => ({
-        params: { slug: slugify(grant.data.recipient_name) },
+        params: { slug: grant.data.slug },
         props: { grant },
     }));
 }
@@ -179,7 +178,7 @@ const sources = [
 const breadcrumbJsonLd = generateBreadcrumbJsonLd([
     { name: "Home", url: "https://pardonned.com/" },
     { name: "Search", url: "https://pardonned.com/search" },
-    { name: data.recipient_name, url: `https://pardonned.com/pardon/details/${slugify(data.recipient_name)}` },
+    { name: data.recipient_name, url: `https://pardonned.com/pardon/details/${data.slug}` },
 ]);
 
 const ogDescriptionParts = [
@@ -189,11 +188,11 @@ if (hasRestitution) {
     ogDescriptionParts.push(`${formattedRestitution} in restitution abandoned.`);
 }
 const ogDescription = ogDescriptionParts.join(" ");
-const ogImagePath = `/og/${slugify(data.recipient_name)}.png`;
+const ogImagePath = `/og/${data.slug}.png`;
 ---
 
 <Layout title={data.recipient_name} description={ogDescription} ogImage={ogImagePath} currentPath={currentPath}>
-  <script type="application/ld+json" set:html={breadcrumbJsonLd} />
+  <script type="application/ld+json" set:html={breadcrumbJsonLd}></script>
     <div class="max-w-detail mx-auto px-5 md:px-10 py-6 md:py-10">
         <!-- Breadcrumb -->
         <div class="breadcrumb mb-6 md:mb-10">

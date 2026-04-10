@@ -96,9 +96,14 @@ function parseTable(
     if (cells.length === 0) {
       const thCells = $(row).find("th");
       if (thCells.length > 0) {
-        // TH rows contain person names — process each TH as a separate person
+        // TH rows contain person names — process each TH as a separate person.
+        // Defensive: some Obama sub-tables use <th> for COLUMN HEADERS, not
+        // person names (e.g. <th>NAME</th><th>DISTRICT</th>...). These slip
+        // past isNameValue() because the strings look name-ish. Skip any TH
+        // whose text matches a known column-header sentinel.
         thCells.each((_ti, th) => {
           const name = $(th).text().trim();
+          if (isHeaderSentinel(name)) return;
           if (name && isNameValue(name)) {
             // Flush previous person
             if (current?.name && currentDate) {
@@ -211,6 +216,17 @@ interface PersonRecord {
   district: string | null;
   sentence: string | null;
   terms: string | null;
+}
+
+/**
+ * Column-header strings that appear as <th> cells in some Obama sub-tables
+ * and would otherwise be parsed as "person" rows, producing garbage records
+ * with recipient_name values like "NAME"/"DISTRICT"/"SENTENCED"/"OFFENSE".
+ */
+const COLUMN_HEADER_SENTINELS = new Set(["NAME", "DISTRICT", "SENTENCED", "OFFENSE"]);
+
+function isHeaderSentinel(value: string): boolean {
+  return COLUMN_HEADER_SENTINELS.has(value.trim().toUpperCase());
 }
 
 /**

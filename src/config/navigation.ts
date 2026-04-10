@@ -7,6 +7,7 @@ export interface NavItem {
 export const mainNavigation: NavItem[] = [
   { label: "Home", href: "/" },
   { label: "Search", href: "/search" },
+  { label: "About", href: "/about" },
 ];
 
 // Helper to check if a nav item is active

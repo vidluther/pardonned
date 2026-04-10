@@ -24,6 +24,7 @@ export const pardons = sqliteTable(
       .notNull()
       .references(() => administrations.id),
     recipient_name: text("recipient_name").notNull(),
+    slug: text("slug").unique(),
     clemency_type: text("clemency_type", {
       enum: ["pardon", "commutation"],
     }).notNull(),
