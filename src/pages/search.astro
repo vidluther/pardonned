@@ -3,7 +3,6 @@ import Layout from '../layouts/Layout.astro';
 import '../styles/global.css';
 
 import { getCollection } from "astro:content";
-import { slugify } from "../lib/slugify";
 import { getAdministrationIndex } from "../lib/president-names";
 
 const currentPath = Astro.url.pathname;
@@ -55,7 +54,7 @@ const sortedGrants = allGrants
 const searchResults = sortedGrants.map((entry) => {
     const d = entry.data;
     return {
-        slug: slugify(d.recipient_name),
+        slug: d.slug,
         name: d.recipient_name,
         clemencyType: d.clemency_type,
         category: d.offense_category,
