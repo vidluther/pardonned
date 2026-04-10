@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS pardons (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   administration INTEGER NOT NULL REFERENCES administrations(id),
   recipient_name TEXT NOT NULL,
+  slug TEXT,
   clemency_type TEXT NOT NULL CHECK(clemency_type IN ('pardon','commutation')),
   grant_date TEXT NOT NULL,
   warrant_url TEXT,
@@ -331,6 +332,21 @@ function getDbPath(): string {
 
 const client = createClient({ url: "file:" + getDbPath() });
 await client.executeMultiple(DDL);
+
+// In-place migration: ALTER existing DBs that predate the slug column.
+// SQLite's CREATE TABLE IF NOT EXISTS won't add columns to an existing
+// table, so we check for the column via PRAGMA and ALTER if missing.
+{
+  const cols = await client.execute("PRAGMA table_info(pardons)");
+  const hasSlug = cols.rows.some((r) => r.name === "slug");
+  if (!hasSlug) {
+    await client.execute("ALTER TABLE pardons ADD COLUMN slug TEXT");
+    console.log("Migrated: added pardons.slug column");
+  }
+}
+// Always ensure the unique index exists (idempotent; safe on both fresh
+// and migrated DBs because the slug column is guaranteed present above).
+await client.execute("CREATE UNIQUE INDEX IF NOT EXISTS pardons_slug_unique ON pardons(slug)");
 
 export const db = drizzle(client, { schema });
 
