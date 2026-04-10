@@ -64,11 +64,17 @@ export function assignSlugs(rows: AssignerRow[]): Map<number, string> {
       taken.add(candidate);
     }
 
-    // assigned is always defined: `base-<id>` is unique because ids are unique
-    // and we pre-claim all candidates, so `base-<id>` for a prior row can
-    // only be in `taken` if a prior row's id happened to produce the same
-    // string — impossible since each id is distinct.
-    result.set(row.id, assigned!);
+    // The `base-${row.id}` fallback candidate (candidates[3]) is always
+    // available because row ids are unique per DB schema, so the first
+    // loop above is guaranteed to find at least one unclaimed candidate.
+    // If this throws, it means someone changed the candidate chain in a
+    // way that broke that guarantee — fix the chain, not this guard.
+    if (assigned === undefined) {
+      throw new Error(
+        `assignSlugs: no candidate found for id ${row.id} — this is a bug in the candidate chain`,
+      );
+    }
+    result.set(row.id, assigned);
   }
 
   return result;

@@ -94,9 +94,9 @@ describe("assignSlugs", () => {
         row(2, "Alice", "2021-01-01", "pardon"),
         row(3, "Bob", "2020-01-01", "pardon"),
       ];
-      const a = assignSlugs(rows);
-      const b = assignSlugs(rows);
-      expect([...a.entries()].sort()).toEqual([...b.entries()].sort());
+      const byId = (m: Map<number, string>) =>
+        [...m.entries()].sort(([x], [y]) => x - y);
+      expect(byId(assignSlugs(rows))).toEqual(byId(assignSlugs(rows)));
     });
   });
 
