@@ -5,10 +5,15 @@ import '../styles/global.css';
 
 import { getCollection } from "astro:content";
 import { slugify } from "../lib/slugify";
+import { getAdministrationIndex } from "../lib/president-names";
 
 const currentPath = Astro.url.pathname;
 
 const allGrants = await getCollection("pardonDetails");
+const administrationIndex = getAdministrationIndex(allGrants);
+const sortedAdmins = Array.from(administrationIndex.values()).sort((a, b) =>
+    b.termStartDate.localeCompare(a.termStartDate),
+);
 
 const categoryColors: Record<string, string> = {
     fraud: "#8A6B1E",
@@ -57,6 +62,7 @@ const searchResults = allGrants.map((entry) => {
         date: formatDate(d.grant_date),
         restitution: d.restitution ?? 0,
         fine: d.fine ?? 0,
+        administrationSlug: d.administration_slug,
     };
 });
 
@@ -104,6 +110,18 @@ for (const grant of searchResults) {
       </div>
     </div>
 
+    <!-- President Pills -->
+    <div id="president-pills" class="flex flex-wrap gap-2 mb-4">
+        <FilterPill label="All Presidents" active={true} count={searchResults.length} data-president="all" />
+        {sortedAdmins.map((admin) => (
+            <FilterPill
+                label={admin.displayName}
+                count={admin.count}
+                data-president={admin.slug}
+            />
+        ))}
+    </div>
+
     <!-- Category Pills -->
     <div id="category-pills" class="flex flex-wrap gap-2 mb-8">
       <FilterPill label="All" active={true} count={searchResults.length} data-category="all" />
@@ -144,6 +162,7 @@ for (const grant of searchResults) {
       const categoryPills = document.getElementById('category-pills');
 
       let activeCategory = 'all';
+      let activePresident = 'all';
 
       function formatRestitution(value) {
         if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
@@ -284,14 +303,16 @@ for (const grant of searchResults) {
           const matchesSearch = !searchTerm || grant.name.toLowerCase().includes(searchTerm) || grant.offense.toLowerCase().includes(searchTerm);
           const matchesType = !typeFilter || grant.clemencyType === typeFilter;
           const matchesCategory = activeCategory === 'all' || grant.category === activeCategory;
-          return matchesSearch && matchesType && matchesCategory;
+          const matchesPresident = activePresident === 'all' || grant.administrationSlug === activePresident;
+          return matchesSearch && matchesType && matchesCategory && matchesPresident;
         });
 
         renderResults(filtered);
       }
 
-      function setActivePill(pill) {
-        document.querySelectorAll('#category-pills button, #category-pills a').forEach((p) => {
+      function setActivePill(pill, containerId) {
+        const container = document.getElementById(containerId);
+        container.querySelectorAll('button, a').forEach((p) => {
           p.classList.remove('filter-pill-active');
           p.classList.add('filter-pill-inactive');
         });
@@ -324,9 +345,20 @@ for (const grant of searchResults) {
         if (!pill) return;
 
         activeCategory = pill.dataset.category || 'all';
-        setActivePill(pill);
+        setActivePill(pill, 'category-pills');
         filterGrants();
         window.posthog?.capture('category_filter_applied', { category: activeCategory });
+      });
+
+      const presidentPills = document.getElementById('president-pills');
+      presidentPills.addEventListener('click', (e) => {
+        const pill = e.target.closest('button, a');
+        if (!pill) return;
+
+        activePresident = pill.dataset.president || 'all';
+        setActivePill(pill, 'president-pills');
+        filterGrants();
+        window.posthog?.capture('president_filter_applied', { president: activePresident });
       });
 
       // Track search result clicks
@@ -337,14 +369,24 @@ for (const grant of searchResults) {
         window.posthog?.capture('search_result_clicked', { slug });
       });
 
-      // Apply ?category= URL param as initial filter (from home page links)
+      // Apply URL params as initial filters
       const urlParams = new URLSearchParams(window.location.search);
+
+      const initialPresident = urlParams.get('president');
+      if (initialPresident) {
+        const matchingPill = presidentPills.querySelector(`[data-president="${initialPresident}"]`);
+        if (matchingPill) {
+          activePresident = initialPresident;
+          setActivePill(matchingPill, 'president-pills');
+        }
+      }
+
       const initialCategory = urlParams.get('category');
       if (initialCategory) {
         const matchingPill = categoryPills.querySelector(`[data-category="${initialCategory}"]`);
         if (matchingPill) {
           activeCategory = initialCategory;
-          setActivePill(matchingPill);
+          setActivePill(matchingPill, 'category-pills');
         }
       }
 
