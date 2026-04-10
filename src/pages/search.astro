@@ -232,6 +232,13 @@ const sortedCategories = Object.entries(categoryCounts)
 
         <div id="results-list" class="results-swap"></div>
 
+        <nav
+          id="pagination-controls"
+          class="pagination"
+          aria-label="Search results pagination"
+          hidden
+        ></nav>
+
         <div id="empty-state" class="hidden text-center py-16">
           <p class="text-text-faint text-lg mb-2">No results found</p>
           <p class="text-text-faint text-sm">Try adjusting your filters or search terms.</p>
@@ -268,6 +275,7 @@ const sortedCategories = Object.entries(categoryCounts)
       const mobileCountTotal = document.getElementById('mobile-count-total');
       const mobileClearAll = document.getElementById('mobile-clear-all');
       const presidentChipRail = document.getElementById('president-chip-rail');
+      const paginationControls = document.getElementById('pagination-controls');
 
       const presidentLabels = { all: 'All' };
       presidentFacets.querySelectorAll('label[data-president]').forEach((label) => {
@@ -276,11 +284,14 @@ const sortedCategories = Object.entries(categoryCounts)
         if (textSpan) presidentLabels[slug] = textSpan.textContent;
       });
 
+      const PAGE_SIZE = 10;
+
       const state = {
         search: '',
         type: '',
         president: 'all',
         categories: new Set(),
+        page: 1,
       };
 
       function formatCategoryName(key) {
@@ -445,6 +456,9 @@ const sortedCategories = Object.entries(categoryCounts)
       function renderResults(filtered) {
         resultsList.classList.add('is-swapping');
 
+        const start = (state.page - 1) * PAGE_SIZE;
+        const pageSlice = filtered.slice(start, start + PAGE_SIZE);
+
         requestAnimationFrame(() => {
           if (filtered.length === 0) {
             resultsList.textContent = '';
@@ -456,7 +470,7 @@ const sortedCategories = Object.entries(categoryCounts)
           emptyState.classList.add('hidden');
           resultsList.textContent = '';
 
-          filtered.forEach((grant, i) => {
+          pageSlice.forEach((grant, i) => {
             const catLabel = formatCategoryName(grant.category);
             const catColor = categoryColors[grant.category] || '#7A7870';
             const typeLabel = grant.clemencyType === 'pardon' ? 'Pardon' : 'Commutation';
@@ -567,12 +581,77 @@ const sortedCategories = Object.entries(categoryCounts)
         });
       }
 
+      function buildPageList(current, total) {
+        if (total <= 7) {
+          const pages = [];
+          for (let i = 1; i <= total; i++) pages.push(i);
+          return pages;
+        }
+        const pages = [1];
+        const windowStart = Math.max(2, current - 1);
+        const windowEnd = Math.min(total - 1, current + 1);
+        if (windowStart > 2) pages.push('ellipsis');
+        for (let i = windowStart; i <= windowEnd; i++) pages.push(i);
+        if (windowEnd < total - 1) pages.push('ellipsis');
+        pages.push(total);
+        return pages;
+      }
+
+      function renderPagination(filteredCount) {
+        if (!paginationControls) return;
+        const totalPages = Math.max(1, Math.ceil(filteredCount / PAGE_SIZE));
+
+        if (filteredCount <= PAGE_SIZE) {
+          paginationControls.textContent = '';
+          paginationControls.hidden = true;
+          return;
+        }
+
+        paginationControls.hidden = false;
+        paginationControls.textContent = '';
+
+        const prev = document.createElement('button');
+        prev.type = 'button';
+        prev.className = 'pagination-button';
+        prev.dataset.pageAction = 'prev';
+        prev.textContent = '\u2039 Prev';
+        prev.disabled = state.page <= 1;
+        paginationControls.appendChild(prev);
+
+        const pages = buildPageList(state.page, totalPages);
+        for (const p of pages) {
+          if (p === 'ellipsis') {
+            const span = document.createElement('span');
+            span.className = 'pagination-ellipsis';
+            span.textContent = '\u2026';
+            paginationControls.appendChild(span);
+            continue;
+          }
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'pagination-page' + (p === state.page ? ' is-active' : '');
+          btn.dataset.page = String(p);
+          btn.textContent = String(p);
+          if (p === state.page) btn.setAttribute('aria-current', 'page');
+          paginationControls.appendChild(btn);
+        }
+
+        const next = document.createElement('button');
+        next.type = 'button';
+        next.className = 'pagination-button';
+        next.dataset.pageAction = 'next';
+        next.textContent = 'Next \u203A';
+        next.disabled = state.page >= totalPages;
+        paginationControls.appendChild(next);
+      }
+
       function syncUrl() {
         const params = new URLSearchParams();
         if (state.search) params.set('q', state.search);
         if (state.type) params.set('type', state.type);
         if (state.president !== 'all') params.set('president', state.president);
         if (state.categories.size > 0) params.set('categories', Array.from(state.categories).join(','));
+        if (state.page > 1) params.set('page', String(state.page));
 
         const qs = params.toString();
         const next = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
@@ -610,7 +689,11 @@ const sortedCategories = Object.entries(categoryCounts)
       function applyState() {
         syncControlsFromState();
         const filtered = getFilteredGrants();
+        const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+        if (state.page > totalPages) state.page = totalPages;
+        if (state.page < 1) state.page = 1;
         renderResults(filtered);
+        renderPagination(filtered.length);
         const counts = computeFilteredCounts();
         renderSidebarCounts(counts);
         renderFilterSummary(filtered);
@@ -628,6 +711,7 @@ const sortedCategories = Object.entries(categoryCounts)
         state.type = '';
         state.president = 'all';
         state.categories.clear();
+        state.page = 1;
 
         if (searchInput) searchInput.value = '';
         if (mobileSearchInput) mobileSearchInput.value = '';
@@ -642,6 +726,7 @@ const sortedCategories = Object.entries(categoryCounts)
       let searchDebounce;
       function handleSearchInput(event) {
         state.search = event.target.value.trim();
+        state.page = 1;
         applyState();
         clearTimeout(searchDebounce);
         searchDebounce = setTimeout(() => {
@@ -668,6 +753,7 @@ const sortedCategories = Object.entries(categoryCounts)
         const t = e.target;
         if (t && t.name === 'type') {
           state.type = t.value;
+          state.page = 1;
           applyState();
           if (state.type) {
             window.posthog?.capture('type_filter_applied', { type: state.type });
@@ -679,6 +765,7 @@ const sortedCategories = Object.entries(categoryCounts)
         const t = e.target;
         if (t && t.name === 'president') {
           state.president = t.value;
+          state.page = 1;
           applyState();
           if (state.president !== 'all') {
             window.posthog?.capture('president_filter_applied', { president: state.president, source: 'sidebar' });
@@ -691,6 +778,7 @@ const sortedCategories = Object.entries(categoryCounts)
           const t = e.target;
           if (t && t.name === 'president-mobile') {
             state.president = t.value;
+            state.page = 1;
             applyState();
             if (state.president !== 'all') {
               window.posthog?.capture('president_filter_applied', { president: state.president, source: 'chip_rail' });
@@ -707,6 +795,7 @@ const sortedCategories = Object.entries(categoryCounts)
           } else {
             state.categories.delete(t.value);
           }
+          state.page = 1;
           applyState();
           window.posthog?.capture('category_filter_applied', { category: t.value, checked: t.checked });
         }
@@ -728,6 +817,7 @@ const sortedCategories = Object.entries(categoryCounts)
           const key = action.slice('clear-category:'.length);
           state.categories.delete(key);
         }
+        state.page = 1;
         applyState();
         window.posthog?.capture('search_filters_cleared', {
           source: 'chip_remove',
@@ -750,6 +840,7 @@ const sortedCategories = Object.entries(categoryCounts)
           query: state.search || null,
           position: cards.indexOf(card),
           total_results: cards.length,
+          page: state.page,
           has_active_filters:
             Boolean(state.search) ||
             Boolean(state.type) ||
@@ -757,6 +848,39 @@ const sortedCategories = Object.entries(categoryCounts)
             state.categories.size > 0,
         });
       });
+
+      if (paginationControls) {
+        paginationControls.addEventListener('click', (e) => {
+          const btn = e.target.closest('button');
+          if (!btn || btn.disabled) return;
+
+          const filteredCount = getFilteredGrants().length;
+          const totalPages = Math.max(1, Math.ceil(filteredCount / PAGE_SIZE));
+          const prevPage = state.page;
+
+          if (btn.dataset.pageAction === 'prev') {
+            if (state.page > 1) state.page -= 1;
+          } else if (btn.dataset.pageAction === 'next') {
+            if (state.page < totalPages) state.page += 1;
+          } else if (btn.dataset.page) {
+            const n = parseInt(btn.dataset.page, 10);
+            if (!Number.isNaN(n)) state.page = Math.max(1, Math.min(totalPages, n));
+          }
+
+          if (state.page !== prevPage) {
+            applyState();
+            const target = document.getElementById('filter-summary') || resultsList;
+            if (target && typeof target.scrollIntoView === 'function') {
+              target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            window.posthog?.capture('search_page_changed', {
+              from_page: prevPage,
+              to_page: state.page,
+              total_pages: totalPages,
+            });
+          }
+        });
+      }
 
       const desktopMq = window.matchMedia('(min-width: 1024px)');
       if (sidebarDisclosure) sidebarDisclosure.open = desktopMq.matches;
@@ -804,6 +928,11 @@ const sortedCategories = Object.entries(categoryCounts)
           cb.checked = true;
         }
       });
+
+      const pageParam = parseInt(urlParams.get('page') || '', 10);
+      if (!Number.isNaN(pageParam) && pageParam > 1) {
+        state.page = pageParam;
+      }
 
       applyState();
     });
