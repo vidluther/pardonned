@@ -1,89 +1,73 @@
 ---
-import Header from '../components/Header.astro';
-import Footer from '../components/Footer.astro';
-import { siteConfig } from '../config/site';
-import { generateMetaTags, generateJsonLd } from '../lib/seo';
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+import SeoHead from "../components/SeoHead.astro";
+import Analytics from "../components/Analytics.astro";
+import { siteConfig } from "../config/site";
+import { truncateText } from "../lib/seo";
 
 interface Props {
-  title?: string;
-  description?: string;
-  ogImage?: string;
-  showHeader?: boolean;
-  showFooter?: boolean;
-  currentPath?: string;
+    title?: string;
+    description?: string;
+    ogImage?: string;
+    showHeader?: boolean;
+    showFooter?: boolean;
+    currentPath?: string;
 }
 
-const { 
-  title = siteConfig.name,
-  description = siteConfig.description,
-  ogImage,
-  showHeader = true,
-  showFooter = true,
-  currentPath = "/"
+const {
+    title = siteConfig.name,
+    description = siteConfig.description,
+    ogImage,
+    showHeader = true,
+    showFooter = true,
+    currentPath = "/",
 } = Astro.props;
 
-const fullTitle = title === siteConfig.name 
-  ? title 
-  : `${title} — ${siteConfig.name}`;
+let fullTitle;
+if (title === siteConfig.name) {
+    fullTitle = title;
+} else {
+    fullTitle = `${title} — ${siteConfig.name}`;
+}
 
-const seoMeta = generateMetaTags({
-  title: fullTitle,
-  description,
-  ogImage,
-}, Astro.url);
-
-const jsonLd = generateJsonLd({
-  title: fullTitle,
-  description,
-}, Astro.url);
+const metaDescription = truncateText(description, 160);
 ---
 
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="icon" href="/favicon.ico" />
-    <meta name="generator" content={Astro.generator} />
-    <meta name="description" content={description} />
-    <link rel="canonical" href={Astro.url?.toString()} />
-    
-    <!-- Open Graph -->
-    <meta property="og:title" content={seoMeta["og:title"]} />
-    <meta property="og:description" content={seoMeta["og:description"]} />
-    <meta property="og:url" content={seoMeta["og:url"]} />
-    <meta property="og:type" content={seoMeta["og:type"]} />
-    <meta property="og:image" content={seoMeta["og:image"]} />
-    <meta property="og:locale" content={seoMeta["og:locale"]} />
-    <meta property="og:site_name" content={seoMeta["og:site_name"]} />
-    
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content={seoMeta["twitter:card"]} />
-    <meta name="twitter:title" content={seoMeta["twitter:title"]} />
-    <meta name="twitter:description" content={seoMeta["twitter:description"]} />
-    <meta name="twitter:image" content={seoMeta["twitter:image"]} />
-    {seoMeta["twitter:site"] && <meta name="twitter:site" content={seoMeta["twitter:site"]} />}
-    {seoMeta["twitter:creator"] && <meta name="twitter:creator" content={seoMeta["twitter:creator"]} />}
-    
-    <!-- JSON-LD Structured Data -->
-    <script type="application/ld+json" set:html={jsonLd} />
-    
-    <!-- Google Fonts - DM Sans + DM Serif Display -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=DM+Serif+Display&display=swap">
-    
-    <title>{fullTitle}</title>
-  </head>
-  <body class="bg-page font-sans text-body antialiased min-h-screen flex flex-col">
-    <a href="#main-content" class="skip-link">Skip to content</a>
-    {showHeader && <Header currentPath={currentPath} />}
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <link rel="icon" href="/favicon.ico" />
+        <meta name="generator" content={Astro.generator} />
+        <meta name="description" content={metaDescription} />
+        <link rel="canonical" href={Astro.url?.toString()} />
 
-    <main id="main-content" class="flex-1">
-      <slot />
-    </main>
-    
-    {showFooter && <Footer />}
-  </body>
+        <SeoHead title={fullTitle} description={description} ogImage={ogImage} />
+
+        <!-- Google Fonts - DM Sans + DM Serif Display -->
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            rel="stylesheet"
+            href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=DM+Serif+Display&display=swap"
+        />
+
+        <Analytics />
+        <title>{fullTitle}</title>
+    </head>
+    <body
+        class="bg-page font-sans text-body antialiased min-h-screen flex flex-col"
+    >
+        <a href="#main-content" class="skip-link">Skip to content</a>
+        {showHeader && <Header currentPath={currentPath} />}
+
+        <main id="main-content" class="flex-1">
+            <slot />
+        </main>
+
+        {showFooter && <Footer />}
+    </body>
 </html>

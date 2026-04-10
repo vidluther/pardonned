@@ -1,0 +1,46 @@
+---
+import { generateMetaTags, generateJsonLd, truncateText } from "../lib/seo";
+
+interface Props {
+    title: string;
+    description: string;
+    ogImage?: string;
+}
+
+const { title, description, ogImage } = Astro.props;
+
+const seoMeta = generateMetaTags({ title, description, ogImage }, Astro.url);
+const jsonLd = generateJsonLd({ title, description }, Astro.url);
+
+// Truncate for social platform limits
+const ogTitle = truncateText(seoMeta["og:title"], 70);
+const ogDescription = truncateText(seoMeta["og:description"], 200);
+---
+
+<!-- Open Graph -->
+<meta property="og:title" content={ogTitle} />
+<meta property="og:description" content={ogDescription} />
+<meta property="og:url" content={seoMeta["og:url"]} />
+<meta property="og:type" content={seoMeta["og:type"]} />
+<meta property="og:image" content={seoMeta["og:image"]} />
+<meta property="og:locale" content={seoMeta["og:locale"]} />
+<meta property="og:site_name" content={seoMeta["og:site_name"]} />
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content={seoMeta["twitter:card"]} />
+<meta name="twitter:title" content={ogTitle} />
+<meta name="twitter:description" content={ogDescription} />
+<meta name="twitter:image" content={seoMeta["twitter:image"]} />
+{
+    seoMeta["twitter:site"] && (
+        <meta name="twitter:site" content={seoMeta["twitter:site"]} />
+    )
+}
+{
+    seoMeta["twitter:creator"] && (
+        <meta name="twitter:creator" content={seoMeta["twitter:creator"]} />
+    )
+}
+
+<!-- JSON-LD Structured Data -->
+<script type="application/ld+json" set:html={jsonLd} />
