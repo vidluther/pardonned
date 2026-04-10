@@ -182,7 +182,13 @@ const breadcrumbJsonLd = generateBreadcrumbJsonLd([
     { name: data.recipient_name, url: `https://pardonned.com/pardon/details/${slugify(data.recipient_name)}` },
 ]);
 
-const ogDescription = `${clemencyLabels[data.clemency_type] ?? data.clemency_type} granted to ${data.recipient_name} on ${grantDate}. ${hasRestitution ? `${formattedRestitution} in restitution abandoned.` : ""}`.trim();
+const ogDescriptionParts = [
+    `${clemencyLabels[data.clemency_type] ?? data.clemency_type} granted to ${data.recipient_name} on ${grantDate}.`,
+];
+if (hasRestitution) {
+    ogDescriptionParts.push(`${formattedRestitution} in restitution abandoned.`);
+}
+const ogDescription = ogDescriptionParts.join(" ");
 const ogImagePath = `/og/${slugify(data.recipient_name)}.png`;
 ---
 
