@@ -8,6 +8,7 @@ import type { ParsedGrant } from "./parsers/types.js";
 import { parseSentence } from "./parsers/sentences.js";
 import { mkdirSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
+import { assignSlugs } from "./slug-assigner.js";
 
 const DDL = `
 CREATE TABLE IF NOT EXISTS administrations (
@@ -503,4 +504,46 @@ export async function upsertGrants(
   }
 
   return { inserted, skipped };
+}
+
+export async function assignAllPardonSlugs(): Promise<{
+  assigned: number;
+  collisionsResolved: number;
+}> {
+  const rows = await db
+    .select({
+      id: pardons.id,
+      recipient_name: pardons.recipient_name,
+      grant_date: pardons.grant_date,
+      clemency_type: pardons.clemency_type,
+    })
+    .from(pardons)
+    .all();
+
+  const slugMap = assignSlugs(rows);
+
+  // Count how many rows got anything other than a pure base slug — useful
+  // as a scrape-log signal to notice regressions in the collision count.
+  let collisionsResolved = 0;
+  for (const row of rows) {
+    const assigned = slugMap.get(row.id);
+    // A row's slug differs from its "clean" form iff collision escalation
+    // kicked in. We can't easily recompute the base here without duplicating
+    // slugify, so instead we count rows whose final slug contains a date
+    // or id suffix. This is a rough signal, not a proof.
+    if (assigned && /-\d{4}-\d{2}-\d{2}/.test(assigned)) {
+      collisionsResolved += 1;
+    }
+  }
+
+  // Write back in one transaction. Drizzle's libsql driver runs these as
+  // individual UPDATE statements inside a transaction; for ~2,500 rows
+  // this is fast enough (sub-second on an M-series Mac).
+  await db.transaction(async (tx) => {
+    for (const [id, slug] of slugMap) {
+      await tx.update(pardons).set({ slug }).where(eq(pardons.id, id)).run();
+    }
+  });
+
+  return { assigned: slugMap.size, collisionsResolved };
 }
