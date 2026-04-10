@@ -5,9 +5,7 @@ import {
 } from "./loaders/pardon-details";
 
 const pardonDetails = defineCollection({
-  loader: pardonDetailsLoader({
-    administrationSlug: "trump-2",
-  }),
+  loader: pardonDetailsLoader(),
   schema: pardonDetailSchema,
 });
 
