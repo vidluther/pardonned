@@ -88,6 +88,8 @@ jobs:
       - name: Build site
         env:
           PARDONNED_DB: ./data/pardonned.db
+          PUBLIC_POSTHOG_PROJECT_TOKEN: ${{ secrets.PUBLIC_POSTHOG_PROJECT_TOKEN }}
+          PUBLIC_POSTHOG_HOST: ${{ secrets.PUBLIC_POSTHOG_HOST }}
         run: pnpm build
 
       - name: Deploy to Cloudflare
