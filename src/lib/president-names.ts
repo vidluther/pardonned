@@ -1,15 +1,16 @@
 /**
  * Format an administration's display name for UI use.
  *
- * Single-term presidents (isOnlyTerm=true) render as just the name.
+ * Single-term presidents (`isOnlyTerm: true`) render as just the name.
  * Multi-term presidents render with an ordinal suffix, e.g.
- * "Donald Trump (First Term)".
+ * `"Donald Trump (First Term)"`.
  */
-export function formatAdministrationDisplayName(
-  presidentName: string,
-  termNumber: number,
-  isOnlyTerm: boolean,
-): string {
+export function formatAdministrationDisplayName(options: {
+  presidentName: string;
+  termNumber: number;
+  isOnlyTerm: boolean;
+}): string {
+  const { presidentName, termNumber, isOnlyTerm } = options;
   if (isOnlyTerm) {
     return presidentName;
   }
@@ -41,11 +42,14 @@ export interface AdministrationIndexEntry {
 
 /**
  * Minimum shape the index builder needs from each collection entry.
- * Matches what the pardon-details loader already exposes via its schema
- * (administration_slug, president_name, term_number are joined from the
- * administrations table during loading).
+ *
+ * Exported as a narrow structural type rather than reusing a full
+ * `CollectionEntry<PardonDetail>` so that callers can pass either real
+ * Astro content collection entries (which satisfy this shape structurally)
+ * or inline fixtures containing only these three fields, without having
+ * to stub every field of `PardonDetail` in tests.
  */
-interface MinimalEntry {
+export interface AdministrationIndexInput {
   data: {
     administration_slug: string;
     president_name: string;
@@ -70,7 +74,7 @@ interface MinimalEntry {
  * ```
  */
 export function getAdministrationIndex(
-  entries: MinimalEntry[],
+  entries: AdministrationIndexInput[],
 ): Map<string, AdministrationIndexEntry> {
   const termsPerPresident = new Map<string, Set<number>>();
   for (const entry of entries) {
@@ -94,11 +98,11 @@ export function getAdministrationIndex(
     const isOnlyTerm = termsPerPresident.get(president_name)!.size === 1;
     index.set(administration_slug, {
       slug: administration_slug,
-      displayName: formatAdministrationDisplayName(
-        president_name,
-        term_number,
+      displayName: formatAdministrationDisplayName({
+        presidentName: president_name,
+        termNumber: term_number,
         isOnlyTerm,
-      ),
+      }),
       presidentName: president_name,
       termNumber: term_number,
       count: 1,

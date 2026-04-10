@@ -1,10 +1,15 @@
 import { createHash } from "node:crypto";
 import { PARDON_SLUG_OVERRIDES } from "./pardon-slug-overrides";
 
-const MAX_SLUG_LENGTH = 60;
+export const MAX_SLUG_LENGTH = 60;
 
 /**
  * Convert a name to a URL-friendly slug.
+ *
+ * **Pass `name` unmodified.** The override lookup in step 1 is byte-exact —
+ * pre-normalizing the input (String.prototype.normalize, NBSP→space, trim,
+ * etc.) will silently miss override entries and fall through to the hashed
+ * fallback.
  *
  * Resolution order:
  * 1. If `name` has an entry in PARDON_SLUG_OVERRIDES, return that override.

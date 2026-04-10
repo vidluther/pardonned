@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { slugify } from "../slugify";
+import { slugify, MAX_SLUG_LENGTH } from "../slugify";
 
 describe("slugify", () => {
   describe("normal names (computed path)", () => {
@@ -20,8 +20,8 @@ describe("slugify", () => {
     });
 
     it("leaves an already-short slug exactly at the length limit unchanged", () => {
-      const sixtyAs = "a".repeat(60);
-      expect(slugify(sixtyAs)).toBe(sixtyAs);
+      const atLimit = "a".repeat(MAX_SLUG_LENGTH);
+      expect(slugify(atLimit)).toBe(atLimit);
     });
   });
 
@@ -59,20 +59,20 @@ describe("slugify", () => {
 
   describe("fallback length cap", () => {
     it("truncates unknown long names and appends a sha1 hash suffix", () => {
-      const longName = "a".repeat(100);
+      const longName = "a".repeat(MAX_SLUG_LENGTH + 40);
       const result = slugify(longName);
-      expect(result.length).toBeLessThanOrEqual(60);
+      expect(result.length).toBeLessThanOrEqual(MAX_SLUG_LENGTH);
       expect(result).toMatch(/-[0-9a-f]{8}$/);
     });
 
     it("produces different slugs for two long names that share a prefix", () => {
-      const name1 = "a".repeat(80) + "x";
-      const name2 = "a".repeat(80) + "y";
+      const name1 = "a".repeat(MAX_SLUG_LENGTH + 20) + "x";
+      const name2 = "a".repeat(MAX_SLUG_LENGTH + 20) + "y";
       const slug1 = slugify(name1);
       const slug2 = slugify(name2);
       expect(slug1).not.toBe(slug2);
-      expect(slug1.length).toBeLessThanOrEqual(60);
-      expect(slug2.length).toBeLessThanOrEqual(60);
+      expect(slug1.length).toBeLessThanOrEqual(MAX_SLUG_LENGTH);
+      expect(slug2.length).toBeLessThanOrEqual(MAX_SLUG_LENGTH);
       expect(slug1).toMatch(/-[0-9a-f]{8}$/);
       expect(slug2).toMatch(/-[0-9a-f]{8}$/);
     });
