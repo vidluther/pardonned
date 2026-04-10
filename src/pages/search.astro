@@ -87,20 +87,58 @@ const sortedCategories = Object.entries(categoryCounts)
   <div class="max-w-search mx-auto px-5 md:px-10 py-10 md:py-section">
     <p class="overline">Clemency Database</p>
     <h1 class="text-page-title font-serif text-text-primary mb-2">Search Grants</h1>
-    <p class="text-nav text-text-faint mb-8">
+    <p class="text-nav text-text-faint mb-6">
       Filter and search through all clemency grants.
     </p>
 
+    <div class="search-sticky-bar">
+      <div class="search-input-wrapper">
+        <svg aria-hidden="true" class="search-input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+        <label for="mobile-search-input" class="sr-only">Search grants by name or offense</label>
+        <input
+          id="mobile-search-input"
+          type="text"
+          placeholder="Name or offense…"
+          class="search-input-sticky"
+          autocomplete="off"
+        />
+      </div>
+      <div class="search-sticky-meta">
+        <span id="mobile-count" class="search-sticky-count">{searchResults.length.toLocaleString()}</span>
+        <span id="mobile-count-total" class="search-sticky-count-total">of {searchResults.length.toLocaleString()}</span>
+        <span class="search-sticky-count-label">grants</span>
+        <button type="button" id="mobile-clear-all" class="search-sticky-clear" hidden>Clear all</button>
+      </div>
+    </div>
+
+    <nav class="president-chip-rail" aria-label="Filter by administration">
+      <div class="president-chip-rail-inner" id="president-chip-rail">
+        <label class="president-chip" data-president-chip="all">
+          <input type="radio" name="president-mobile" value="all" checked class="sr-only" />
+          <span class="president-chip-label">All <span class="president-chip-count" data-chip-count-for="all">{searchResults.length.toLocaleString()}</span></span>
+        </label>
+        {sortedAdmins.map((admin) => (
+          <label class="president-chip" data-president-chip={admin.slug}>
+            <input type="radio" name="president-mobile" value={admin.slug} class="sr-only" />
+            <span class="president-chip-label">{admin.displayName} <span class="president-chip-count" data-chip-count-for={admin.slug}>{admin.count.toLocaleString()}</span></span>
+          </label>
+        ))}
+      </div>
+    </nav>
+
     <div class="search-layout">
       <aside class="search-sidebar">
-        <details class="search-sidebar-disclosure" id="sidebar-disclosure" open>
+        <details class="search-sidebar-disclosure" id="sidebar-disclosure">
           <summary class="search-sidebar-summary">
             <span>Filters <span id="sidebar-active-count" class="text-text-faint"></span></span>
             <span class="search-sidebar-summary-caret" aria-hidden="true"></span>
           </summary>
 
           <div class="search-sidebar-body">
-            <div class="search-sidebar-section">
+            <div class="search-sidebar-section" data-mobile-hidden>
               <p class="overline">President</p>
               <fieldset id="president-facets">
                 <legend class="sr-only">Filter by administration</legend>
@@ -123,7 +161,7 @@ const sortedCategories = Object.entries(categoryCounts)
               </fieldset>
             </div>
 
-            <div class="search-sidebar-section">
+            <div class="search-sidebar-section" data-mobile-hidden>
               <p class="overline">Search</p>
               <div class="search-input-wrapper">
                 <svg aria-hidden="true" class="search-input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -225,6 +263,11 @@ const sortedCategories = Object.entries(categoryCounts)
       const sidebarActiveCount = document.getElementById('sidebar-active-count');
       const a11yAnnounce = document.getElementById('a11y-results-announce');
       const sidebarDisclosure = document.getElementById('sidebar-disclosure');
+      const mobileSearchInput = document.getElementById('mobile-search-input');
+      const mobileCount = document.getElementById('mobile-count');
+      const mobileCountTotal = document.getElementById('mobile-count-total');
+      const mobileClearAll = document.getElementById('mobile-clear-all');
+      const presidentChipRail = document.getElementById('president-chip-rail');
 
       const presidentLabels = { all: 'All' };
       presidentFacets.querySelectorAll('label[data-president]').forEach((label) => {
@@ -311,6 +354,21 @@ const sortedCategories = Object.entries(categoryCounts)
           }
         });
 
+        if (presidentChipRail) {
+          presidentChipRail.querySelectorAll('label[data-president-chip]').forEach((label) => {
+            const slug = label.dataset.presidentChip;
+            const count = counts.byPresident[slug] ?? 0;
+            const countEl = label.querySelector('[data-chip-count-for]');
+            if (countEl) countEl.textContent = count.toLocaleString();
+            const isCurrent = state.president === slug;
+            if (count === 0 && !isCurrent) {
+              label.classList.add('president-chip-disabled');
+            } else {
+              label.classList.remove('president-chip-disabled');
+            }
+          });
+        }
+
         categoryFacets.querySelectorAll('label[data-category]').forEach((label) => {
           const key = label.dataset.category;
           const count = counts.byCategory[key] ?? 0;
@@ -342,6 +400,7 @@ const sortedCategories = Object.entries(categoryCounts)
 
       function renderFilterSummary(filtered) {
         filterSummaryCount.textContent = filtered.length.toLocaleString();
+        if (mobileCount) mobileCount.textContent = filtered.length.toLocaleString();
 
         const chips = [];
         if (state.search) {
@@ -375,6 +434,7 @@ const sortedCategories = Object.entries(categoryCounts)
         const sep = filterSummary.querySelector('.filter-summary-sep');
         if (sep) sep.hidden = chips.length === 0;
         sidebarActiveCount.textContent = chips.length > 0 ? `(${chips.length} active)` : '';
+        if (mobileClearAll) mobileClearAll.hidden = chips.length === 0;
 
         const chipText = chips.map((c) => c.label).join(', ');
         a11yAnnounce.textContent =
@@ -522,7 +582,33 @@ const sortedCategories = Object.entries(categoryCounts)
         }
       }
 
+      function syncControlsFromState() {
+        if (searchInput && document.activeElement !== searchInput && searchInput.value !== state.search) {
+          searchInput.value = state.search;
+        }
+        if (mobileSearchInput && document.activeElement !== mobileSearchInput && mobileSearchInput.value !== state.search) {
+          mobileSearchInput.value = state.search;
+        }
+
+        const typeRadio = findInputByValue(typeSegmented, 'type', state.type);
+        if (typeRadio && !typeRadio.checked) typeRadio.checked = true;
+
+        const desktopPres = findInputByValue(presidentFacets, 'president', state.president);
+        if (desktopPres && !desktopPres.checked) desktopPres.checked = true;
+
+        if (presidentChipRail) {
+          const mobilePres = findInputByValue(presidentChipRail, 'president-mobile', state.president);
+          if (mobilePres && !mobilePres.checked) mobilePres.checked = true;
+        }
+
+        categoryFacets.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
+          const shouldBeChecked = state.categories.has(cb.value);
+          if (cb.checked !== shouldBeChecked) cb.checked = shouldBeChecked;
+        });
+      }
+
       function applyState() {
+        syncControlsFromState();
         const filtered = getFilteredGrants();
         renderResults(filtered);
         const counts = computeFilteredCounts();
@@ -531,9 +617,31 @@ const sortedCategories = Object.entries(categoryCounts)
         syncUrl();
       }
 
+      function clearAllFilters(source) {
+        const priorFilterCount =
+          (state.search ? 1 : 0) +
+          (state.type ? 1 : 0) +
+          (state.president !== 'all' ? 1 : 0) +
+          state.categories.size;
+
+        state.search = '';
+        state.type = '';
+        state.president = 'all';
+        state.categories.clear();
+
+        if (searchInput) searchInput.value = '';
+        if (mobileSearchInput) mobileSearchInput.value = '';
+
+        applyState();
+        window.posthog?.capture('search_filters_cleared', {
+          source,
+          filter_count: priorFilterCount,
+        });
+      }
+
       let searchDebounce;
-      searchInput.addEventListener('input', () => {
-        state.search = searchInput.value.trim();
+      function handleSearchInput(event) {
+        state.search = event.target.value.trim();
         applyState();
         clearTimeout(searchDebounce);
         searchDebounce = setTimeout(() => {
@@ -548,10 +656,13 @@ const sortedCategories = Object.entries(categoryCounts)
                 president: state.president !== 'all' ? state.president : null,
                 categories_count: state.categories.size,
               },
+              source: event.target.id === 'mobile-search-input' ? 'mobile' : 'desktop',
             });
           }
         }, 600);
-      });
+      }
+      searchInput.addEventListener('input', handleSearchInput);
+      if (mobileSearchInput) mobileSearchInput.addEventListener('input', handleSearchInput);
 
       typeSegmented.addEventListener('change', (e) => {
         const t = e.target;
@@ -570,10 +681,23 @@ const sortedCategories = Object.entries(categoryCounts)
           state.president = t.value;
           applyState();
           if (state.president !== 'all') {
-            window.posthog?.capture('president_filter_applied', { president: state.president });
+            window.posthog?.capture('president_filter_applied', { president: state.president, source: 'sidebar' });
           }
         }
       });
+
+      if (presidentChipRail) {
+        presidentChipRail.addEventListener('change', (e) => {
+          const t = e.target;
+          if (t && t.name === 'president-mobile') {
+            state.president = t.value;
+            applyState();
+            if (state.president !== 'all') {
+              window.posthog?.capture('president_filter_applied', { president: state.president, source: 'chip_rail' });
+            }
+          }
+        });
+      }
 
       categoryFacets.addEventListener('change', (e) => {
         const t = e.target;
@@ -594,20 +718,15 @@ const sortedCategories = Object.entries(categoryCounts)
         const action = btn.dataset.action;
         if (action === 'clear-search') {
           state.search = '';
-          searchInput.value = '';
+          if (searchInput) searchInput.value = '';
+          if (mobileSearchInput) mobileSearchInput.value = '';
         } else if (action === 'clear-type') {
           state.type = '';
-          const allTypeRadio = findInputByValue(typeSegmented, 'type', '');
-          if (allTypeRadio) allTypeRadio.checked = true;
         } else if (action === 'clear-president') {
           state.president = 'all';
-          const allPresRadio = findInputByValue(presidentFacets, 'president', 'all');
-          if (allPresRadio) allPresRadio.checked = true;
         } else if (action && action.startsWith('clear-category:')) {
           const key = action.slice('clear-category:'.length);
           state.categories.delete(key);
-          const cb = findInputByValue(categoryFacets, 'category', key);
-          if (cb) cb.checked = false;
         }
         applyState();
         window.posthog?.capture('search_filters_cleared', {
@@ -616,33 +735,10 @@ const sortedCategories = Object.entries(categoryCounts)
         });
       });
 
-      filterSummaryClear.addEventListener('click', () => {
-        const priorFilterCount =
-          (state.search ? 1 : 0) +
-          (state.type ? 1 : 0) +
-          (state.president !== 'all' ? 1 : 0) +
-          state.categories.size;
-
-        state.search = '';
-        state.type = '';
-        state.president = 'all';
-        state.categories.clear();
-
-        searchInput.value = '';
-        const allType = findInputByValue(typeSegmented, 'type', '');
-        if (allType) allType.checked = true;
-        const allPres = findInputByValue(presidentFacets, 'president', 'all');
-        if (allPres) allPres.checked = true;
-        categoryFacets.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
-          cb.checked = false;
-        });
-
-        applyState();
-        window.posthog?.capture('search_filters_cleared', {
-          source: 'clear_all_button',
-          filter_count: priorFilterCount,
-        });
-      });
+      filterSummaryClear.addEventListener('click', () => clearAllFilters('clear_all_button'));
+      if (mobileClearAll) {
+        mobileClearAll.addEventListener('click', () => clearAllFilters('mobile_clear_all_button'));
+      }
 
       resultsList.addEventListener('click', (e) => {
         const card = e.target.closest('a.search-card');
@@ -663,13 +759,10 @@ const sortedCategories = Object.entries(categoryCounts)
       });
 
       const desktopMq = window.matchMedia('(min-width: 1024px)');
-      const enforceDesktopOpen = () => {
-        if (desktopMq.matches && sidebarDisclosure && !sidebarDisclosure.open) {
-          sidebarDisclosure.open = true;
-        }
-      };
-      enforceDesktopOpen();
-      desktopMq.addEventListener('change', enforceDesktopOpen);
+      if (sidebarDisclosure) sidebarDisclosure.open = desktopMq.matches;
+      desktopMq.addEventListener('change', (e) => {
+        if (e.matches && sidebarDisclosure) sidebarDisclosure.open = true;
+      });
 
       const urlParams = new URLSearchParams(window.location.search);
 
