@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { formatAdministrationDisplayName } from "../president-names";
+import {
+  formatAdministrationDisplayName,
+  getAdministrationIndex,
+} from "../president-names";
 
 describe("formatAdministrationDisplayName", () => {
   it("returns just the name for a single-term president", () => {
@@ -42,5 +45,93 @@ describe("formatAdministrationDisplayName", () => {
     expect(formatAdministrationDisplayName("Example President", 2, true)).toBe(
       "Example President",
     );
+  });
+});
+
+describe("getAdministrationIndex", () => {
+  const fixture = [
+    {
+      data: {
+        administration_slug: "biden-1",
+        president_name: "Joe Biden",
+        term_number: 1,
+      },
+    },
+    {
+      data: {
+        administration_slug: "biden-1",
+        president_name: "Joe Biden",
+        term_number: 1,
+      },
+    },
+    {
+      data: {
+        administration_slug: "trump-1",
+        president_name: "Donald Trump",
+        term_number: 1,
+      },
+    },
+    {
+      data: {
+        administration_slug: "trump-2",
+        president_name: "Donald Trump",
+        term_number: 2,
+      },
+    },
+    {
+      data: {
+        administration_slug: "trump-2",
+        president_name: "Donald Trump",
+        term_number: 2,
+      },
+    },
+    {
+      data: {
+        administration_slug: "trump-2",
+        president_name: "Donald Trump",
+        term_number: 2,
+      },
+    },
+  ];
+
+  it("builds one entry per unique administration slug", () => {
+    const index = getAdministrationIndex(fixture);
+    expect(index.size).toBe(3);
+    expect(index.has("biden-1")).toBe(true);
+    expect(index.has("trump-1")).toBe(true);
+    expect(index.has("trump-2")).toBe(true);
+  });
+
+  it("counts pardons per slug", () => {
+    const index = getAdministrationIndex(fixture);
+    expect(index.get("biden-1")!.count).toBe(2);
+    expect(index.get("trump-1")!.count).toBe(1);
+    expect(index.get("trump-2")!.count).toBe(3);
+  });
+
+  it("renders a single-term president without a term suffix", () => {
+    const index = getAdministrationIndex(fixture);
+    expect(index.get("biden-1")!.displayName).toBe("Joe Biden");
+  });
+
+  it("renders multi-term presidents with an ordinal suffix", () => {
+    const index = getAdministrationIndex(fixture);
+    expect(index.get("trump-1")!.displayName).toBe("Donald Trump (First Term)");
+    expect(index.get("trump-2")!.displayName).toBe(
+      "Donald Trump (Second Term)",
+    );
+  });
+
+  it("carries the raw president name and term number through unchanged", () => {
+    const index = getAdministrationIndex(fixture);
+    const trump2 = index.get("trump-2")!;
+    expect(trump2.presidentName).toBe("Donald Trump");
+    expect(trump2.termNumber).toBe(2);
+    expect(trump2.slug).toBe("trump-2");
+  });
+
+  it("returns an empty map for an empty collection", () => {
+    const index = getAdministrationIndex([]);
+    expect(index.size).toBe(0);
   });
 });
