@@ -997,4 +997,30 @@
   .leading-relaxed {
     line-height: 1.8;
   }
+
+  .prose-content {
+    & h2 {
+      margin-top: 2.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    & h2:first-child {
+      margin-top: 0;
+    }
+
+    & p {
+      margin-bottom: 1rem;
+      line-height: 1.8;
+    }
+
+    & a {
+      color: var(--color-accent, #c23b22);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    & a:hover {
+      text-decoration: underline;
+    }
+  }
 }
