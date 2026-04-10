@@ -98,6 +98,9 @@ async function main(): Promise<void> {
       await scrapePresident(presidentFilter);
     }
 
+    // Always runs across ALL pardon rows, not just the president that
+    // was scraped — collision resolution needs the full dataset to be
+    // correct. So `pnpm scrape:trump2` will still log ~2,500 assigned.
     console.log("\nAssigning slugs...");
     const { assigned, collisionsResolved } = await assignAllPardonSlugs();
     console.log(`  Assigned ${assigned} slugs (${collisionsResolved} collision-resolved)`);

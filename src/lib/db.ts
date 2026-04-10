@@ -506,6 +506,26 @@ export async function upsertGrants(
   return { inserted, skipped };
 }
 
+/**
+ * Load every pardon row, run them through the pure `assignSlugs` collision
+ * resolver, and write the results back to the `pardons.slug` column in a
+ * single transaction.
+ *
+ * Always operates on the full dataset, even when called from a single-
+ * president scrape (`pnpm scrape:trump2` etc.). This is deliberate:
+ * collision resolution needs to see every row, not just the subset that
+ * was freshly scraped, because a new trump-2 row can collide with an
+ * existing obama row by name.
+ *
+ * Returns `{ assigned, collisionsResolved }`:
+ * - `assigned` equals `slugMap.size`, which equals the total pardons row
+ *   count. The assigner algorithm is total (every row gets a slug), so
+ *   this is never a subset — treat it as a "rows the algorithm ran over"
+ *   counter, not "rows that changed."
+ * - `collisionsResolved` is a heuristic count of rows whose final slug
+ *   was escalated past the base form (see the comment on the counter
+ *   loop below for accuracy caveats).
+ */
 export async function assignAllPardonSlugs(): Promise<{
   assigned: number;
   collisionsResolved: number;
@@ -524,13 +544,14 @@ export async function assignAllPardonSlugs(): Promise<{
 
   // Count how many rows got anything other than a pure base slug — useful
   // as a scrape-log signal to notice regressions in the collision count.
+  // Rough signal, not a proof: matches any slug containing a YYYY-MM-DD
+  // pattern (covers base-date and base-date-type escalations) but MISSES
+  // rows that escalated all the way to `base-<id>` (which end in `-N`,
+  // not a date). The `-<id>` fallback is unreachable in current data but
+  // could happen in the future — don't trust this counter as exact.
   let collisionsResolved = 0;
   for (const row of rows) {
     const assigned = slugMap.get(row.id);
-    // A row's slug differs from its "clean" form iff collision escalation
-    // kicked in. We can't easily recompute the base here without duplicating
-    // slugify, so instead we count rows whose final slug contains a date
-    // or id suffix. This is a rough signal, not a proof.
     if (assigned && /-\d{4}-\d{2}-\d{2}/.test(assigned)) {
       collisionsResolved += 1;
     }
@@ -538,7 +559,10 @@ export async function assignAllPardonSlugs(): Promise<{
 
   // Write back in one transaction. Drizzle's libsql driver runs these as
   // individual UPDATE statements inside a transaction; for ~2,500 rows
-  // this is fast enough (sub-second on an M-series Mac).
+  // this is fast enough (sub-second on an M-series Mac). On any error
+  // (e.g., a UNIQUE constraint violation from a bug in assignSlugs),
+  // Drizzle rolls back the entire transaction — slugs are either all
+  // written or all left as NULL, never partially populated.
   await db.transaction(async (tx) => {
     for (const [id, slug] of slugMap) {
       await tx.update(pardons).set({ slug }).where(eq(pardons.id, id)).run();
