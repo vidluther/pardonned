@@ -39,6 +39,10 @@ export function parseTableFive(
 
       const name = cells.eq(0).text().trim();
       if (!name) return;
+      // Defensive: skip header rows that use <td> instead of <th>. The DOJ
+      // HTML is inconsistent across administrations — some sub-tables reuse
+      // <td> elements for their header rows and slip past the :has(th) filter
+      // above. Mirrors the same guard in table-four.ts (see Obama-era notes).
       if (name.toUpperCase() === "NAME") return;
 
       // District might be missing on some entries (e.g., Hunter Biden)
