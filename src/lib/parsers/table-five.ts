@@ -39,6 +39,7 @@ export function parseTableFive(
 
       const name = cells.eq(0).text().trim();
       if (!name) return;
+      if (name.toUpperCase() === "NAME") return;
 
       // District might be missing on some entries (e.g., Hunter Biden)
       const district = cells.eq(1).text().trim() || null;
