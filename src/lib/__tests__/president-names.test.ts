@@ -83,6 +83,7 @@ describe("getAdministrationIndex", () => {
         administration_slug: "biden-1",
         president_name: "Joe Biden",
         term_number: 1,
+        term_start_date: "2021-01-20",
       },
     },
     {
@@ -90,6 +91,7 @@ describe("getAdministrationIndex", () => {
         administration_slug: "biden-1",
         president_name: "Joe Biden",
         term_number: 1,
+        term_start_date: "2021-01-20",
       },
     },
     {
@@ -97,6 +99,7 @@ describe("getAdministrationIndex", () => {
         administration_slug: "trump-1",
         president_name: "Donald Trump",
         term_number: 1,
+        term_start_date: "2017-01-20",
       },
     },
     {
@@ -104,6 +107,7 @@ describe("getAdministrationIndex", () => {
         administration_slug: "trump-2",
         president_name: "Donald Trump",
         term_number: 2,
+        term_start_date: "2025-01-20",
       },
     },
     {
@@ -111,6 +115,7 @@ describe("getAdministrationIndex", () => {
         administration_slug: "trump-2",
         president_name: "Donald Trump",
         term_number: 2,
+        term_start_date: "2025-01-20",
       },
     },
     {
@@ -118,6 +123,7 @@ describe("getAdministrationIndex", () => {
         administration_slug: "trump-2",
         president_name: "Donald Trump",
         term_number: 2,
+        term_start_date: "2025-01-20",
       },
     },
   ];
@@ -156,6 +162,13 @@ describe("getAdministrationIndex", () => {
     expect(trump2.presidentName).toBe("Donald Trump");
     expect(trump2.termNumber).toBe(2);
     expect(trump2.slug).toBe("trump-2");
+  });
+
+  it("carries termStartDate from the first matching entry", () => {
+    const index = getAdministrationIndex(fixture);
+    expect(index.get("biden-1")!.termStartDate).toBe("2021-01-20");
+    expect(index.get("trump-1")!.termStartDate).toBe("2017-01-20");
+    expect(index.get("trump-2")!.termStartDate).toBe("2025-01-20");
   });
 
   it("returns an empty map for an empty collection", () => {

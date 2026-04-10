@@ -10,10 +10,10 @@ export const GET: APIRoute = async () => {
   const stats = computeStats(allGrants);
 
   const png = await renderOgImage({
-    title: "Tracking the Pardons granted by Donald J Trump",
-    subtitle: "More Money, More Pardons ",
+    title: "Tracking Presidential Pardons",
+    subtitle: "More Money, More Pardons",
     stat: `${stats.totalGrants}`,
-    statLabel: "Pardons Granted (not including January 6th)",
+    statLabel: "Clemency Grants Tracked",
   });
 
   return new Response(png as unknown as BodyInit, {

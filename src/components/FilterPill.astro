@@ -6,9 +6,10 @@ interface Props {
   href?: string;
   count?: number;
   'data-category'?: string;
+  'data-president'?: string;
 }
 
-const { label, active = false, onClick, href, count, 'data-category': dataCategory } = Astro.props;
+const { label, active = false, onClick, href, count, 'data-category': dataCategory, 'data-president': dataPresident } = Astro.props;
 
 const displayLabel = count !== undefined ? `${label} (${count})` : label;
 
@@ -27,6 +28,7 @@ const Element = href ? 'a' : 'button';
   type={!href ? 'button' : undefined}
   aria-pressed={active}
   data-category={dataCategory}
+  data-president={dataPresident}
 >
   {displayLabel}
 </Element>

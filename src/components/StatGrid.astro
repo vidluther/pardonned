@@ -31,9 +31,10 @@ interface PardonStats {
 interface Props {
     stats: PardonStats;
     animated?: boolean;
+    footnote?: string;
 }
 
-const { stats, animated = false } = Astro.props;
+const { stats, animated = false, footnote } = Astro.props;
 ---
 
 <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-stat-grid">
@@ -42,7 +43,7 @@ const { stats, animated = false } = Astro.props;
         value={stats.totalGrants.toLocaleString()}
         variant="default"
         animated={animated}
-        footnote="Does not include January 6th"
+        footnote={footnote}
         animationDelay={animated ? 1 * 150 : 0}
     />
     <StatCard

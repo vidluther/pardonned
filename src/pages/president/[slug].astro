@@ -1,0 +1,215 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import StatGrid from "../../components/StatGrid.astro";
+import CategoryGrid from "../../components/CategoryGrid.astro";
+import Timeline from "../../components/Timeline.astro";
+import SourceBanner from "../../components/SourceBanner.astro";
+import FilterPill from "../../components/FilterPill.astro";
+import "../../styles/global.css";
+
+import { getCollection } from "astro:content";
+import { computeStats, filterByAdministration } from "../../lib/pardon-stats";
+import { getAdministrationIndex } from "../../lib/president-names";
+import { slugify } from "../../lib/slugify";
+
+const categoryColors: Record<string, string> = {
+    fraud: "#8A6B1E",
+    "drug offense": "#3A6A4A",
+    firearms: "#C23B22",
+    "FACE act": "#B8652A",
+    "financial crime": "#2A6A7A",
+    "violent crime": "#6A4B7A",
+    immigration: "#7A6A3A",
+    other: "#7A7870",
+};
+
+export async function getStaticPaths() {
+    const allGrants = await getCollection("pardonDetails");
+    const index = getAdministrationIndex(allGrants);
+    const sortedAdmins = Array.from(index.values()).sort((a, b) =>
+        b.termStartDate.localeCompare(a.termStartDate),
+    );
+
+    return sortedAdmins.map((admin) => ({
+        params: { slug: admin.slug },
+        props: {
+            admin,
+            entries: filterByAdministration(allGrants, admin.slug),
+            allAdmins: sortedAdmins,
+        },
+    }));
+}
+
+const { admin, entries, allAdmins } = Astro.props;
+const stats = computeStats(entries);
+
+const categoryCounts = Object.entries(stats.byCategory).map(([key, count]) => ({
+    key,
+    name: key.replace(/\b\w/g, (c) => c.toUpperCase()),
+    count,
+    color: categoryColors[key] ?? "#7A7880",
+}));
+
+const groupedByDate = entries.reduce(
+    (acc, entry) => {
+        const date = entry.data.grant_date;
+        if (!acc[date]) acc[date] = [];
+        acc[date].push(entry.data);
+        return acc;
+    },
+    {} as Record<string, (typeof entries)[number]["data"][]>,
+);
+
+const sortedDates = Object.keys(groupedByDate).sort((a, b) =>
+    b.localeCompare(a),
+);
+
+const timelineEntries = sortedDates.map((date, i) => {
+    const grants = groupedByDate[date];
+    const names = grants.map((g) => g.recipient_name);
+    const categories = [...new Set(grants.map((g) => g.offense_category))];
+    const pardons = grants.filter((g) => g.clemency_type === "pardon").length;
+    const commutations = grants.filter(
+        (g) => g.clemency_type === "commutation",
+    ).length;
+
+    const hrefs = grants.reduce(
+        (acc, grant) => {
+            acc[grant.recipient_name] =
+                `/pardon/details/${slugify(grant.recipient_name)}`;
+            return acc;
+        },
+        {} as Record<string, string>,
+    );
+
+    const parts: string[] = [];
+    if (pardons > 0)
+        parts.push(`${pardons} ${pardons === 1 ? "pardon" : "pardons"}`);
+    if (commutations > 0)
+        parts.push(
+            `${commutations} ${commutations === 1 ? "commutation" : "commutations"}`,
+        );
+
+    const grantLabel = parts.join(", ");
+    const [y, m, d] = date.split("-");
+    const formattedDate = new Date(
+        Number(y),
+        Number(m) - 1,
+        Number(d),
+    ).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+    });
+
+    return {
+        date: formattedDate,
+        grants: grantLabel,
+        names,
+        highlight: categories.join(", "),
+        isLatest: i === 0,
+        hrefs,
+    };
+});
+
+const isTrump = admin.slug.startsWith("trump-");
+const footnote = isTrump ? "Does not include January 6th" : undefined;
+---
+
+<Layout
+    title={admin.displayName}
+    description={`Clemency grants by ${admin.displayName}. Track pardons and commutations by category, date, and financial impact.`}
+    ogImage={`/og/president/${admin.slug}.png`}
+    currentPath={`/president/${admin.slug}`}
+>
+    <!-- President Navigation Pills -->
+    <nav class="max-w-home mx-auto px-5 md:px-10 pt-8 pb-2">
+        <div class="flex flex-wrap gap-2">
+            <FilterPill label="All" href="/" />
+            {allAdmins.map((a) => (
+                <FilterPill
+                    label={a.displayName}
+                    count={a.count}
+                    href={`/president/${a.slug}`}
+                    active={a.slug === admin.slug}
+                />
+            ))}
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="py-10 md:py-20 px-5 md:px-10 max-w-home mx-auto text-center">
+        <h1 class="hero-headline mb-6 max-w-3xl mx-auto">
+            Pardons granted by {admin.displayName}
+        </h1>
+        {isTrump && (
+            <h2 class="hero-subtitle mb-8">Not Including the January 6th Pardons</h2>
+        )}
+        <StatGrid stats={stats} animated={true} footnote={footnote} />
+    </section>
+
+    <!-- Gradient Divider -->
+    <div class="max-w-home mx-auto px-5 md:px-10">
+        <div class="divider-gradient"></div>
+    </div>
+
+    <!-- Categories Section -->
+    <section class="py-10 md:py-section px-5 md:px-10 max-w-home mx-auto" data-animate>
+        <h2 class="text-section font-serif text-text-primary mb-2">
+            By Offense Category
+        </h2>
+        <p class="text-nav text-text-faint mb-10">
+            Breakdown of all pardons by type of offense
+        </p>
+        <CategoryGrid
+            categoryCounts={categoryCounts}
+            columns={3}
+            hrefPattern={`/search?president=${admin.slug}&category={key}`}
+        />
+    </section>
+
+    <!-- Flat Divider -->
+    <div class="max-w-home mx-auto px-5 md:px-10">
+        <div class="divider-flat"></div>
+    </div>
+
+    <!-- Timeline Section -->
+    <section class="py-10 md:py-section px-5 md:px-10 max-w-home mx-auto" data-animate>
+        <h2 class="text-section font-serif text-text-primary mb-2">Timeline</h2>
+        <p class="text-nav text-text-faint mb-10">
+            Every clemency action in reverse chronological order
+        </p>
+        <Timeline entries={timelineEntries} />
+
+        <div class="text-center mt-5">
+            <a href={`/search?president=${admin.slug}`} class="load-more-btn inline-block no-underline">
+                Search all pardons →
+            </a>
+        </div>
+    </section>
+
+    <!-- Source Banner -->
+    <section class="max-w-source mx-auto px-5 md:px-8 mb-10">
+        <SourceBanner />
+    </section>
+</Layout>
+
+<script src="/scripts/animate-on-scroll.js" is:inline></script>
+
+<script is:inline>
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelector('.grid')?.addEventListener('click', (e) => {
+      const card = e.target.closest('a[href*="category="]');
+      if (!card) return;
+      const url = new URL(card.href, window.location.origin);
+      const category = url.searchParams.get('category');
+      if (category) {
+        window.posthog?.capture('category_clicked', { category, source: 'president_page' });
+      }
+    });
+
+    document.querySelector('a[href*="/search"].load-more-btn')?.addEventListener('click', () => {
+      window.posthog?.capture('search_all_pardons_clicked', { source: 'president_page' });
+    });
+  });
+</script>

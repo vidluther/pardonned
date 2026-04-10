@@ -37,6 +37,7 @@ export interface AdministrationIndexEntry {
   displayName: string;
   presidentName: string;
   termNumber: number;
+  termStartDate: string;
   count: number;
 }
 
@@ -54,6 +55,7 @@ export interface AdministrationIndexInput {
     administration_slug: string;
     president_name: string;
     term_number: number;
+    term_start_date: string;
   };
 }
 
@@ -105,6 +107,7 @@ export function getAdministrationIndex(
       }),
       presidentName: president_name,
       termNumber: term_number,
+      termStartDate: entry.data.term_start_date,
       count: 1,
     });
   }
