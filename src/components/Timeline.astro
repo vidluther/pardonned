@@ -44,3 +44,13 @@ const { entries } = Astro.props;
     </div>
   ))}
 </div>
+
+<script is:inline>
+  document.querySelector('.timeline-container')?.addEventListener('click', (e) => {
+    const chip = e.target.closest('a.name-chip-link');
+    if (!chip) return;
+    window.posthog?.capture('timeline_name_clicked', {
+      name: chip.textContent?.trim(),
+    });
+  });
+</script>

@@ -3,6 +3,7 @@ import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
 import SeoHead from "../components/SeoHead.astro";
 import Analytics from "../components/Analytics.astro";
+import PostHog from "../components/PostHog.astro";
 import { siteConfig } from "../config/site";
 import { truncateText } from "../lib/seo";
 
@@ -56,6 +57,7 @@ const metaDescription = truncateText(description, 160);
         />
 
         <Analytics />
+        <PostHog />
         <title>{fullTitle}</title>
     </head>
     <body

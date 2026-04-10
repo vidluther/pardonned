@@ -6,7 +6,11 @@ import { resolve } from "node:path";
 // Load font files once (cached across invocations during build)
 const fontsDir = resolve(process.cwd(), "src/assets/fonts");
 
-let fontData: { dmSansRegular: Buffer; dmSansMedium: Buffer; dmSerif: Buffer } | null = null;
+let fontData: {
+  dmSansRegular: Buffer;
+  dmSansMedium: Buffer;
+  dmSerif: Buffer;
+} | null = null;
 
 function loadFonts() {
   if (!fontData) {

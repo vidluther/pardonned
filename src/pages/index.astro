@@ -151,3 +151,23 @@ const timelineEntries = sortedDates.map((date, i) => {
 </Layout>
 
 <script src="/scripts/animate-on-scroll.js" is:inline></script>
+
+<script is:inline>
+  document.addEventListener('DOMContentLoaded', () => {
+    // Track category card clicks via event delegation (href contains ?category=key)
+    document.querySelector('.grid')?.addEventListener('click', (e) => {
+      const card = e.target.closest('a[href*="category="]');
+      if (!card) return;
+      const url = new URL(card.href, window.location.origin);
+      const category = url.searchParams.get('category');
+      if (category) {
+        window.posthog?.capture('category_clicked', { category });
+      }
+    });
+
+    // Track "Search all pardons" CTA click
+    document.querySelector('a[href="/search"].load-more-btn')?.addEventListener('click', () => {
+      window.posthog?.capture('search_all_pardons_clicked');
+    });
+  });
+</script>

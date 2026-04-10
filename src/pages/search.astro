@@ -299,8 +299,25 @@ for (const grant of searchResults) {
         pill.classList.add('filter-pill-active');
       }
 
-      searchInput.addEventListener('input', filterGrants);
-      typeSelect.addEventListener('change', filterGrants);
+      // Debounced search tracking
+      let searchDebounce;
+      searchInput.addEventListener('input', () => {
+        filterGrants();
+        clearTimeout(searchDebounce);
+        searchDebounce = setTimeout(() => {
+          const term = searchInput.value.trim();
+          if (term) {
+            window.posthog?.capture('search_performed', { query: term });
+          }
+        }, 600);
+      });
+
+      typeSelect.addEventListener('change', () => {
+        filterGrants();
+        if (typeSelect.value) {
+          window.posthog?.capture('type_filter_applied', { type: typeSelect.value });
+        }
+      });
 
       categoryPills.addEventListener('click', (e) => {
         const pill = e.target.closest('button, a');
@@ -309,6 +326,15 @@ for (const grant of searchResults) {
         activeCategory = pill.dataset.category || 'all';
         setActivePill(pill);
         filterGrants();
+        window.posthog?.capture('category_filter_applied', { category: activeCategory });
+      });
+
+      // Track search result clicks
+      resultsList.addEventListener('click', (e) => {
+        const card = e.target.closest('a.search-card');
+        if (!card) return;
+        const slug = card.href.split('/pardon/details/')[1];
+        window.posthog?.capture('search_result_clicked', { slug });
       });
 
       // Apply ?category= URL param as initial filter (from home page links)

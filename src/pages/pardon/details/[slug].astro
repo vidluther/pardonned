@@ -360,3 +360,24 @@ const ogImagePath = `/og/${slugify(data.recipient_name)}.png`;
 </Layout>
 
 <script src="/scripts/animate-on-scroll.js" is:inline></script>
+
+<script is:inline define:vars={{ recipientName: data.recipient_name, clemencyType: data.clemency_type, offenseCategory: data.offense_category }}>
+  document.addEventListener('DOMContentLoaded', () => {
+    // Track detail page view
+    window.posthog?.capture('pardon_detail_viewed', {
+      name: recipientName,
+      clemency_type: clemencyType,
+      offense_category: offenseCategory,
+    });
+
+    // Track source document clicks
+    document.querySelectorAll('a.source-link').forEach((link) => {
+      link.addEventListener('click', () => {
+        window.posthog?.capture('source_document_clicked', {
+          name: recipientName,
+          url: link.href,
+        });
+      });
+    });
+  });
+</script>

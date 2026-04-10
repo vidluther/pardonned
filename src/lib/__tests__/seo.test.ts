@@ -12,7 +12,8 @@ describe("truncateText", () => {
   });
 
   it("truncates long text at last word boundary and adds ellipsis", () => {
-    const text = "Pardon granted to Michelle Breazeale Horton on January 17 2017 with additional details here";
+    const text =
+      "Pardon granted to Michelle Breazeale Horton on January 17 2017 with additional details here";
     const result = truncateText(text, 60);
     expect(result.length).toBeLessThanOrEqual(60);
     expect(result).toMatch(/…$/);
@@ -32,7 +33,10 @@ describe("truncateText", () => {
   });
 
   it("does not double-punctuate when truncated near a period", () => {
-    const result = truncateText("Some sentence. Another sentence that is long.", 20);
+    const result = truncateText(
+      "Some sentence. Another sentence that is long.",
+      20,
+    );
     expect(result).not.toMatch(/\.…$/);
   });
 });
