@@ -30,6 +30,12 @@ export const PRESIDENT_SOURCES: PresidentSource[] = [
     commutations:
       "https://www.justice.gov/pardon/commutations-granted-president-george-w-bush-2001-2009",
   },
+  {
+    slugs: ["clinton-1", "clinton-2"],
+    pardons: "https://www.justice.gov/pardon/pardons-granted-president-william-j-clinton-1993-2001",
+    commutations:
+      "https://www.justice.gov/pardon/commutations-granted-president-william-j-clinton-1993-2001",
+  },
 ];
 
 /**
