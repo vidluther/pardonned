@@ -1,5 +1,6 @@
 ---
 import { generateMetaTags, generateJsonLd, truncateText } from "../lib/seo";
+import { socialLinks } from "../config/social";
 
 interface Props {
     title: string;
@@ -15,6 +16,8 @@ const jsonLd = generateJsonLd({ title, description }, Astro.url);
 // Truncate for social platform limits
 const ogTitle = truncateText(seoMeta["og:title"], 70);
 const ogDescription = truncateText(seoMeta["og:description"], 200);
+
+const verifiedProfiles = socialLinks.filter((link) => link.rel === "me");
 ---
 
 <!-- Open Graph -->
@@ -41,6 +44,9 @@ const ogDescription = truncateText(seoMeta["og:description"], 200);
         <meta name="twitter:creator" content={seoMeta["twitter:creator"]} />
     )
 }
+
+<!-- Verified social profiles (rel="me") -->
+{verifiedProfiles.map((profile) => <link rel="me" href={profile.href} />)}
 
 <!-- JSON-LD Structured Data -->
 <script type="application/ld+json" set:html={jsonLd} />
