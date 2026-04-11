@@ -11,7 +11,7 @@ pnpm test            # vitest (not jest)
 pnpm lint            # oxlint
 pnpm format          # oxfmt
 pnpm scrape          # All presidents, ~5-10 min via Playwright
-pnpm scrape:trump2   # Single-president variants: trump2 | biden | trump1 | obama | bush
+pnpm scrape:trump2   # Single-president variants: trump2 | biden | trump1 | obama | bush | clinton
 ```
 
 ## Data flow

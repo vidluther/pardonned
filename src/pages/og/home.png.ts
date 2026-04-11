@@ -11,7 +11,7 @@ export const GET: APIRoute = async () => {
 
   const png = await renderOgImage({
     title: "Tracking Presidential Pardons",
-    subtitle: "Pardons Granted by US Presidents Since 2000",
+    subtitle: "Pardons Granted by US Presidents",
     stat: `${stats.totalGrants}`,
     statLabel: "Clemency Grants Tracked",
   });
