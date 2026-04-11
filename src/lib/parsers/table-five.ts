@@ -2,6 +2,7 @@ import * as cheerio from "cheerio";
 import type { ParsedGrant } from "./types.js";
 import { resolveUrl } from "./types.js";
 import { categorizeOffense } from "./categorize.js";
+import { parseDate } from "./parse-date.js";
 
 /**
  * Format B — Biden & Trump Term 1 (separate pardons/commutations pages).
@@ -76,28 +77,4 @@ export function parseTableFive(
   return grants;
 }
 
-function parseDate(text: string): string | null {
-  const match = text.match(/(\w+)\s+(\d{1,2}),\s+(\d{4})/);
-  if (!match) return null;
 
-  const months: Record<string, string> = {
-    January: "01",
-    February: "02",
-    March: "03",
-    April: "04",
-    May: "05",
-    June: "06",
-    July: "07",
-    August: "08",
-    September: "09",
-    October: "10",
-    November: "11",
-    December: "12",
-  };
-
-  const month = months[match[1]];
-  if (!month) return null;
-
-  const day = match[2].padStart(2, "0");
-  return `${match[3]}-${month}-${day}`;
-}

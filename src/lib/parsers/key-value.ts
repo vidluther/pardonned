@@ -1,6 +1,7 @@
 import * as cheerio from "cheerio";
 import type { ParsedGrant } from "./types.js";
 import { categorizeOffense } from "./categorize.js";
+import { parseDate } from "./parse-date.js";
 
 type CheerioTable = cheerio.Cheerio<any>;
 
@@ -82,6 +83,14 @@ function parseTable(
   sourceUrl: string,
   defaultDate: string | null,
 ): ParsedGrant[] {
+  // Mixed-format pages (e.g. Obama pardons) contain sub-tables that use
+  // the 4-column NAME | DISTRICT | SENTENCED | OFFENSE layout inside a
+  // page that otherwise uses key-value format. Detect these and parse
+  // them with the 4-column logic instead of key-value accumulation.
+  if (isFourColumnTable($, table) && defaultDate) {
+    return parseFourColumnSubTable($, table, pardonType, sourceUrl, defaultDate);
+  }
+
   const grants: ParsedGrant[] = [];
   const rows = table.find("tr");
 
@@ -210,6 +219,72 @@ function parseTable(
   return grants;
 }
 
+/**
+ * Check whether a table uses the 4-column layout (NAME | DISTRICT | SENTENCED | OFFENSE).
+ * Used to detect mixed-format pages where some sub-tables use a different layout
+ * than the one that format-detection chose.
+ */
+function isFourColumnTable($: cheerio.CheerioAPI, table: CheerioTable): boolean {
+  const headerRow = table.find("tr").first();
+  const thCells = headerRow.find("th");
+  if (thCells.length < 4) return false;
+
+  const headers = thCells
+    .map((_i, th) => $(th).text().trim().toUpperCase())
+    .get();
+
+  return (
+    headers.length >= 4 &&
+    headers[0] === "NAME" &&
+    headers[1] === "DISTRICT" &&
+    headers[2] === "SENTENCED" &&
+    headers[3] === "OFFENSE"
+  );
+}
+
+/**
+ * Parse a 4-column sub-table found inside a key-value format page.
+ * Mirrors the logic of parseTableFour but uses the date from the surrounding h2 heading.
+ */
+function parseFourColumnSubTable(
+  $: cheerio.CheerioAPI,
+  table: CheerioTable,
+  pardonType: "pardon" | "commutation",
+  sourceUrl: string,
+  grantDate: string,
+): ParsedGrant[] {
+  const grants: ParsedGrant[] = [];
+  const rows = table.find("tr").not(":has(th)");
+
+  rows.each((_rowIdx, row) => {
+    const cells = $(row).find("td");
+    if (cells.length < 4) return;
+
+    const name = cells.eq(0).text().trim();
+    if (!name) return;
+    // Skip residual header rows that use <td> instead of <th>
+    if (name.toUpperCase() === "NAME") return;
+
+    const district = cells.eq(1).text().trim() || null;
+    const sentence = cells.eq(2).text().trim() || null;
+    const offense = cells.eq(3).text().trim();
+
+    grants.push({
+      recipient_name: name,
+      warrant_url: null,
+      district,
+      sentence,
+      offense,
+      offense_category: categorizeOffense(offense),
+      pardon_type: pardonType,
+      grant_date: grantDate,
+      source_url: sourceUrl,
+    });
+  });
+
+  return grants;
+}
+
 interface PersonRecord {
   name: string;
   offense: string | null;
@@ -325,28 +400,4 @@ function extractDistrict(offenseText: string): {
   return { offense: offenseText, district: null };
 }
 
-function parseDate(text: string): string | null {
-  const match = text.match(/(\w+)\s+(\d{1,2}),\s+(\d{4})/);
-  if (!match) return null;
 
-  const months: Record<string, string> = {
-    January: "01",
-    February: "02",
-    March: "03",
-    April: "04",
-    May: "05",
-    June: "06",
-    July: "07",
-    August: "08",
-    September: "09",
-    October: "10",
-    November: "11",
-    December: "12",
-  };
-
-  const month = months[match[1]];
-  if (!month) return null;
-
-  const day = match[2].padStart(2, "0");
-  return `${match[3]}-${month}-${day}`;
-}

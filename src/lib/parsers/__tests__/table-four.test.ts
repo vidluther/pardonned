@@ -55,4 +55,27 @@ describe("parseTableFour", () => {
     expect(grants).toHaveLength(1);
     expect(grants[0].recipient_name).toBe("Jane Doe");
   });
+
+  it("parses uppercase month names in headings (Obama commutations format)", () => {
+    const html = `
+      <html><body>
+        <h2>JUNE 3, 2016</h2>
+        <table>
+          <tr><th>NAME</th><th>DISTRICT</th><th>SENTENCED</th><th>OFFENSE</th></tr>
+          <tr><td>Jane Doe</td><td>E.D. Cal.</td><td>24 months</td><td>Fraud</td></tr>
+        </table>
+        <h2>DECEMBER 18, 2015</h2>
+        <table>
+          <tr><th>NAME</th><th>DISTRICT</th><th>SENTENCED</th><th>OFFENSE</th></tr>
+          <tr><td>John Smith</td><td>W.D. Tex.</td><td>12 months</td><td>Theft</td></tr>
+        </table>
+      </body></html>
+    `;
+    const grants = parseTableFour(html, "commutation", "https://example/");
+    expect(grants).toHaveLength(2);
+    expect(grants[0].grant_date).toBe("2016-06-03");
+    expect(grants[0].recipient_name).toBe("Jane Doe");
+    expect(grants[1].grant_date).toBe("2015-12-18");
+    expect(grants[1].recipient_name).toBe("John Smith");
+  });
 });
