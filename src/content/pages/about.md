@@ -1,5 +1,5 @@
 ---
-title: About
+title: Why Pardonned Exists & How It's Built
 description: About Pardonned — an unofficial tracker of presidential pardons and commutations since 2000, inspired by Liz Oyer's work on pardon impropriety.
 ---
 
