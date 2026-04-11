@@ -19,17 +19,19 @@ const sortedAdmins = Array.from(index.values()).sort((a, b) =>
 ---
 
 <Layout
-    title="Every Presidential Pardon Since 2000"
+    title="Tracking Presidential Pardons since Bill Clinton"
     description="Explore presidential clemency grants. Track pardons and commutations across administrations by category, date, and financial impact."
     ogImage="/og/home.png"
     currentPath={currentPath}
 >
     <!-- Hero Section -->
-    <section class="py-10 md:py-20 px-5 md:px-10 max-w-home mx-auto text-center">
+    <section
+        class="py-10 md:py-20 px-5 md:px-10 max-w-home mx-auto text-center"
+    >
         <h1 class="hero-headline mb-6 max-w-3xl mx-auto">
             Tracking Presidential Pardons
         </h1>
-        <h2 class="hero-subtitle mb-8">Since 2000</h2>
+        <h2 class="hero-subtitle mb-8">Since William Jefferson Clinton</h2>
         <StatGrid stats={stats} animated={true} />
     </section>
 
@@ -39,26 +41,38 @@ const sortedAdmins = Array.from(index.values()).sort((a, b) =>
     </div>
 
     <!-- Administrations Section -->
-    <section class="py-10 md:py-section px-5 md:px-10 max-w-home mx-auto" data-animate>
+    <section
+        class="py-10 md:py-section px-5 md:px-10 max-w-home mx-auto"
+        data-animate
+    >
         <h2 class="text-section font-serif text-text-primary mb-2">
             By Administration
         </h2>
         <p class="text-nav text-text-faint mb-10">
             Select an administration to explore its clemency record
         </p>
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-grid">
-            {sortedAdmins.map((admin) => (
-                <a
-                    href={`/president/${admin.slug}`}
-                    class="category-card hover:bg-muted transition-colors"
-                    style="border-left-color: var(--color-accent);"
-                >
-                    <span class="category-count" style="color: var(--color-accent);">
-                        {admin.count.toLocaleString()}
-                    </span>
-                    <span class="text-nav text-text-body">{admin.displayName}</span>
-                </a>
-            ))}
+        <div
+            class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-grid"
+        >
+            {
+                sortedAdmins.map((admin) => (
+                    <a
+                        href={`/president/${admin.slug}`}
+                        class="category-card hover:bg-muted transition-colors"
+                        style="border-left-color: var(--color-accent);"
+                    >
+                        <span
+                            class="category-count"
+                            style="color: var(--color-accent);"
+                        >
+                            {admin.count.toLocaleString()}
+                        </span>
+                        <span class="text-nav text-text-body">
+                            {admin.displayName}
+                        </span>
+                    </a>
+                ))
+            }
         </div>
     </section>
 
@@ -68,12 +82,16 @@ const sortedAdmins = Array.from(index.values()).sort((a, b) =>
     </div>
 
     <!-- Search CTA -->
-    <section class="py-10 md:py-section px-5 md:px-10 max-w-home mx-auto text-center" data-animate>
+    <section
+        class="py-10 md:py-section px-5 md:px-10 max-w-home mx-auto text-center"
+        data-animate
+    >
         <h2 class="text-section font-serif text-text-primary mb-4">
             Explore the Data
         </h2>
         <p class="text-nav text-text-faint mb-8">
-            Search, filter, and explore all {stats.totalGrants.toLocaleString()} clemency grants
+            Search, filter, and explore all {stats.totalGrants.toLocaleString()} clemency
+            grants
         </p>
         <a href="/search" class="load-more-btn inline-block no-underline">
             Search all pardons →
@@ -89,18 +107,22 @@ const sortedAdmins = Array.from(index.values()).sort((a, b) =>
 <script src="/scripts/animate-on-scroll.js" is:inline></script>
 
 <script is:inline>
-  document.addEventListener('DOMContentLoaded', () => {
-    // Track administration card clicks
-    document.querySelectorAll('a[href^="/president/"]').forEach((card) => {
-      card.addEventListener('click', () => {
-        const slug = card.getAttribute('href')?.replace('/president/', '');
-        window.posthog?.capture('administration_clicked', { slug });
-      });
-    });
+    document.addEventListener("DOMContentLoaded", () => {
+        // Track administration card clicks
+        document.querySelectorAll('a[href^="/president/"]').forEach((card) => {
+            card.addEventListener("click", () => {
+                const slug = card
+                    .getAttribute("href")
+                    ?.replace("/president/", "");
+                window.posthog?.capture("administration_clicked", { slug });
+            });
+        });
 
-    // Track "Search all pardons" CTA click
-    document.querySelector('a[href="/search"].load-more-btn')?.addEventListener('click', () => {
-      window.posthog?.capture('search_all_pardons_clicked');
+        // Track "Search all pardons" CTA click
+        document
+            .querySelector('a[href="/search"].load-more-btn')
+            ?.addEventListener("click", () => {
+                window.posthog?.capture("search_all_pardons_clicked");
+            });
     });
-  });
 </script>

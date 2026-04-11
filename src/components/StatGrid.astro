@@ -50,6 +50,8 @@ const { stats, animated = false, footnote } = Astro.props;
         label="Prison Time Reduced "
         value={stats.totalYearsErased.toLocaleString()}
         footnote="In Years"
+        noteText="Estimate — see note"
+        noteHref="/about#on-prison-time-reduced"
         variant="default"
         animated={animated}
         animationDelay={animated ? 4 * 150 : 0}
@@ -57,6 +59,8 @@ const { stats, animated = false, footnote } = Astro.props;
     <StatCard
         label="Restitution Abandoned"
         value={formatCurrency(stats.totalRestitutionAbandoned)}
+        noteText="Estimate — see note"
+        noteHref="/about#on-fines-and-restitution-abandoned"
         variant="restitution"
         animated={animated}
         animationDelay={animated ? 5 * 150 : 0}
@@ -64,6 +68,8 @@ const { stats, animated = false, footnote } = Astro.props;
     <StatCard
         label="Fines Abandoned"
         value={formatCurrency(stats.totalFinesAbandoned)}
+        noteText="Estimate — see note"
+        noteHref="/about#on-fines-and-restitution-abandoned"
         variant="restitution"
         animated={animated}
         animationDelay={animated ? 6 * 150 : 0}
