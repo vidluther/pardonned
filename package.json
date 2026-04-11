@@ -16,6 +16,7 @@
     "scrape:trump1": "tsx src/scraper/scrape.ts --president trump-1",
     "scrape:obama": "tsx src/scraper/scrape.ts --president obama",
     "scrape:bush": "tsx src/scraper/scrape.ts --president bush-jr",
+    "scrape:clinton": "tsx src/scraper/scrape.ts --president clinton",
     "scrape:all": "tsx src/scraper/scrape.ts --president all",
     "db:studio": "drizzle-kit studio"
   },
