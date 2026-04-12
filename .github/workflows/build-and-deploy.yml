@@ -85,6 +85,9 @@ jobs:
           fi
           echo "Database size: $(du -h data/pardonned.db | cut -f1)"
 
+      - name: Copy database to public directory
+        run: cp data/pardonned.db public/pardonned.db
+
       - name: Build site
         env:
           PARDONNED_DB: ./data/pardonned.db

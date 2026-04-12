@@ -26,6 +26,7 @@ pnpm-debug.log*
 
 # data files (produced by scraper, injected at build time)
 data/*.db
+public/*.db
 
 # local git worktrees
 .worktrees/
