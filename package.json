@@ -18,11 +18,15 @@
     "scrape:bush": "tsx src/scraper/scrape.ts --president bush-jr",
     "scrape:clinton": "tsx src/scraper/scrape.ts --president clinton",
     "scrape:all": "tsx src/scraper/scrape.ts --president all",
+    "classify": "tsx scripts/classify-offenses.ts",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.69",
+    "@ai-sdk/openai-compatible": "^2.0.41",
     "@astrojs/sitemap": "^3.7.2",
     "@libsql/client": "^0.17.2",
+    "ai": "^6.0.158",
     "astro": "^6.1.5",
     "cheerio": "^1.2.0",
     "dotenv": "^17.4.1",

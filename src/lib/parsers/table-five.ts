@@ -76,5 +76,3 @@ export function parseTableFive(
 
   return grants;
 }
-
-

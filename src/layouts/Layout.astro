@@ -57,7 +57,7 @@ const metaDescription = truncateText(description, 160);
         />
 
         <Analytics />
-        <PostHog />
+         {!import.meta.env.DEV && <PostHog />}
         <title>{fullTitle}</title>
     </head>
     <body

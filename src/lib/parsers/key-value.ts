@@ -229,9 +229,7 @@ function isFourColumnTable($: cheerio.CheerioAPI, table: CheerioTable): boolean 
   const thCells = headerRow.find("th");
   if (thCells.length < 4) return false;
 
-  const headers = thCells
-    .map((_i, th) => $(th).text().trim().toUpperCase())
-    .get();
+  const headers = thCells.map((_i, th) => $(th).text().trim().toUpperCase()).get();
 
   return (
     headers.length >= 4 &&
@@ -298,7 +296,13 @@ interface PersonRecord {
  * and would otherwise be parsed as "person" rows, producing garbage records
  * with recipient_name values like "NAME"/"DISTRICT"/"SENTENCED"/"OFFENSE".
  */
-const COLUMN_HEADER_SENTINELS = new Set(["NAME", "DISTRICT", "SENTENCED", "OFFENSE"]);
+const COLUMN_HEADER_SENTINELS = new Set([
+  "NAME",
+  "DISTRICT",
+  "SENTENCED",
+  "OFFENSE",
+  "DISTRICT/DATE",
+]);
 
 function isHeaderSentinel(value: string): boolean {
   return COLUMN_HEADER_SENTINELS.has(value.trim().toUpperCase());
@@ -314,6 +318,10 @@ function isNameValue(value: string): boolean {
   if (/^\d+\./.test(value)) return false;
   // Sentence-like continuations that start with lowercase or special chars
   if (/^[a-z(]/.test(value)) return false;
+  // Label-like values that end with a colon (e.g. "District/Date:", "Offense:")
+  if (value.endsWith(":")) return false;
+  // Label-like values containing "/" that aren't names (e.g. "District/Date")
+  if (value.includes("/") && /^(?:\d+\.\s*)?(?:[A-Z][a-z]+\/)/.test(value)) return false;
   // Values that look like sentences (contain common sentence keywords right at start)
   if (/^(?:Life|Time served|No punishment)/i.test(value) && !value.includes(",")) {
     // Could be a name like "Life" or a sentence — check for imprisonment keywords
@@ -399,5 +407,3 @@ function extractDistrict(offenseText: string): {
 
   return { offense: offenseText, district: null };
 }
-
-

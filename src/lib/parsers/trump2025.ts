@@ -83,8 +83,6 @@ export function parseTrump2025(html: string, sourceUrl: string): ParsedGrant[] {
   return grants;
 }
 
-
-
 function parseCounts(heading: string): {
   pardonCount: number;
   commutationCount: number;
