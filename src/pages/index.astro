@@ -18,55 +18,37 @@ const sortedAdmins = Array.from(index.values()).sort((a, b) =>
     b.termStartDate.localeCompare(a.termStartDate),
 );
 
-const allData = allGrants.map((g) => g.data);
+const DATE_LIMIT = 5;
+const PER_DATE_CHIP_LIMIT = 5;
 
-const realCountsByDate: Record<string, { pardons: number; commutations: number }> = {};
-for (const grant of allData) {
-    if (!realCountsByDate[grant.grant_date]) {
-        realCountsByDate[grant.grant_date] = { pardons: 0, commutations: 0 };
-    }
-    if (grant.clemency_type === "pardon") realCountsByDate[grant.grant_date].pardons++;
-    else realCountsByDate[grant.grant_date].commutations++;
+const grantsByDate = new Map<string, Array<(typeof allGrants)[number]["data"]>>();
+for (const { data } of allGrants) {
+    const bucket = grantsByDate.get(data.grant_date) ?? [];
+    bucket.push(data);
+    grantsByDate.set(data.grant_date, bucket);
 }
 
-const sortedGrants = allData.sort((a, b) => b.grant_date.localeCompare(a.grant_date));
-const recent = sortedGrants.slice(0, 5);
-
-const groupedByDate: Record<string, typeof recent> = {};
-for (const grant of recent) {
-    if (!groupedByDate[grant.grant_date]) groupedByDate[grant.grant_date] = [];
-    groupedByDate[grant.grant_date].push(grant);
-}
-
-const recentEntries = Object.entries(groupedByDate)
+const recentEntries = Array.from(grantsByDate.entries())
     .sort(([a], [b]) => b.localeCompare(a))
-    .map(([date, shown]) => {
-        const real = realCountsByDate[date];
-        const shownPardons = shown.filter(
-            (g) => g.clemency_type === "pardon",
-        ).length;
-        const shownCommutations = shown.filter(
-            (g) => g.clemency_type === "commutation",
-        ).length;
+    .slice(0, DATE_LIMIT)
+    .map(([date, dateGrants]) => {
+        const pardons = dateGrants.filter((g) => g.clemency_type === "pardon").length;
+        const commutations = dateGrants.length - pardons;
 
         const parts: string[] = [];
-        if (real.pardons > 0)
+        if (pardons > 0)
+            parts.push(`${pardons} ${pardons === 1 ? "pardon" : "pardons"}`);
+        if (commutations > 0)
             parts.push(
-                `${real.pardons} ${real.pardons === 1 ? "pardon" : "pardons"}`,
-            );
-        if (real.commutations > 0)
-            parts.push(
-                `${real.commutations} ${real.commutations === 1 ? "commutation" : "commutations"}`,
+                `${commutations} ${commutations === 1 ? "commutation" : "commutations"}`,
             );
 
-        const totalShown = shownPardons + shownCommutations;
-        const totalReal = real.pardons + real.commutations;
-        const overflow = totalReal - totalShown;
-
-        let grantLabel = parts.join(", ");
-        if (overflow > 0) {
-            grantLabel += ` (${totalShown} shown, +${overflow} more)`;
-        }
+        const shown = dateGrants.slice(0, PER_DATE_CHIP_LIMIT).map((g) => ({
+            name: g.recipient_name,
+            href: `/pardon/details/${g.slug}`,
+            type: g.clemency_type as "pardon" | "commutation",
+        }));
+        const overflow = dateGrants.length - shown.length;
 
         const [y, m, d] = date.split("-");
         const formattedDate = new Date(
@@ -79,18 +61,12 @@ const recentEntries = Object.entries(groupedByDate)
             day: "numeric",
         });
 
-        const hrefs = Object.fromEntries(
-            shown.map((g) => [
-                g.recipient_name,
-                `/pardon/details/${g.slug}`,
-            ]),
-        );
-
         return {
             date: formattedDate,
-            grants: grantLabel,
-            names: shown.map((g) => g.recipient_name),
-            hrefs,
+            isoDate: date,
+            grants: parts.join(", "),
+            overflow,
+            shown,
         };
     });
 ---
@@ -176,18 +152,29 @@ const recentEntries = Object.entries(groupedByDate)
                         <div
                             class="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4 mb-1.5"
                         >
-                            <span class="timeline-date">{entry.date}</span>
+                            <span
+                                class="timeline-date"
+                                data-iso-date={entry.isoDate}
+                            >
+                                {entry.date}
+                            </span>
                             <span class="timeline-grants-badge inline-block w-fit">
                                 {entry.grants}
                             </span>
                         </div>
-                        <div class="flex flex-wrap gap-1.5">
-                            {entry.names.map((name) => (
+                        <div class="flex flex-wrap items-center gap-1.5">
+                            {entry.shown.map(({ name, href, type }) => (
                                 <NameChip
                                     name={name}
-                                    href={entry.hrefs[name]}
+                                    href={href}
+                                    type={type}
                                 />
                             ))}
+                            {entry.overflow > 0 && (
+                                <span class="recent-overflow-note">
+                                    +{entry.overflow} more on this date
+                                </span>
+                            )}
                         </div>
                     </div>
                 ))

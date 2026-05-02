@@ -180,6 +180,20 @@
     color: #1a1918;
   }
 
+  .name-chip--pardon {
+    border-left: 3px solid #c23b22;
+  }
+
+  .name-chip--commutation {
+    border-left: 3px solid #2a6a7a;
+  }
+
+  .recent-overflow-note {
+    font-size: 13px;
+    color: #7a7870;
+    font-style: italic;
+  }
+
   .badge {
     font-size: 11px;
     padding: 2px 8px;
