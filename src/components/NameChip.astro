@@ -2,20 +2,25 @@
 interface Props {
   name: string;
   href?: string;
+  type?: "pardon" | "commutation";
 }
 
-const { name, href } = Astro.props;
+const { name, href, type } = Astro.props;
+const variantClass =
+  type === "commutation"
+    ? "name-chip--commutation"
+    : type === "pardon"
+      ? "name-chip--pardon"
+      : "";
 ---
 
 {href ? (
-  <a 
+  <a
     href={href}
-    class="name-chip name-chip-link no-underline"
+    class:list={["name-chip", "name-chip-link", "no-underline", variantClass]}
   >
     {name}
   </a>
 ) : (
-  <span class="name-chip">
-    {name}
-  </span>
+  <span class:list={["name-chip", variantClass]}>{name}</span>
 )}
