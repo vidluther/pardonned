@@ -23,7 +23,7 @@
   "dependencies": {
     "@astrojs/sitemap": "^3.7.2",
     "@libsql/client": "^0.17.2",
-    "astro": "^6.1.5",
+    "astro": "^6.2.1",
     "cheerio": "^1.2.0",
     "dotenv": "^17.4.1",
     "drizzle-orm": "^0.45.2",

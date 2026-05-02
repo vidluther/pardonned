@@ -2,6 +2,7 @@
 import Layout from "../layouts/Layout.astro";
 import StatGrid from "../components/StatGrid.astro";
 import SourceBanner from "../components/SourceBanner.astro";
+import NameChip from "../components/NameChip.astro";
 import "../styles/global.css";
 
 const currentPath = Astro.url.pathname;
@@ -16,6 +17,82 @@ const index = getAdministrationIndex(allGrants);
 const sortedAdmins = Array.from(index.values()).sort((a, b) =>
     b.termStartDate.localeCompare(a.termStartDate),
 );
+
+const allData = allGrants.map((g) => g.data);
+
+const realCountsByDate: Record<string, { pardons: number; commutations: number }> = {};
+for (const grant of allData) {
+    if (!realCountsByDate[grant.grant_date]) {
+        realCountsByDate[grant.grant_date] = { pardons: 0, commutations: 0 };
+    }
+    if (grant.clemency_type === "pardon") realCountsByDate[grant.grant_date].pardons++;
+    else realCountsByDate[grant.grant_date].commutations++;
+}
+
+const sortedGrants = allData.sort((a, b) => b.grant_date.localeCompare(a.grant_date));
+const recent = sortedGrants.slice(0, 5);
+
+const groupedByDate: Record<string, typeof recent> = {};
+for (const grant of recent) {
+    if (!groupedByDate[grant.grant_date]) groupedByDate[grant.grant_date] = [];
+    groupedByDate[grant.grant_date].push(grant);
+}
+
+const recentEntries = Object.entries(groupedByDate)
+    .sort(([a], [b]) => b.localeCompare(a))
+    .map(([date, shown]) => {
+        const real = realCountsByDate[date];
+        const shownPardons = shown.filter(
+            (g) => g.clemency_type === "pardon",
+        ).length;
+        const shownCommutations = shown.filter(
+            (g) => g.clemency_type === "commutation",
+        ).length;
+
+        const parts: string[] = [];
+        if (real.pardons > 0)
+            parts.push(
+                `${real.pardons} ${real.pardons === 1 ? "pardon" : "pardons"}`,
+            );
+        if (real.commutations > 0)
+            parts.push(
+                `${real.commutations} ${real.commutations === 1 ? "commutation" : "commutations"}`,
+            );
+
+        const totalShown = shownPardons + shownCommutations;
+        const totalReal = real.pardons + real.commutations;
+        const overflow = totalReal - totalShown;
+
+        let grantLabel = parts.join(", ");
+        if (overflow > 0) {
+            grantLabel += ` (${totalShown} shown, +${overflow} more)`;
+        }
+
+        const [y, m, d] = date.split("-");
+        const formattedDate = new Date(
+            Number(y),
+            Number(m) - 1,
+            Number(d),
+        ).toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+        });
+
+        const hrefs = Object.fromEntries(
+            shown.map((g) => [
+                g.recipient_name,
+                `/pardon/details/${g.slug}`,
+            ]),
+        );
+
+        return {
+            date: formattedDate,
+            grants: grantLabel,
+            names: shown.map((g) => g.recipient_name),
+            hrefs,
+        };
+    });
 ---
 
 <Layout
@@ -71,6 +148,48 @@ const sortedAdmins = Array.from(index.values()).sort((a, b) =>
                             {admin.displayName}
                         </span>
                     </a>
+                ))
+            }
+        </div>
+    </section>
+
+    <!-- Flat Divider -->
+    <div class="max-w-home mx-auto px-5 md:px-10">
+        <div class="divider-flat"></div>
+    </div>
+
+    <!-- Recent Pardons Section -->
+    <section
+        class="py-10 md:py-section px-5 md:px-10 max-w-home mx-auto"
+        data-animate
+    >
+        <h2 class="text-section font-serif text-text-primary mb-2">
+            Recent Pardons &amp; Commutations
+        </h2>
+        <p class="text-nav text-text-faint mb-10">
+            The most recent executive clemency actions
+        </p>
+        <div class="space-y-8">
+            {
+                recentEntries.map((entry) => (
+                    <div>
+                        <div
+                            class="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4 mb-1.5"
+                        >
+                            <span class="timeline-date">{entry.date}</span>
+                            <span class="timeline-grants-badge inline-block w-fit">
+                                {entry.grants}
+                            </span>
+                        </div>
+                        <div class="flex flex-wrap gap-1.5">
+                            {entry.names.map((name) => (
+                                <NameChip
+                                    name={name}
+                                    href={entry.hrefs[name]}
+                                />
+                            ))}
+                        </div>
+                    </div>
                 ))
             }
         </div>
