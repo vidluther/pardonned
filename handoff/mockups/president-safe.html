@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Donald J. Trump (2nd term) — Pardonned</title>
+<link rel="stylesheet" href="../styles/tokens.css">
+<style>
+.crumb { padding: 32px 0 0; font-size: 13px; color: var(--text-muted); display: flex; gap: 8px; align-items: center; }
+.crumb a { color: var(--text-muted); }
+.crumb a:hover { color: var(--text-primary); }
+.crumb .sep { color: var(--border-soft); }
+
+.pres-head { padding: 24px 0 36px; }
+.pres-head .meta { font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-faint); font-weight: 500; margin-bottom: 14px; }
+.pres-head h1 { font-family: var(--serif); font-size: 56px; letter-spacing: -0.02em; line-height: 1.05; margin-bottom: 12px; }
+.pres-head h1 .term { color: var(--text-faint); font-size: 36px; display: inline-block; margin-left: 12px; vertical-align: middle; }
+.pres-head .summary { font-size: 16px; color: var(--text-body); line-height: 1.65; max-width: 680px; margin: 0; }
+
+/* term-tab strip */
+.term-strip { display: flex; gap: 0; border-top: 1px solid var(--border-default); border-bottom: 1px solid var(--border-default); margin-bottom: 40px; }
+.term-tab { padding: 16px 20px; font-size: 13px; color: var(--text-muted); text-decoration: none; border-right: 1px solid var(--border-default); display: flex; flex-direction: column; gap: 2px; }
+.term-tab:last-child { border-right: none; }
+.term-tab .yr { font-size: 11px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.08em; }
+.term-tab .nm { font-weight: 500; color: var(--text-body); }
+.term-tab.active { background: var(--bg-card); color: var(--text-primary); border-top: 2px solid var(--accent); margin-top: -1px; }
+.term-tab.active .nm { color: var(--text-primary); }
+
+/* stat row */
+.stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 56px; }
+.stat-card { background: var(--bg-card); border: 1px solid var(--border-default); border-radius: 8px; padding: 22px 20px; }
+.stat-card.tinted { background: var(--accent-tint); border-color: var(--accent-border); }
+.stat-card .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-faint); font-weight: 500; margin-bottom: 8px; }
+.stat-card .val { font-family: var(--serif); font-size: 36px; line-height: 1; letter-spacing: -0.015em; margin-bottom: 6px; font-variant-numeric: tabular-nums; }
+.stat-card.tinted .val { color: var(--accent); }
+.stat-card .note { font-size: 12px; color: var(--text-faint); line-height: 1.5; }
+
+/* split: category breakdown + sentence breakdown */
+.split-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-bottom: 56px; }
+.panel { background: var(--bg-card); border: 1px solid var(--border-default); border-radius: 8px; padding: 24px 28px; }
+.panel h2 { font-family: var(--serif); font-size: 22px; letter-spacing: -0.01em; margin-bottom: 4px; }
+.panel .sub { font-size: 12px; color: var(--text-faint); margin-bottom: 20px; }
+
+.cat-bar-list { display: flex; flex-direction: column; gap: 12px; }
+.cat-bar-row { display: grid; grid-template-columns: 130px 1fr 50px; gap: 12px; align-items: center; font-size: 13px; }
+.cat-bar-row .nm { color: var(--text-body); }
+.cat-bar-row .b { height: 8px; background: var(--bg-muted); position: relative; border-radius: 2px; overflow: hidden; }
+.cat-bar-row .f { height: 100%; }
+.cat-bar-row .ct { font-variant-numeric: tabular-nums; color: var(--text-secondary); text-align: right; font-size: 13px; font-weight: 500; }
+
+.month-grid { display: grid; grid-template-columns: repeat(15, 1fr); gap: 4px; margin-top: 4px; }
+.month-cell { aspect-ratio: 1; background: var(--bg-muted); border-radius: 2px; position: relative; }
+.month-cell[data-c="1"] { background: rgba(194,59,34,0.2); }
+.month-cell[data-c="2"] { background: rgba(194,59,34,0.4); }
+.month-cell[data-c="3"] { background: rgba(194,59,34,0.7); }
+.month-cell[data-c="4"] { background: var(--accent); }
+.month-legend { display: flex; gap: 8px; align-items: center; font-size: 11px; color: var(--text-faint); margin-top: 16px; text-transform: uppercase; letter-spacing: 0.08em; }
+.month-legend .swatches { display: flex; gap: 2px; }
+.month-legend .sw { width: 10px; height: 10px; border-radius: 1px; }
+
+/* notable grants list */
+.notable { margin-bottom: 56px; }
+.notable h2 { font-family: var(--serif); font-size: 28px; letter-spacing: -0.01em; margin-bottom: 6px; }
+.notable .sub { font-size: 13px; color: var(--text-secondary); margin-bottom: 24px; }
+.grant-list { display: flex; flex-direction: column; gap: 8px; }
+.grant-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  padding: 18px 24px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 24px;
+  text-decoration: none;
+  color: inherit;
+  align-items: start;
+  transition: background 0.15s;
+}
+.grant-item:hover { background: var(--bg-muted); }
+.gi-head { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; margin-bottom: 6px; }
+.gi-name { font-size: 16px; font-weight: 500; letter-spacing: -0.005em; }
+.gi-offense { font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 8px; }
+.gi-meta { font-size: 12px; color: var(--text-faint); display: flex; gap: 14px; align-items: baseline; flex-wrap: wrap; }
+.gi-meta .dot { color: var(--border-soft); }
+.gi-right { text-align: right; min-width: 130px; }
+.gi-right .date { font-size: 12px; color: var(--text-faint); }
+.gi-right .money { font-size: 16px; font-weight: 500; color: var(--accent); margin-top: 4px; font-variant-numeric: tabular-nums; }
+.gi-right .nores { font-size: 13px; color: var(--text-ghost); }
+</style>
+</head>
+<body>
+
+<header class="site-nav">
+  <div class="site-nav-inner">
+    <a href="index.html" class="wordmark">Pardonn<span class="accent">e</span>d<span class="wordmark-tag">Clemency tracker</span></a>
+    <nav class="nav-links">
+      <a href="home-safe.html">Home</a>
+      <a href="search-safe.html">Search</a>
+      <a href="#" class="active">Presidents</a>
+      <a href="#">About</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page-1040">
+  <div class="crumb">
+    <a href="home-safe.html">Home</a>
+    <span class="sep">/</span>
+    <a href="#">Presidents</a>
+    <span class="sep">/</span>
+    <span style="color:var(--text-body);">Donald J. Trump (2nd term)</span>
+  </div>
+
+  <div class="pres-head">
+    <div class="meta">2025 · 47th president · Republican</div>
+    <h1>Donald J. Trump<span class="term">Second term</span></h1>
+    <p class="summary">Trump's second-term clemency record is dominated by a single inauguration-day act: a blanket pardon for roughly 1,500 January 6 defendants. He has subsequently issued grants concentrated in financial fraud, cryptocurrency, and political cases.</p>
+  </div>
+
+  <div class="term-strip">
+    <a href="#" class="term-tab active"><span class="yr">2025–</span><span class="nm">2nd term</span></a>
+    <a href="president-safe.html" class="term-tab"><span class="yr">2017–2021</span><span class="nm">1st term</span></a>
+    <span style="flex:1; border-right:none;"></span>
+    <a href="#" class="term-tab"><span class="yr">→ Compare</span><span class="nm">All presidents</span></a>
+  </div>
+
+  <!-- stat row -->
+  <div class="stat-row">
+    <div class="stat-card">
+      <div class="lbl">Total grants</div>
+      <div class="val">121</div>
+      <div class="note">As of May 2, 2026</div>
+    </div>
+    <div class="stat-card">
+      <div class="lbl">Pardons / commutations</div>
+      <div class="val">114 <span style="color:var(--text-faint); font-size:24px;">/ 7</span></div>
+      <div class="note">94% are full pardons</div>
+    </div>
+    <div class="stat-card tinted">
+      <div class="lbl">Restitution forgiven</div>
+      <div class="val">$1.35B</div>
+      <div class="note">Largest of any administration tracked</div>
+    </div>
+    <div class="stat-card">
+      <div class="lbl">Most active day</div>
+      <div class="val" style="font-size: 22px; line-height: 1.2;">Jan 20, 2025</div>
+      <div class="note">~1,500 grants — January 6 blanket pardon</div>
+    </div>
+  </div>
+
+  <!-- split -->
+  <div class="split-2">
+    <div class="panel">
+      <h2>Grants by category</h2>
+      <div class="sub">Categorization from the DOJ source data.</div>
+      <div class="cat-bar-list" id="catBars"></div>
+    </div>
+    <div class="panel">
+      <h2>Grants by month</h2>
+      <div class="sub">Each cell is one month from January 2025 to present. Darker = more grants.</div>
+      <div class="month-grid" id="monthGrid"></div>
+      <div class="month-legend">
+        <span>Less</span>
+        <div class="swatches">
+          <div class="sw" style="background:var(--bg-muted);"></div>
+          <div class="sw" style="background:rgba(194,59,34,0.2);"></div>
+          <div class="sw" style="background:rgba(194,59,34,0.4);"></div>
+          <div class="sw" style="background:rgba(194,59,34,0.7);"></div>
+          <div class="sw" style="background:var(--accent);"></div>
+        </div>
+        <span>More</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- notable grants -->
+  <div class="notable">
+    <h2>Largest restitution forgiven</h2>
+    <p class="sub">Top grants from this term, by court-ordered restitution amount.</p>
+    <div class="grant-list" id="grantList"></div>
+    <div style="margin-top: 16px;">
+      <a href="search-safe.html" style="font-size:13px; color:var(--accent); border-bottom: 1px solid var(--accent-border); padding-bottom:1px;">View all 121 grants from this term →</a>
+    </div>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="site-footer-inner">
+    <div><a href="index.html" class="wordmark">Pardonn<span class="accent">e</span>d</a></div>
+    <div class="site-footer-meta">Data source: DOJ Office of the Pardon Attorney · Not affiliated with the U.S. government<br>Last updated: May 2, 2026 @ 1103 hrs EST</div>
+  </div>
+</footer>
+
+<script src="data/sample.js"></script>
+<script>
+const { GRANTS, CATEGORIES, formatMoney, formatDate, adminById } = window.PARDONNED;
+
+// faux per-term breakdown for trump-2
+const breakdown = [
+  { id: 'j6', label: 'January 6', count: 1500, color: '#C23B22' },
+  { id: 'fraud', label: 'Financial fraud', count: 38, color: '#8A6B1E' },
+  { id: 'crypto', label: 'Crypto & securities', count: 14, color: '#2A6A7A' },
+  { id: 'political', label: 'Political corruption', count: 12, color: '#6A4B7A' },
+  { id: 'other', label: 'Other', count: 26, color: '#7A7870' },
+  { id: 'drug', label: 'Drug offenses', count: 18, color: '#3A6A4A' },
+  { id: 'face', label: 'FACE Act', count: 23, color: '#B8652A' },
+];
+const max = Math.max(...breakdown.map(b => b.count));
+const cb = document.getElementById('catBars');
+breakdown.forEach(b => {
+  const pct = (b.count / max) * 100;
+  const row = document.createElement('div');
+  row.className = 'cat-bar-row';
+  row.innerHTML = `
+    <div class="nm">${b.label}</div>
+    <div class="b"><div class="f" style="width:${pct}%; background:${b.color};"></div></div>
+    <div class="ct">${b.count.toLocaleString()}</div>
+  `;
+  cb.appendChild(row);
+});
+
+// month grid (Jan 2025 → April 2026 = 16 months but we use 15 cells for the layout)
+const months = [
+  ['Jan', 4], ['Feb', 1], ['Mar', 3], ['Apr', 1], ['May', 1], ['Jun', 0], ['Jul', 1], ['Aug', 0],
+  ['Sep', 1], ['Oct', 2], ['Nov', 0], ['Dec', 1],
+  ['Jan', 1], ['Feb', 0], ['Mar', 1], ['Apr', 1],
+];
+const mg = document.getElementById('monthGrid');
+months.forEach(([nm, c], i) => {
+  const cell = document.createElement('div');
+  cell.className = 'month-cell';
+  cell.dataset.c = c;
+  cell.title = nm + ' — ' + c + ' grants';
+  mg.appendChild(cell);
+});
+
+// notable grants for trump-2
+const trumpG = GRANTS.filter(g => g.president === 'trump-2').sort((a,b) => b.restitution - a.restitution);
+const gl = document.getElementById('grantList');
+trumpG.forEach(g => {
+  const cat = CATEGORIES.find(c => c.id === g.category) || { color:'#7A7870', label: g.categoryLabel };
+  const el = document.createElement('a');
+  el.className = 'grant-item';
+  el.href = `detail-safe.html?id=${g.id}`;
+  el.innerHTML = `
+    <div>
+      <div class="gi-head">
+        <div class="gi-name">${g.name}</div>
+        <span class="badge ${g.type === 'pardon' ? 'badge-pardon' : 'badge-commutation'}">${g.type === 'pardon' ? 'Pardon' : 'Commutation'}</span>
+        <span class="badge badge-cat" style="color:${cat.color};">${cat.label}</span>
+      </div>
+      <div class="gi-offense">${g.offense}</div>
+      <div class="gi-meta">
+        <span>${g.district}</span>
+        <span class="dot">·</span>
+        <span>Sentence: ${g.sentence}</span>
+      </div>
+    </div>
+    <div class="gi-right">
+      <div class="date">${formatDate(g.date)}</div>
+      ${g.restitution > 0 ? `<div class="money">${formatMoney(g.restitution)}</div><div style="font-size:10px;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.08em;">Restitution</div>` : `<div class="nores">No restitution</div>`}
+    </div>
+  `;
+  gl.appendChild(el);
+});
+</script>
+</body>
+</html>

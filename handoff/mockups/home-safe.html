@@ -1,0 +1,586 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pardonned — Tracking presidential clemency since 1993</title>
+<link rel="stylesheet" href="../styles/tokens.css">
+<style>
+/* ===== Hero ===== */
+.hero {
+  padding: 72px 0 56px;
+}
+.hero-eyebrow {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-faint);
+  font-weight: 500;
+  margin-bottom: 18px;
+}
+.hero h1 {
+  font-family: var(--serif);
+  font-size: 56px;
+  line-height: 1.05;
+  letter-spacing: -0.015em;
+  max-width: 780px;
+  margin-bottom: 18px;
+}
+.hero-deck {
+  font-size: 17px;
+  color: var(--text-body);
+  max-width: 660px;
+  line-height: 1.6;
+  margin-bottom: 36px;
+}
+.hero-deck strong { color: var(--text-primary); font-weight: 500; }
+
+.headline-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  border-top: 1px solid var(--border-default);
+  border-bottom: 1px solid var(--border-default);
+  padding: 28px 0;
+}
+.headline-stat {
+  padding: 0 28px;
+  border-right: 1px solid var(--border-default);
+}
+.headline-stat:last-child { border-right: none; }
+.headline-stat:first-child { padding-left: 0; }
+.headline-stat .label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-faint);
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+.headline-stat .value {
+  font-family: var(--serif);
+  font-size: 36px;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  margin-bottom: 6px;
+}
+.headline-stat .value.accent { color: var(--accent); }
+.headline-stat .note {
+  font-size: 12px;
+  color: var(--text-faint);
+  line-height: 1.5;
+}
+
+/* ===== Compare strip ===== */
+.section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 32px;
+  gap: 32px;
+}
+.section-head h2 {
+  font-family: var(--serif);
+  font-size: 30px;
+  letter-spacing: -0.01em;
+}
+.section-head .lede {
+  font-size: 14px;
+  color: var(--text-secondary);
+  max-width: 460px;
+  line-height: 1.6;
+  text-align: right;
+}
+
+.compare-strip {
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  background: var(--bg-card);
+  overflow: hidden;
+}
+.compare-row {
+  display: grid;
+  grid-template-columns: 220px 1fr 110px 130px;
+  gap: 20px;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--border-default);
+  align-items: center;
+  text-decoration: none;
+  color: var(--text-primary);
+  transition: background 0.15s;
+}
+.compare-row:hover { background: var(--bg-muted); }
+.compare-row:last-child { border-bottom: none; }
+.compare-row.head {
+  padding: 12px 24px;
+  background: var(--bg-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-faint);
+  font-weight: 500;
+  cursor: default;
+}
+.compare-row.head:hover { background: var(--bg-muted); }
+.compare-row .num { text-align: right; font-variant-numeric: tabular-nums; }
+.compare-pres {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.compare-pres .name {
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+}
+.compare-pres .meta {
+  font-size: 12px;
+  color: var(--text-faint);
+}
+.compare-pres .party {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.party-D { background: #2A6A7A; }
+.party-R { background: #C23B22; }
+
+/* the bar */
+.bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.bar {
+  flex: 1;
+  height: 6px;
+  background: var(--bg-muted);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+.bar-fill {
+  height: 100%;
+  background: var(--text-primary);
+  opacity: 0.6;
+  border-radius: 3px;
+}
+.bar-count {
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-body);
+  min-width: 56px;
+  text-align: right;
+  font-weight: 500;
+}
+
+.compare-row .restitution {
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+  text-align: right;
+}
+.compare-row .restitution.has { color: var(--accent); font-weight: 500; }
+.compare-row .arrow { color: var(--text-faint); text-align: right; font-size: 13px; }
+
+/* ===== Timeline (latest activity) ===== */
+.timeline {
+  padding-left: 32px;
+  position: relative;
+}
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 4px;
+  bottom: 4px;
+  width: 1px;
+  background: var(--border-soft);
+}
+.tl-item {
+  position: relative;
+  margin-bottom: 36px;
+  padding-bottom: 0;
+}
+.tl-item::before {
+  content: '';
+  position: absolute;
+  left: -32px;
+  top: 4px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 2px solid var(--border-soft);
+  box-sizing: border-box;
+}
+.tl-item.latest::before {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.tl-head {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.tl-date {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  min-width: 110px;
+}
+.tl-grants {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: var(--accent-bg);
+  color: var(--accent);
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+.tl-pres {
+  font-size: 12px;
+  color: var(--text-faint);
+}
+.tl-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.chip {
+  font-size: 13px;
+  color: var(--text-primary);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-default);
+  padding: 4px 10px;
+  border-radius: 4px;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+.chip:hover { background: var(--bg-muted); }
+
+/* ===== Restitution leaderboard ===== */
+.leaderboard {
+  display: grid;
+  grid-template-columns: 1fr;
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  background: var(--bg-card);
+  overflow: hidden;
+}
+.lb-row {
+  display: grid;
+  grid-template-columns: 28px 1fr 110px 140px;
+  gap: 16px;
+  padding: 14px 20px;
+  align-items: center;
+  border-bottom: 1px solid var(--border-default);
+  text-decoration: none;
+  color: var(--text-primary);
+  transition: background 0.15s;
+}
+.lb-row:last-child { border-bottom: none; }
+.lb-row:hover { background: var(--bg-muted); }
+.lb-rank {
+  font-family: var(--serif);
+  font-size: 16px;
+  color: var(--text-faint);
+  text-align: right;
+}
+.lb-name { font-size: 15px; font-weight: 500; letter-spacing: -0.005em; }
+.lb-offense { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+.lb-pres { font-size: 12px; color: var(--text-faint); text-align: right; }
+.lb-money {
+  font-family: var(--serif);
+  font-size: 22px;
+  color: var(--accent);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* ===== Categories grid ===== */
+.cat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.cat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-left: 3px solid var(--cat-other);
+  border-radius: 0 6px 6px 0;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-decoration: none;
+  color: var(--text-primary);
+  transition: background 0.15s;
+}
+.cat-card:hover { background: var(--bg-muted); }
+.cat-count {
+  font-family: var(--serif);
+  font-size: 24px;
+  min-width: 64px;
+  font-variant-numeric: tabular-nums;
+}
+.cat-name {
+  font-size: 14px;
+  color: var(--text-body);
+}
+
+/* ===== Source banner ===== */
+.source-banner {
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  padding: 24px 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+}
+.source-banner-text {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  max-width: 580px;
+}
+.source-banner-text strong { color: var(--text-primary); font-weight: 500; }
+.source-banner-cta {
+  font-size: 13px;
+  color: var(--accent);
+  white-space: nowrap;
+  text-decoration: none;
+  border-bottom: 1px solid var(--accent-border);
+  padding-bottom: 1px;
+}
+
+.subhead { font-size: 13px; color: var(--text-secondary); }
+</style>
+</head>
+<body>
+
+<header class="site-nav">
+  <div class="site-nav-inner">
+    <a href="index.html" class="wordmark">Pardonn<span class="accent">e</span>d<span class="wordmark-tag">Clemency tracker</span></a>
+    <nav class="nav-links">
+      <a href="home-safe.html" class="active">Home</a>
+      <a href="search-safe.html">Search</a>
+      <a href="#">Presidents</a>
+      <a href="#">About</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- HERO -->
+  <section class="hero page-1040">
+    <div class="hero-eyebrow">Tracking presidential clemency since 1993</div>
+    <h1>Every pardon, every commutation, every president — in one place.</h1>
+    <p class="hero-deck">Pardonned is a public record of federal clemency grants from <strong>five presidents across nine administrations</strong>, drawn directly from the Department of Justice. Compare the scope of each presidency, follow the money, and read the original warrants.</p>
+
+    <div class="headline-stats">
+      <div class="headline-stat">
+        <div class="label">Total grants</div>
+        <div class="value mono-num">3,205</div>
+        <div class="note">Pardons + commutations, 1993–present</div>
+      </div>
+      <div class="headline-stat">
+        <div class="label">Restitution forgiven</div>
+        <div class="value accent mono-num">$1.47B</div>
+        <div class="note">Money owed to victims, written off</div>
+      </div>
+      <div class="headline-stat">
+        <div class="label">Administrations</div>
+        <div class="value mono-num">9</div>
+        <div class="note">Clinton through Trump (2nd term)</div>
+      </div>
+      <div class="headline-stat">
+        <div class="label">Latest grant</div>
+        <div class="value serif" style="font-size:22px; line-height:1.2;">Apr 23, 2026</div>
+        <div class="note">Paul Walczak · tax fraud · $4.4M restitution</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMPARE STRIP -->
+  <section class="page-1040" style="padding-bottom:56px;">
+    <div class="section-head">
+      <div>
+        <h2>By administration</h2>
+        <p class="subhead" style="margin-top:8px;">Grants and restitution, since the start of each term.</p>
+      </div>
+      <p class="lede">Bar widths are scaled to the largest administration (Obama's second term, 1,904 grants). Restitution figures sum the dollars owed to victims that were forgiven by clemency.</p>
+    </div>
+
+    <div class="compare-strip" id="compareStrip">
+      <div class="compare-row head">
+        <div>President</div>
+        <div>Grants</div>
+        <div class="num">Restitution</div>
+        <div class="num">View</div>
+      </div>
+      <!-- rows injected by JS -->
+    </div>
+  </section>
+
+  <div class="page-1040"><div class="divider gradient" style="margin:0 0 60px;"></div></div>
+
+  <!-- TWO-COLUMN: leaderboard + latest activity -->
+  <section class="page-1040" style="padding-bottom:56px;">
+    <div style="display:grid; grid-template-columns: 1.15fr 1fr; gap: 56px; align-items:start;">
+      <div>
+        <div class="section-head" style="margin-bottom:24px;">
+          <div>
+            <h2>Largest restitution forgiven</h2>
+            <p class="subhead" style="margin-top:8px;">Money owed to victims that recipients no longer have to pay back.</p>
+          </div>
+        </div>
+        <div class="leaderboard" id="leaderboard"></div>
+      </div>
+
+      <div>
+        <div class="section-head" style="margin-bottom:24px;">
+          <div>
+            <h2>Latest activity</h2>
+            <p class="subhead" style="margin-top:8px;">Most recent clemency dates.</p>
+          </div>
+        </div>
+        <div class="timeline" id="timeline"></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="page-1040"><div class="divider"></div></div>
+
+  <!-- CATEGORIES -->
+  <section class="page-1040" style="padding-bottom:64px;">
+    <div class="section-head">
+      <div>
+        <h2>By offense category</h2>
+        <p class="subhead" style="margin-top:8px;">Grants are categorized using DOJ source data.</p>
+      </div>
+    </div>
+    <div class="cat-grid" id="catGrid"></div>
+  </section>
+
+  <!-- SOURCE BANNER -->
+  <section class="page-1040" style="padding-bottom:80px;">
+    <div class="source-banner">
+      <p class="source-banner-text">All data on this site comes directly from the <strong>DOJ Office of the Pardon Attorney</strong>. Every grant page links to the original warrant PDF. Pardonned is not affiliated with the U.S. government.</p>
+      <a href="#" class="source-banner-cta">View raw database ↗</a>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="site-footer-inner">
+    <div>
+      <a href="index.html" class="wordmark">Pardonn<span class="accent">e</span>d</a>
+    </div>
+    <div class="site-footer-meta">
+      Data source: DOJ Office of the Pardon Attorney · Not affiliated with the U.S. government<br>
+      Last updated: May 2, 2026 @ 1103 hrs EST
+    </div>
+  </div>
+</footer>
+
+<script src="data/sample.js"></script>
+<script>
+const { ADMINS, GRANTS, CATEGORIES, RESTITUTION_LEADERBOARD, formatMoney, formatDate, adminById } = window.PARDONNED;
+
+// ----- Compare strip -----
+const maxCount = Math.max(...ADMINS.map(a => a.count));
+const stripEl = document.getElementById('compareStrip');
+ADMINS.forEach(a => {
+  const pct = (a.count / maxCount) * 100;
+  const row = document.createElement('a');
+  row.className = 'compare-row';
+  row.href = 'president-safe.html';
+  row.innerHTML = `
+    <div class="compare-pres">
+      <div class="name"><span class="party party-${a.party}"></span>${a.name}</div>
+      <div class="meta">${a.term ? a.term + ' · ' : ''}${a.years}</div>
+    </div>
+    <div class="bar-wrap">
+      <div class="bar"><div class="bar-fill" style="width:${pct}%; background:${a.color}; opacity:0.85;"></div></div>
+      <div class="bar-count">${a.count.toLocaleString()}</div>
+    </div>
+    <div class="restitution ${a.restitution > 0 ? 'has' : ''}">${a.restitution > 0 ? formatMoney(a.restitution) : '—'}</div>
+    <div class="arrow">→</div>
+  `;
+  stripEl.appendChild(row);
+});
+
+// ----- Leaderboard -----
+const lbEl = document.getElementById('leaderboard');
+RESTITUTION_LEADERBOARD.slice(0, 8).forEach((g, i) => {
+  const a = adminById(g.president);
+  const row = document.createElement('a');
+  row.className = 'lb-row';
+  row.href = `detail-safe.html?id=${g.id}`;
+  row.innerHTML = `
+    <div class="lb-rank">${i + 1}</div>
+    <div>
+      <div class="lb-name">${g.name}</div>
+      <div class="lb-offense">${g.offense}</div>
+    </div>
+    <div class="lb-pres">${a.name.split(' ').slice(-1)[0]}<br><span style="color:var(--text-ghost);">${a.years.split('–')[0]}</span></div>
+    <div class="lb-money">${formatMoney(g.restitution)}</div>
+  `;
+  lbEl.appendChild(row);
+});
+
+// ----- Timeline (latest 6 by date) -----
+const tlEl = document.getElementById('timeline');
+const sorted = [...GRANTS].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 6);
+// group by date
+const groups = {};
+sorted.forEach(g => { (groups[g.date] = groups[g.date] || []).push(g); });
+Object.keys(groups).sort((a, b) => b.localeCompare(a)).slice(0, 5).forEach((date, idx) => {
+  const items = groups[date];
+  const a = adminById(items[0].president);
+  const item = document.createElement('div');
+  item.className = 'tl-item' + (idx === 0 ? ' latest' : '');
+  const pardons = items.filter(g => g.type === 'pardon').length;
+  const comms = items.filter(g => g.type === 'commutation').length;
+  let label = '';
+  if (pardons) label += `${pardons} ${pardons === 1 ? 'pardon' : 'pardons'}`;
+  if (pardons && comms) label += ' · ';
+  if (comms) label += `${comms} ${comms === 1 ? 'commutation' : 'commutations'}`;
+  item.innerHTML = `
+    <div class="tl-head">
+      <div class="tl-date">${formatDate(date)}</div>
+      <div class="tl-grants">${label}</div>
+      <div class="tl-pres">${a.name}</div>
+    </div>
+    <div class="tl-chips">
+      ${items.map(g => `<a href="detail-safe.html?id=${g.id}" class="chip">${g.name}</a>`).join('')}
+    </div>
+  `;
+  tlEl.appendChild(item);
+});
+
+// ----- Categories -----
+const cgEl = document.getElementById('catGrid');
+CATEGORIES.forEach(c => {
+  const a = document.createElement('a');
+  a.className = 'cat-card';
+  a.href = `search-safe.html?cat=${c.id}`;
+  a.style.borderLeftColor = c.color;
+  a.innerHTML = `
+    <div class="cat-count" style="color:${c.color}">${c.count.toLocaleString()}</div>
+    <div class="cat-name">${c.label}</div>
+  `;
+  cgEl.appendChild(a);
+});
+</script>
+</body>
+</html>

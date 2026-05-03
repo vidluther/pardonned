@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trevor Milton — Pardonned</title>
+<link rel="stylesheet" href="../styles/tokens.css">
+<style>
+.crumb { padding: 28px 0 0; font-size: 13px; color: var(--text-muted); display: flex; gap: 8px; }
+.crumb a { color: var(--text-muted); }
+.crumb a:hover { color: var(--text-primary); }
+.crumb .sep { color: var(--border-soft); }
+
+.detail-head { padding: 24px 0 32px; }
+.dh-meta { display: flex; gap: 10px; align-items: baseline; margin-bottom: 14px; flex-wrap: wrap; }
+.dh-meta .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-faint); font-weight: 500; }
+.detail-head h1 { font-family: var(--serif); font-size: 48px; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 18px; }
+.detail-head .one-liner { font-size: 16px; color: var(--text-body); line-height: 1.6; max-width: 680px; }
+
+/* known-vs-unknown summary */
+.known-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  margin-bottom: 32px;
+}
+.ks {
+  padding: 22px 20px;
+  border-right: 1px solid var(--border-default);
+}
+.ks:last-child { border-right: none; }
+.ks.tinted { background: var(--accent-tint); border-color: var(--accent-border); }
+.ks .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-faint); font-weight: 500; margin-bottom: 8px; }
+.ks .val { font-family: var(--serif); font-size: 28px; line-height: 1; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.ks.tinted .val { color: var(--accent); }
+.ks .val.unknown { color: var(--text-ghost); font-size: 18px; font-family: var(--sans); font-weight: 400; }
+.ks .note { font-size: 12px; color: var(--text-faint); margin-top: 6px; line-height: 1.5; }
+
+/* tab strip */
+.tab-strip { display: flex; border-bottom: 1px solid var(--border-default); margin-bottom: 32px; }
+.tab {
+  padding: 12px 24px;
+  font-size: 14px;
+  color: var(--text-faint);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  cursor: pointer;
+}
+.tab:hover { color: var(--text-primary); }
+.tab.active { color: var(--text-primary); font-weight: 500; border-bottom: 2px solid var(--accent); }
+
+/* MAIN GRID */
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 48px;
+  padding-bottom: 80px;
+  align-items: start;
+}
+
+.section-block { margin-bottom: 36px; }
+.section-block h3 {
+  font-family: var(--serif);
+  font-size: 22px;
+  letter-spacing: -0.005em;
+  margin-bottom: 16px;
+}
+
+/* offense list */
+.offense-list { display: flex; flex-direction: column; gap: 10px; }
+.offense-item {
+  display: flex;
+  gap: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-left: 3px solid rgba(194,59,34,0.35);
+  border-radius: 0 8px 8px 0;
+  padding: 18px 22px;
+}
+.oi-num {
+  font-size: 12px;
+  color: var(--text-faint);
+  background: var(--bg-muted);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+  min-width: 22px;
+  text-align: center;
+  align-self: flex-start;
+  font-variant-numeric: tabular-nums;
+}
+.oi-text { font-size: 15px; color: var(--text-primary); line-height: 1.55; }
+.oi-note { font-size: 12px; color: var(--text-faint); margin-top: 4px; }
+
+/* sentence quote */
+.quote-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-left: 3px solid var(--border-soft);
+  border-radius: 0 8px 8px 0;
+  padding: 22px 26px;
+}
+.quote-box .qlbl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-faint); font-weight: 500; margin-bottom: 10px; }
+.quote-box .qtext { font-family: var(--serif); font-size: 18px; line-height: 1.45; color: var(--text-primary); letter-spacing: -0.005em; }
+
+/* aside */
+.aside-block {
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.aside-block h4 {
+  font-family: var(--serif);
+  font-size: 18px;
+  margin: 0 0 14px;
+  letter-spacing: -0.005em;
+}
+.kv { display: flex; flex-direction: column; gap: 14px; }
+.kv-row { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; font-size: 13px; }
+.kv-row .k { color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.08em; font-size: 11px; font-weight: 500; }
+.kv-row .v { color: var(--text-body); text-align: right; }
+.kv-row .v.money { color: var(--accent); font-weight: 500; font-variant-numeric: tabular-nums; }
+.kv-row .v.unknown { color: var(--text-ghost); }
+
+.aside-block.sources { background: var(--accent-tint); border-color: var(--accent-border); }
+.aside-block.sources h4 { color: var(--accent); }
+
+/* same-day card */
+.same-day {
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.same-day h4 { font-family: var(--serif); font-size: 18px; margin: 0 0 6px; letter-spacing: -0.005em; }
+.same-day .sub { font-size: 12px; color: var(--text-faint); margin-bottom: 16px; }
+.same-day .chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.same-day .chip {
+  font-size: 13px;
+  color: var(--text-primary);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-default);
+  padding: 4px 10px;
+  border-radius: 4px;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+.same-day .chip:hover { background: var(--bg-muted); }
+</style>
+</head>
+<body>
+
+<header class="site-nav">
+  <div class="site-nav-inner">
+    <a href="index.html" class="wordmark">Pardonn<span class="accent">e</span>d<span class="wordmark-tag">Clemency tracker</span></a>
+    <nav class="nav-links">
+      <a href="home-safe.html">Home</a>
+      <a href="search-safe.html">Search</a>
+      <a href="#">Presidents</a>
+      <a href="#">About</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page-1040">
+  <div class="crumb">
+    <a href="search-safe.html">Search</a>
+    <span class="sep">/</span>
+    <span style="color:var(--text-body);">Trevor Milton</span>
+  </div>
+
+  <div class="detail-head">
+    <div class="dh-meta">
+      <span class="badge badge-pardon">Pardon</span>
+      <span class="badge badge-cat" style="color:#8A6B1E;">Financial fraud</span>
+      <span class="label">Granted by Donald J. Trump · 2nd term · March 28, 2025</span>
+    </div>
+    <h1>Trevor Milton</h1>
+    <p class="one-liner">Founder of the electric-vehicle company Nikola Corp., convicted in 2022 of securities fraud and wire fraud for misleading investors about the company's technology. Pardoned at 4 years into his sentence; <span style="color:var(--accent); font-weight:500;">$680M in restitution to investors no longer enforceable</span>.</p>
+  </div>
+
+  <!-- KNOWN strip -->
+  <div class="known-strip">
+    <div class="ks">
+      <div class="lbl">Sentence</div>
+      <div class="val">4 years</div>
+      <div class="note">48 months federal prison (S.D.N.Y.)</div>
+    </div>
+    <div class="ks">
+      <div class="lbl">Fine</div>
+      <div class="val">$1M</div>
+      <div class="note">Standard penalty to U.S. Treasury</div>
+    </div>
+    <div class="ks tinted">
+      <div class="lbl">Restitution forgiven</div>
+      <div class="val">$680M</div>
+      <div class="note">Owed to defrauded Nikola investors</div>
+    </div>
+    <div class="ks">
+      <div class="lbl">Time served</div>
+      <div class="val">0 months</div>
+      <div class="note">Pardoned before reporting to prison</div>
+    </div>
+  </div>
+
+  <!-- tabs -->
+  <div class="tab-strip">
+    <button class="tab active">Overview</button>
+    <button class="tab">Offenses (3)</button>
+    <button class="tab">Source documents</button>
+    <button class="tab">Related grants</button>
+  </div>
+
+  <!-- main grid -->
+  <div class="detail-grid">
+    <div>
+      <!-- offenses -->
+      <div class="section-block">
+        <h3>Offenses</h3>
+        <div class="offense-list">
+          <div class="offense-item">
+            <div class="oi-num">1</div>
+            <div>
+              <div class="oi-text">Securities fraud</div>
+              <div class="oi-note">15 U.S.C. § 78j(b), § 78ff · Count One of indictment</div>
+            </div>
+          </div>
+          <div class="offense-item">
+            <div class="oi-num">2</div>
+            <div>
+              <div class="oi-text">Wire fraud</div>
+              <div class="oi-note">18 U.S.C. § 1343 · Count Three of indictment</div>
+            </div>
+          </div>
+          <div class="offense-item">
+            <div class="oi-num">3</div>
+            <div>
+              <div class="oi-text">Securities fraud (additional count)</div>
+              <div class="oi-note">15 U.S.C. § 78j(b), § 78ff · Count Two of indictment</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- original sentence -->
+      <div class="section-block">
+        <h3>Original sentence</h3>
+        <div class="quote-box">
+          <div class="qlbl">As recorded in DOJ warrant</div>
+          <p class="qtext">"Sentenced on December 18, 2023 to 48 months imprisonment, three years supervised release, and ordered to pay restitution in the amount of $675,963,477.00 and a fine of $1,000,000.00."</p>
+        </div>
+      </div>
+
+      <!-- pardon scope -->
+      <div class="section-block">
+        <h3>Scope of clemency</h3>
+        <div class="quote-box">
+          <div class="qlbl">From the warrant text</div>
+          <p class="qtext">"A full and unconditional pardon for the offenses described above, remitting the unserved portion of the sentence of imprisonment and any unpaid balance of the restitution and fine."</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ASIDE -->
+    <aside>
+      <div class="aside-block">
+        <h4>Case details</h4>
+        <div class="kv">
+          <div class="kv-row"><div class="k">Clemency type</div><div class="v">Pardon</div></div>
+          <div class="kv-row"><div class="k">Grant date</div><div class="v">March 28, 2025</div></div>
+          <div class="kv-row"><div class="k">President</div><div class="v">Trump (2nd term)</div></div>
+          <div class="kv-row"><div class="k">District</div><div class="v">S.D.N.Y.</div></div>
+          <div class="kv-row"><div class="k">Category</div><div class="v">Financial fraud</div></div>
+          <div class="kv-row"><div class="k">Convicted</div><div class="v">Oct 14, 2022</div></div>
+          <div class="kv-row"><div class="k">Sentenced</div><div class="v">Dec 18, 2023</div></div>
+        </div>
+      </div>
+
+      <div class="aside-block sources">
+        <h4>Source documents</h4>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <a class="source-link" href="#" style="background:transparent; border-color:rgba(194,59,34,0.2);">
+            <span class="icon">📄</span>
+            <div>
+              <div class="title">Pardon warrant (PDF)</div>
+              <div class="subtitle">DOJ Office of the Pardon Attorney</div>
+            </div>
+            <span class="arrow">↗</span>
+          </a>
+          <a class="source-link" href="#" style="background:transparent; border-color:rgba(194,59,34,0.2);">
+            <span class="icon">🏛</span>
+            <div>
+              <div class="title">DOJ clemency listing</div>
+              <div class="subtitle">justice.gov/pardon</div>
+            </div>
+            <span class="arrow">↗</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="same-day">
+        <h4>Same-day grants</h4>
+        <p class="sub">Other clemency issued March 28, 2025 (3 grants).</p>
+        <div class="chip-row">
+          <a href="#" class="chip">Devon Archer</a>
+          <a href="#" class="chip">Carlos Watson</a>
+          <a href="#" class="chip">Paul Walczak</a>
+        </div>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="site-footer-inner">
+    <div><a href="index.html" class="wordmark">Pardonn<span class="accent">e</span>d</a></div>
+    <div class="site-footer-meta">Data source: DOJ Office of the Pardon Attorney · Not affiliated with the U.S. government<br>Last updated: May 2, 2026 @ 1103 hrs EST</div>
+  </div>
+</footer>
+
+</body>
+</html>
