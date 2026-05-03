@@ -559,7 +559,6 @@ const categoryColorMap: Record<string, string> = Object.fromEntries(
                 president: state.president !== 'all' ? state.president : null,
                 category: state.category || null,
               },
-              source: 'desktop',
             });
           }
         }, 600);
@@ -604,6 +603,11 @@ const categoryColorMap: Record<string, string> = Object.fromEntries(
         const btn = e.target.closest('[data-action]');
         if (!btn) return;
         const action = btn.dataset.action;
+        const priorFilterCount =
+          (state.search ? 1 : 0) +
+          (state.type ? 1 : 0) +
+          (state.president !== 'all' ? 1 : 0) +
+          (state.category ? 1 : 0);
         if (action === 'clear-search') {
           state.search = '';
           if (searchInput) searchInput.value = '';
@@ -621,6 +625,7 @@ const categoryColorMap: Record<string, string> = Object.fromEntries(
         applyState();
         window.posthog?.capture('search_filters_cleared', {
           source: 'pill_remove',
+          filter_count: priorFilterCount,
           filter_type: action,
         });
       });

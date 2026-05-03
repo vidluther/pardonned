@@ -273,6 +273,7 @@ const timelineEntries = sortedDates.map((date, i) => {
                         href={`/president/${newer.slug}`}
                         class="pp-foot-link pp-foot-link-right"
                         data-direction="newer"
+                        data-to-slug={newer.slug}
                     >
                         <span class="pp-foot-stack">
                             <span class="pp-foot-label">Next administration</span>
@@ -322,6 +323,7 @@ const timelineEntries = sortedDates.map((date, i) => {
                 link.addEventListener("click", () => {
                     window.posthog?.capture("administration_neighbor_clicked", {
                         from_slug: adminSlug,
+                        to_slug: link.getAttribute("data-to-slug"),
                         direction: link.getAttribute("data-direction"),
                     });
                 });

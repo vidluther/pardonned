@@ -47,10 +47,14 @@ const { entries } = Astro.props;
 
 <script is:inline>
   document.querySelector('.timeline-container')?.addEventListener('click', (e) => {
-    const chip = e.target.closest('a.name-chip-link');
+    const chip = e.target instanceof Element ? e.target.closest('a.name-chip-link') : null;
     if (!chip) return;
+    const href = chip.getAttribute('href') || '';
     window.posthog?.capture('timeline_name_clicked', {
       name: chip.textContent?.trim(),
+      slug: href.split('/').pop() || null,
+      source: 'timeline',
+      from_path: window.location.pathname,
     });
   });
 </script>

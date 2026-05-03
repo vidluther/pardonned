@@ -1,0 +1,152 @@
+[
+  {
+    "event": "header_nav_clicked",
+    "description": "Click on a top header navigation link (desktop or mobile drawer).",
+    "file": "src/components/Header.astro",
+    "properties": ["link", "label", "source", "from_path"]
+  },
+  {
+    "event": "mobile_nav_toggled",
+    "description": "Mobile hamburger menu opened or closed.",
+    "file": "src/components/Header.astro",
+    "properties": ["state", "from_path"]
+  },
+  {
+    "event": "footer_link_clicked",
+    "description": "Click on any link in the site footer (nav duplicate, social icon, raw DB download, author byline).",
+    "file": "src/components/Footer.astro",
+    "properties": ["kind", "label", "href", "from_path"]
+  },
+  {
+    "event": "administration_clicked",
+    "description": "Navigation to a /president/<slug> page from a list or table row.",
+    "file": "src/pages/index.astro, src/pages/all-presidents.astro, src/pages/recent.astro",
+    "properties": ["slug", "source"]
+  },
+  {
+    "event": "recent_date_clicked",
+    "description": "Click on a homepage newswire row to open a pardon detail.",
+    "file": "src/pages/index.astro",
+    "properties": ["date", "slug", "source"]
+  },
+  {
+    "event": "view_all_recent_clicked",
+    "description": "Homepage newswire 'View all recent →' CTA.",
+    "file": "src/pages/index.astro",
+    "properties": ["source"]
+  },
+  {
+    "event": "restitution_leaderboard_clicked",
+    "description": "Homepage restitution leaderboard row click.",
+    "file": "src/pages/index.astro",
+    "properties": ["slug", "position", "restitution", "source"]
+  },
+  {
+    "event": "category_clicked",
+    "description": "Click on an offense-category row (homepage breakdown or president page composition).",
+    "file": "src/pages/index.astro, src/pages/president/[slug].astro",
+    "properties": ["category", "source"]
+  },
+  {
+    "event": "search_all_pardons_clicked",
+    "description": "CTA that links to the search page from the homepage source band or a president page.",
+    "file": "src/pages/index.astro, src/pages/president/[slug].astro",
+    "properties": ["source"]
+  },
+  {
+    "event": "pardon_detail_viewed",
+    "description": "Pardon detail page mounted (acts as the canonical detail-view event).",
+    "file": "src/pages/pardon/details/[slug].astro",
+    "properties": ["name", "clemency_type", "offense_category", "slug"]
+  },
+  {
+    "event": "source_document_clicked",
+    "description": "Click on the linked DOJ warrant PDF on a pardon detail page.",
+    "file": "src/pages/pardon/details/[slug].astro",
+    "properties": ["slug", "name"]
+  },
+  {
+    "event": "pardon_neighbor_clicked",
+    "description": "Prev/next pagination between pardon detail pages within an administration.",
+    "file": "src/pages/pardon/details/[slug].astro",
+    "properties": ["from_slug", "to_slug", "direction"]
+  },
+  {
+    "event": "administration_neighbor_clicked",
+    "description": "Prev/next pagination between president pages chronologically.",
+    "file": "src/pages/president/[slug].astro",
+    "properties": ["from_slug", "to_slug", "direction"]
+  },
+  {
+    "event": "all_presidents_sorted",
+    "description": "Sortable column header click on the all-presidents comparison table.",
+    "file": "src/pages/all-presidents.astro",
+    "properties": ["column", "direction"]
+  },
+  {
+    "event": "recent_month_loaded",
+    "description": "Recent feed 'Load older' button revealed the next month group.",
+    "file": "src/pages/recent.astro",
+    "properties": ["month", "rank"]
+  },
+  {
+    "event": "recent_entry_clicked",
+    "description": "Click on a row in the recent feed (excludes the inner president-link click).",
+    "file": "src/pages/recent.astro",
+    "properties": ["slug", "date", "source"]
+  },
+  {
+    "event": "timeline_name_clicked",
+    "description": "Click on a recipient name chip inside the Timeline component (currently rendered on president pages).",
+    "file": "src/components/Timeline.astro",
+    "properties": ["name", "slug", "source", "from_path"]
+  },
+  {
+    "event": "search_performed",
+    "description": "Debounced fire after the user types in the search box and matches > 0 (debounce 600ms).",
+    "file": "src/pages/search.astro",
+    "properties": ["query", "results_count", "has_results", "active_filters"]
+  },
+  {
+    "event": "type_filter_applied",
+    "description": "Search type dropdown changed to pardon or commutation.",
+    "file": "src/pages/search.astro",
+    "properties": ["type"]
+  },
+  {
+    "event": "category_filter_applied",
+    "description": "Search category dropdown changed; fires once for the unset of the prior value and once for the new value.",
+    "file": "src/pages/search.astro",
+    "properties": ["category", "checked"]
+  },
+  {
+    "event": "president_filter_applied",
+    "description": "Search president dropdown changed to a non-'all' value.",
+    "file": "src/pages/search.astro",
+    "properties": ["president", "source"]
+  },
+  {
+    "event": "search_result_clicked",
+    "description": "Click on a result row in the search results table.",
+    "file": "src/pages/search.astro",
+    "properties": ["slug", "query", "position", "total_results", "page", "has_active_filters"]
+  },
+  {
+    "event": "search_filters_cleared",
+    "description": "Filters cleared via the 'Clear all' button or by removing an individual pill.",
+    "file": "src/pages/search.astro",
+    "properties": ["source", "filter_count", "filter_type"]
+  },
+  {
+    "event": "search_page_changed",
+    "description": "Search results pagination — prev, next, or page-number button.",
+    "file": "src/pages/search.astro",
+    "properties": ["from_page", "to_page", "total_pages"]
+  },
+  {
+    "event": "$exception",
+    "description": "Uncaught JS error or unhandled promise rejection captured globally. Forwarded via posthog.captureException from window error/unhandledrejection listeners; also enabled by autocapture defaults.",
+    "file": "src/components/PostHog.astro",
+    "properties": ["$exception_message", "$exception_type", "$exception_stack_trace_raw"]
+  }
+]

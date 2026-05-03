@@ -368,6 +368,7 @@ function dayLabel(isoDate: string): string {
                     window.posthog?.capture("recent_entry_clicked", {
                         slug: entry.getAttribute("data-grant-slug"),
                         date: entry.getAttribute("data-grant-date"),
+                        source: "recent_feed",
                     });
                 });
             });
