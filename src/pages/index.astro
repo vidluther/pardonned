@@ -368,6 +368,8 @@ const heroEyebrow = `Presidential clemency · ${modernEraStartYear} → present`
                             class="lb-row"
                             href={`/pardon/details/${d.slug}`}
                             data-grant-slug={d.slug}
+                            data-position={i + 1}
+                            data-restitution={d.restitution ?? 0}
                         >
                             <div class="lb-rank">{i + 1}</div>
                             <div>
@@ -477,7 +479,9 @@ const heroEyebrow = `Presidential clemency · ${modernEraStartYear} → present`
         document
             .querySelector('a.wire-view-all[href="/recent"]')
             ?.addEventListener("click", () => {
-                window.posthog?.capture("view_all_recent_clicked");
+                window.posthog?.capture("view_all_recent_clicked", {
+                    source: "homepage_newswire",
+                });
             });
 
         // restitution_leaderboard_clicked — leaderboard row
@@ -489,6 +493,9 @@ const heroEyebrow = `Presidential clemency · ${modernEraStartYear} → present`
                         "restitution_leaderboard_clicked",
                         {
                             slug: row.getAttribute("data-grant-slug"),
+                            position: Number(row.getAttribute("data-position")),
+                            restitution: Number(row.getAttribute("data-restitution")),
+                            source: "homepage",
                         },
                     );
                 });

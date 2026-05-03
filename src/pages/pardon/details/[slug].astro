@@ -434,6 +434,7 @@ const ogImagePath = `/og/${data.slug}.png`;
                         href={`/pardon/details/${older.slug}`}
                         class="db-foot-link"
                         data-direction="older"
+                        data-to-slug={older.slug}
                     >
                         <span class="db-foot-arrow" aria-hidden="true">←</span>
                         <span class="db-foot-stack">
@@ -464,6 +465,7 @@ const ogImagePath = `/og/${data.slug}.png`;
                         href={`/pardon/details/${newer.slug}`}
                         class="db-foot-link db-foot-link-right"
                         data-direction="newer"
+                        data-to-slug={newer.slug}
                     >
                         <span class="db-foot-stack">
                             <span class="db-foot-label">Next</span>
@@ -506,8 +508,8 @@ const ogImagePath = `/og/${data.slug}.png`;
         document.querySelectorAll("a.db-doc-link").forEach((link) => {
             link.addEventListener("click", () => {
                 window.posthog?.capture("source_document_clicked", {
+                    slug: grantSlug,
                     name: recipientName,
-                    url: link.href,
                 });
             });
         });
@@ -519,6 +521,7 @@ const ogImagePath = `/og/${data.slug}.png`;
                 link.addEventListener("click", () => {
                     window.posthog?.capture("pardon_neighbor_clicked", {
                         from_slug: grantSlug,
+                        to_slug: link.getAttribute("data-to-slug"),
                         direction: link.getAttribute("data-direction"),
                     });
                 });

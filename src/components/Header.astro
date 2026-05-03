@@ -26,6 +26,9 @@ const { currentPath = "/" } = Astro.props;
         return (
           <a
             href={item.href}
+            data-nav-link={item.href}
+            data-nav-label={item.label}
+            data-nav-source="header_desktop"
             class:list={[
               "text-nav transition-colors pb-0.5",
               isActive
@@ -61,6 +64,9 @@ const { currentPath = "/" } = Astro.props;
       return (
         <a
           href={item.href}
+          data-nav-link={item.href}
+          data-nav-label={item.label}
+          data-nav-source="header_mobile"
           class:list={[
             "text-nav transition-colors py-2",
             isActive
@@ -85,6 +91,10 @@ const { currentPath = "/" } = Astro.props;
       nav.classList.remove('is-open');
       toggle.setAttribute('aria-expanded', 'false');
       toggle.focus();
+      window.posthog?.capture('mobile_nav_toggled', {
+        state: 'close',
+        from_path: window.location.pathname,
+      });
     }
 
     function openNav() {
@@ -92,6 +102,10 @@ const { currentPath = "/" } = Astro.props;
       toggle.setAttribute('aria-expanded', 'true');
       const firstLink = nav.querySelector('a');
       if (firstLink) firstLink.focus();
+      window.posthog?.capture('mobile_nav_toggled', {
+        state: 'open',
+        from_path: window.location.pathname,
+      });
     }
 
     toggle.addEventListener('click', () => {
@@ -107,6 +121,17 @@ const { currentPath = "/" } = Astro.props;
       if (e.key === 'Escape' && nav.classList.contains('is-open')) {
         closeNav();
       }
+    });
+
+    document.querySelectorAll('a[data-nav-link]').forEach((link) => {
+      link.addEventListener('click', () => {
+        window.posthog?.capture('header_nav_clicked', {
+          link: link.getAttribute('data-nav-link'),
+          label: link.getAttribute('data-nav-label'),
+          source: link.getAttribute('data-nav-source'),
+          from_path: window.location.pathname,
+        });
+      });
     });
   });
 </script>
