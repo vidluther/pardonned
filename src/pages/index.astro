@@ -152,12 +152,13 @@ const recentEntries = Array.from(grantsByDate.entries())
                         <div
                             class="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4 mb-1.5"
                         >
-                            <span
-                                class="timeline-date"
+                            <a
+                                class="timeline-date timeline-date-link no-underline"
+                                href={`/search?date=${entry.isoDate}`}
                                 data-iso-date={entry.isoDate}
                             >
                                 {entry.date}
-                            </span>
+                            </a>
                             <span class="timeline-grants-badge inline-block w-fit">
                                 {entry.grants}
                             </span>
@@ -171,9 +172,13 @@ const recentEntries = Array.from(grantsByDate.entries())
                                 />
                             ))}
                             {entry.overflow > 0 && (
-                                <span class="recent-overflow-note">
-                                    +{entry.overflow} more on this date
-                                </span>
+                                <a
+                                    class="recent-overflow-note no-underline"
+                                    href={`/search?date=${entry.isoDate}`}
+                                    data-iso-date={entry.isoDate}
+                                >
+                                    +{entry.overflow} more — view this date and earlier →
+                                </a>
                             )}
                         </div>
                     </div>
@@ -229,6 +234,28 @@ const recentEntries = Array.from(grantsByDate.entries())
             .querySelector('a[href="/search"].load-more-btn')
             ?.addEventListener("click", () => {
                 window.posthog?.capture("search_all_pardons_clicked");
+            });
+
+        // Track Recent section date label clicks
+        document
+            .querySelectorAll("a.timeline-date-link[data-iso-date]")
+            .forEach((link) => {
+                link.addEventListener("click", () => {
+                    window.posthog?.capture("recent_date_clicked", {
+                        date: link.getAttribute("data-iso-date"),
+                    });
+                });
+            });
+
+        // Track Recent section overflow link clicks
+        document
+            .querySelectorAll("a.recent-overflow-note[data-iso-date]")
+            .forEach((link) => {
+                link.addEventListener("click", () => {
+                    window.posthog?.capture("recent_overflow_clicked", {
+                        date: link.getAttribute("data-iso-date"),
+                    });
+                });
             });
     });
 </script>
