@@ -192,6 +192,11 @@
     font-size: 13px;
     color: #7a7870;
     font-style: italic;
+    transition: color 0.15s ease;
+  }
+
+  a.recent-overflow-note:hover {
+    color: #1a1918;
   }
 
   .badge {
@@ -506,6 +511,15 @@
     }
   }
 
+  .timeline-date-link {
+    display: inline-block;
+    transition: color 0.15s ease;
+  }
+
+  .timeline-date-link:hover {
+    color: #1a1918;
+  }
+
   .timeline-grants-badge {
     font-size: 11px;
     text-transform: uppercase;
@@ -687,6 +701,17 @@
     border-radius: 6px;
     padding: 10px 12px 10px 34px;
     font-size: 14px;
+  }
+
+  .date-input-sidebar {
+    width: 100%;
+    background: #f6f5f0;
+    border: 1px solid #e8e6e0;
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 14px;
+    font-family: inherit;
+    color: inherit;
   }
 
   .type-segmented {
