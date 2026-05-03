@@ -1,0 +1,511 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>All presidents — Pardonned</title>
+<link rel="stylesheet" href="../styles/tokens.css">
+<style>
+.crumb { padding: 28px 0 0; font-size: 12px; color: var(--text-muted); display: flex; gap: 8px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 500; }
+.crumb a { color: var(--text-muted); }
+.crumb .sep { color: var(--border-soft); }
+
+/* MASTHEAD */
+.masthead { padding: 32px 0 56px; border-bottom: 2px solid var(--text-primary); }
+.masthead .kicker { font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em; color: var(--accent); margin-bottom: 24px; font-weight: 500; }
+.masthead h1 { font-family: var(--serif); font-size: 88px; letter-spacing: -0.03em; line-height: 0.95; margin-bottom: 28px; max-width: 920px; }
+.masthead h1 .red { color: var(--accent); }
+.masthead h1 .quiet { color: var(--text-faint); }
+.masthead .dek { font-size: 18px; color: var(--text-body); line-height: 1.6; max-width: 720px; margin: 0; }
+
+/* totals strip */
+.totals {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-bottom: 1px solid var(--border-default);
+}
+.t-cell {
+  padding: 32px 28px 32px 0;
+  border-right: 1px solid var(--border-default);
+  padding-left: 28px;
+}
+.t-cell:first-child { padding-left: 0; }
+.t-cell:last-child { padding-right: 0; border-right: none; }
+.t-cell .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-faint); font-weight: 500; margin-bottom: 12px; }
+.t-cell .big { font-family: var(--serif); font-size: 56px; line-height: 0.95; letter-spacing: -0.025em; font-variant-numeric: tabular-nums; margin-bottom: 8px; }
+.t-cell .big.accent { color: var(--accent); }
+.t-cell .sub { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+
+/* mode toggle */
+.mode-toggle {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border-default);
+  margin-bottom: 0;
+}
+.mode-tab {
+  padding: 16px 22px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  font-weight: 500;
+  background: none;
+  border-left: none;
+  border-top: none;
+  border-right: none;
+  font-family: inherit;
+  cursor: pointer;
+}
+.mode-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.mode-tab:hover { color: var(--text-primary); }
+
+/* SECTION */
+.sec { padding: 64px 0; border-bottom: 1px solid var(--border-default); }
+.sec h2 { font-family: var(--serif); font-size: 42px; letter-spacing: -0.015em; line-height: 1.05; margin-bottom: 12px; }
+.sec .dek { font-size: 14px; color: var(--text-secondary); max-width: 620px; line-height: 1.65; margin-bottom: 40px; }
+
+/* RANKED COMPARE */
+.cmp { display: flex; flex-direction: column; }
+.cmp .head {
+  display: grid;
+  grid-template-columns: 50px 280px 1fr 160px 24px;
+  gap: 28px;
+  padding: 14px 0;
+  border-top: 2px solid var(--text-primary);
+  border-bottom: 1px solid var(--border-default);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-faint);
+  font-weight: 500;
+}
+.cmp .head .num, .cmp .row .num { text-align: right; }
+.cmp .row {
+  display: grid;
+  grid-template-columns: 50px 280px 1fr 160px 24px;
+  gap: 28px;
+  padding: 22px 0;
+  border-bottom: 1px solid var(--border-default);
+  align-items: center;
+  text-decoration: none;
+  color: var(--text-primary);
+  transition: background 0.15s;
+}
+.cmp .row:hover { background: var(--bg-muted); }
+.cmp .rank {
+  font-family: var(--serif);
+  font-size: 32px;
+  color: var(--text-faint);
+  text-align: right;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.cmp .pres .name {
+  font-family: var(--serif);
+  font-size: 22px;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+.cmp .pres .term {
+  font-size: 11px;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-top: 6px;
+}
+.cmp .pres .party { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; vertical-align: middle; position: relative; top: -3px; }
+.cmp .bar-wrap { padding-right: 8px; }
+.cmp .bar-top { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-faint); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.06em; }
+.cmp .bar-top .ct {
+  font-family: var(--serif);
+  font-size: 22px;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  text-transform: none;
+  font-variant-numeric: tabular-nums;
+}
+.cmp .bar { height: 10px; background: var(--bg-muted); }
+.cmp .fill { height: 100%; }
+.cmp .money { text-align: right; }
+.cmp .money .amt { font-family: var(--serif); font-size: 26px; color: var(--accent); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; line-height: 1; }
+.cmp .money .amt.zero { color: var(--text-ghost); }
+.cmp .money .lbl { font-size: 10px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 6px; }
+.cmp .arrow { color: var(--text-faint); text-align: right; font-size: 18px; }
+
+/* PER-DAY rate */
+.rate-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.rate-card {
+  padding: 28px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+}
+.rate-card .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-faint); font-weight: 500; margin-bottom: 16px; }
+.rate-card h3 { font-family: var(--serif); font-size: 22px; letter-spacing: -0.01em; margin: 0 0 24px; }
+.rate-list { display: flex; flex-direction: column; }
+.rate-row { display: grid; grid-template-columns: 1fr 60px 1fr 60px; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border-default); align-items: center; font-size: 13px; }
+.rate-row:last-child { border-bottom: none; }
+.rate-row .nm { color: var(--text-body); }
+.rate-row .pty { font-family: var(--serif); font-size: 18px; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; text-align: right; }
+.rate-row .b { height: 4px; background: var(--bg-muted); }
+.rate-row .b .f { height: 100%; }
+.rate-row .ct { font-size: 11px; color: var(--text-faint); text-align: right; font-variant-numeric: tabular-nums; }
+
+/* STACKED PROFILE: composition by category */
+.stack-section { padding: 64px 0; border-bottom: 1px solid var(--border-default); }
+.stack-table { display: flex; flex-direction: column; }
+.stack-row {
+  display: grid;
+  grid-template-columns: 220px 1fr 80px;
+  gap: 20px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border-default);
+  align-items: center;
+}
+.stack-row.head {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-faint);
+  font-weight: 500;
+  border-top: 2px solid var(--text-primary);
+  padding: 14px 0;
+}
+.stack-row.head .num { text-align: right; }
+.stack-row .pres-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.stack-row .pres-info .nm { font-size: 14px; font-weight: 500; }
+.stack-row .pres-info .term { font-size: 11px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.08em; }
+.stack-bar { height: 24px; display: flex; overflow: hidden; }
+.stack-bar .seg { height: 100%; transition: opacity 0.15s; cursor: pointer; }
+.stack-bar .seg:hover { opacity: 0.8; }
+.stack-row .total { font-family: var(--serif); font-size: 18px; text-align: right; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.stack-legend { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--border-default); }
+.stack-legend .item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-body); }
+.stack-legend .sw { width: 12px; height: 12px; border-radius: 0; }
+
+/* CALLOUT */
+.callout {
+  background: var(--accent-tint);
+  border-top: 2px solid var(--accent);
+  padding: 56px 56px 48px;
+  margin: 0;
+}
+.callout .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em; color: var(--accent); font-weight: 500; margin-bottom: 24px; }
+.callout .text { font-family: var(--serif); font-size: 32px; line-height: 1.25; letter-spacing: -0.015em; color: var(--text-primary); max-width: 880px; }
+.callout .text .red { color: var(--accent); }
+
+/* TIMELINE TICKER */
+.ticker { padding: 64px 0; border-bottom: 1px solid var(--border-default); }
+.ticker-strip { display: flex; gap: 0; border-top: 2px solid var(--text-primary); }
+.tk-cell {
+  flex: 1;
+  padding: 22px 16px;
+  border-right: 1px solid var(--border-default);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.tk-cell:last-child { border-right: none; }
+.tk-cell .yr { font-family: var(--serif); font-size: 13px; letter-spacing: -0.005em; color: var(--text-faint); margin-bottom: 8px; }
+.tk-cell .ct { font-family: var(--serif); font-size: 28px; line-height: 1; letter-spacing: -0.015em; font-variant-numeric: tabular-nums; }
+.tk-cell .pres { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-faint); margin-top: 8px; font-weight: 500; }
+
+.party-D { background: #2A6A7A; }
+.party-R { background: #C23B22; }
+</style>
+</head>
+<body>
+
+<header class="site-nav">
+  <div class="site-nav-inner">
+    <a href="index.html" class="wordmark">Pardonn<span class="accent">e</span>d<span class="wordmark-tag">Clemency tracker</span></a>
+    <nav class="nav-links">
+      <a href="home-bold.html">Home</a>
+      <a href="search-bold.html">Search</a>
+      <a href="all-presidents.html" class="active">Presidents</a>
+      <a href="recent.html">Recent</a>
+      <a href="#">About</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page-1040">
+  <div class="crumb">
+    <a href="home-bold.html">Home</a>
+    <span class="sep">/</span>
+    <span style="color:var(--text-body);">All presidents</span>
+  </div>
+
+  <header class="masthead">
+    <div class="kicker">Cross-administration comparison · 1993 → 2026</div>
+    <h1><span class="quiet">Five presidents.</span><br>Nine terms.<br><span class="red">$1.47B</span> in restitution.</h1>
+    <p class="dek">A side-by-side look at every administration's clemency record since 1993 — by volume, by money forgiven, by composition, and by pace. Drawn from the same DOJ source for every term, normalized for comparison.</p>
+  </header>
+
+  <div class="totals">
+    <div class="t-cell"><div class="lbl">Grants tracked</div><div class="big">3,205</div><div class="sub">Pardons + commutations, all administrations.</div></div>
+    <div class="t-cell"><div class="lbl">Restitution forgiven</div><div class="big accent">$1.47B</div><div class="sub">Owed to victims, written off by clemency.</div></div>
+    <div class="t-cell"><div class="lbl">Years covered</div><div class="big">33</div><div class="sub">January 1993 to present.</div></div>
+    <div class="t-cell"><div class="lbl">Avg per term</div><div class="big">356</div><div class="sub">Wide variance — Obama 2nd skews the mean.</div></div>
+  </div>
+
+  <!-- BY VOLUME -->
+  <section class="sec">
+    <h2>Ranked by total grants.</h2>
+    <p class="dek">Each term shown separately. Bar widths scale to Obama's second term (1,904), the largest single-term clemency record on file — driven primarily by drug-offense commutations under the 2014 clemency initiative.</p>
+
+    <div class="cmp" id="cmpVolume">
+      <div class="head">
+        <div class="num">#</div>
+        <div>President · term</div>
+        <div>Grants</div>
+        <div class="num">Restitution</div>
+        <div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BY MONEY -->
+  <section class="sec">
+    <h2>Ranked by restitution forgiven.</h2>
+    <p class="dek">Same nine terms, re-ranked by total dollars forgiven. The order changes dramatically — Trump's second term jumps from #4 by volume to #1 by dollars, while Obama's huge second term drops because most grants involved drug offenses with no restitution.</p>
+
+    <div class="cmp" id="cmpMoney">
+      <div class="head">
+        <div class="num">#</div>
+        <div>President · term</div>
+        <div>Restitution</div>
+        <div class="num">Grants</div>
+        <div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CALLOUT -->
+  <div class="callout">
+    <div class="lbl">The reorder</div>
+    <p class="text">Ranking by <span class="red">grants</span> and ranking by <span class="red">dollars</span> produce almost-inverse lists. Volume and impact are not the same thing — and the editorial story lives in the gap between them.</p>
+  </div>
+
+  <!-- COMPOSITION -->
+  <section class="stack-section">
+    <h2 style="font-family: var(--serif); font-size: 42px; letter-spacing: -0.015em; line-height:1.05; margin-bottom:12px;">Composition by category.</h2>
+    <p class="dek">Each row shows the offense-category mix of one term's grants, scaled to fill the row. Obama's terms are dominated by drug commutations; Trump's first term skewed political; Trump's second is anchored by the January 6 blanket.</p>
+
+    <div class="stack-table" id="stackTable">
+      <div class="stack-row head">
+        <div>President · term</div>
+        <div>Composition (proportional)</div>
+        <div class="num">Total</div>
+      </div>
+    </div>
+
+    <div class="stack-legend" id="stackLegend"></div>
+  </section>
+
+  <!-- PER-DAY rate -->
+  <section class="sec">
+    <h2>Rate of clemency.</h2>
+    <p class="dek">Average grants per year served, and average dollars forgiven per grant. These remove the inflation effect of long-running terms, and reveal the per-grant intensity of recent administrations.</p>
+
+    <div class="rate-grid">
+      <div class="rate-card">
+        <div class="lbl">Pace</div>
+        <h3>Grants per year of term</h3>
+        <div class="rate-list" id="rateGrants"></div>
+      </div>
+      <div class="rate-card">
+        <div class="lbl">Intensity</div>
+        <h3>Avg restitution per grant</h3>
+        <div class="rate-list" id="rateMoney"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TICKER -->
+  <section class="ticker" style="border-bottom: none;">
+    <h2 style="font-family: var(--serif); font-size: 42px; letter-spacing: -0.015em; line-height:1.05; margin-bottom:12px;">Across the years.</h2>
+    <p class="dek">A condensed timeline of which administration was issuing clemency in each calendar year.</p>
+
+    <div class="ticker-strip" id="tickerStrip"></div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="site-footer-inner">
+    <div><a href="index.html" class="wordmark">Pardonn<span class="accent">e</span>d</a></div>
+    <div class="site-footer-meta">Data source: DOJ Office of the Pardon Attorney · Not affiliated with the U.S. government<br>Last updated: May 2, 2026 @ 1103 hrs EST</div>
+  </div>
+</footer>
+
+<script src="data/sample.js"></script>
+<script>
+const { ADMINS, formatMoney } = window.PARDONNED;
+
+// term length in years (approx)
+const TERM_YEARS = {
+  'trump-2': 1.3, 'biden': 4, 'trump-1': 4, 'obama-2': 4, 'obama-1': 4,
+  'bush-2': 4, 'bush-1': 4, 'clinton-2': 4, 'clinton-1': 4,
+};
+
+function buildCmpRow(parent, a, i, primary, secondary, primaryMax) {
+  const row = document.createElement('a');
+  row.className = 'row';
+  row.href = a.id === 'trump-2' ? 'president-bold.html' : '#';
+  const primaryPct = (primary.value / primaryMax) * 100;
+  row.innerHTML = `
+    <div class="rank">${i + 1}</div>
+    <div class="pres">
+      <div class="name"><span class="party party-${a.party}"></span>${a.name}</div>
+      <div class="term">${a.term || '—'} · ${a.years}</div>
+    </div>
+    <div class="bar-wrap">
+      <div class="bar-top"><span>${primary.label}</span><span class="ct">${primary.display}</span></div>
+      <div class="bar"><div class="fill" style="width:${primaryPct}%; background:${a.color};"></div></div>
+    </div>
+    <div class="money">
+      <div class="amt ${secondary.zero ? 'zero' : ''}">${secondary.display}</div>
+      <div class="lbl">${secondary.label}</div>
+    </div>
+    <div class="arrow">→</div>
+  `;
+  parent.appendChild(row);
+}
+
+// ranked by volume
+const byVolume = [...ADMINS].sort((a,b) => b.count - a.count);
+const maxV = Math.max(...byVolume.map(a => a.count));
+const cmpV = document.getElementById('cmpVolume');
+byVolume.forEach((a, i) => buildCmpRow(cmpV, a, i,
+  { label: 'Grants', value: a.count, display: a.count.toLocaleString() },
+  { label: 'Restitution', display: a.restitution > 0 ? formatMoney(a.restitution) : '$0', zero: a.restitution === 0 }
+, maxV));
+
+// ranked by money
+const byMoney = [...ADMINS].sort((a,b) => b.restitution - a.restitution);
+const maxM = Math.max(...byMoney.map(a => a.restitution));
+const cmpM = document.getElementById('cmpMoney');
+byMoney.forEach((a, i) => buildCmpRow(cmpM, a, i,
+  { label: 'Restitution', value: a.restitution, display: a.restitution > 0 ? formatMoney(a.restitution) : '$0' },
+  { label: 'Grants', display: a.count.toLocaleString() }
+, maxM));
+
+// composition stacks (faux per-term breakdown)
+const COMP = {
+  'trump-2': [['#C23B22','Jan 6',1500],['#8A6B1E','Fraud',38],['#B8652A','FACE',23],['#3A6A4A','Drug',18],['#2A6A7A','Crypto',14],['#6A4B7A','Pol.',12],['#7A7870','Other',26]],
+  'biden':   [['#3A6A4A','Drug',128],['#7A7870','Other',47],['#6A2A2A','Violent',39],['#8A6B1E','Fraud',26],['#6A4B7A','Pol.',12],['#4A4030','Firearm',5]],
+  'trump-1': [['#6A4B7A','Pol.',62],['#8A6B1E','Fraud',58],['#3A6A4A','Drug',42],['#7A7870','Other',38],['#6A2A2A','Violent',24],['#4A4030','Firearm',14]],
+  'obama-2': [['#3A6A4A','Drug',1715],['#7A7870','Other',98],['#8A6B1E','Fraud',52],['#4A4030','Firearm',31],['#6A2A2A','Violent',8]],
+  'obama-1': [['#3A6A4A','Drug',12],['#7A7870','Other',7],['#8A6B1E','Fraud',4]],
+  'bush-2':  [['#3A6A4A','Drug',64],['#8A6B1E','Fraud',48],['#7A7870','Other',32],['#6A2A2A','Violent',15],['#4A4030','Firearm',10]],
+  'bush-1':  [['#3A6A4A','Drug',12],['#8A6B1E','Fraud',9],['#7A7870','Other',7],['#4A4030','Firearm',3]],
+  'clinton-2': [['#3A6A4A','Drug',184],['#8A6B1E','Fraud',102],['#7A7870','Other',64],['#6A4B7A','Pol.',32],['#6A2A2A','Violent',24]],
+  'clinton-1': [['#3A6A4A','Drug',22],['#8A6B1E','Fraud',14],['#7A7870','Other',12],['#4A4030','Firearm',8]],
+};
+const stackEl = document.getElementById('stackTable');
+[...ADMINS].sort((a,b) => b.count - a.count).forEach(a => {
+  const segs = COMP[a.id] || [];
+  const total = segs.reduce((s, [,,c]) => s + c, 0);
+  const row = document.createElement('div');
+  row.className = 'stack-row';
+  row.innerHTML = `
+    <div class="pres-info">
+      <div class="nm"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${a.party === 'D' ? '#2A6A7A' : '#C23B22'};margin-right:8px;"></span>${a.name}</div>
+      <div class="term">${a.term || '—'} · ${a.years}</div>
+    </div>
+    <div class="stack-bar">
+      ${segs.map(([col, lbl, ct]) => `<div class="seg" style="background:${col}; width:${(ct/total)*100}%;" title="${lbl}: ${ct}"></div>`).join('')}
+    </div>
+    <div class="total">${total.toLocaleString()}</div>
+  `;
+  stackEl.appendChild(row);
+});
+
+// stack legend
+const legendItems = [
+  ['#C23B22','January 6'], ['#3A6A4A','Drug offenses'], ['#8A6B1E','Financial fraud'],
+  ['#6A4B7A','Political'], ['#2A6A7A','Crypto/securities'], ['#B8652A','FACE Act'],
+  ['#6A2A2A','Violent crime'], ['#4A4030','Firearms'], ['#7A7870','Other'],
+];
+const legEl = document.getElementById('stackLegend');
+legendItems.forEach(([c, l]) => {
+  const item = document.createElement('div');
+  item.className = 'item';
+  item.innerHTML = `<div class="sw" style="background:${c}"></div>${l}`;
+  legEl.appendChild(item);
+});
+
+// rates
+const grantsPerYear = ADMINS.map(a => ({ ...a, rate: a.count / TERM_YEARS[a.id] })).sort((a,b) => b.rate - a.rate);
+const maxRate = Math.max(...grantsPerYear.map(a => a.rate));
+const rg = document.getElementById('rateGrants');
+grantsPerYear.forEach(a => {
+  const pct = (a.rate / maxRate) * 100;
+  const row = document.createElement('div');
+  row.className = 'rate-row';
+  row.innerHTML = `
+    <div class="nm">${a.name.split(' ').slice(-1)[0]}<span style="color:var(--text-faint); font-size: 11px; text-transform:uppercase; letter-spacing:0.08em; margin-left: 6px;">${a.term ? a.term.replace(' Term','') : ''}</span></div>
+    <div class="pty">${Math.round(a.rate)}</div>
+    <div class="b"><div class="f" style="width:${pct}%; background:${a.color};"></div></div>
+    <div class="ct">${a.count.toLocaleString()}/yr</div>
+  `;
+  rg.appendChild(row);
+});
+
+const moneyPerGrant = ADMINS.filter(a => a.restitution > 0).map(a => ({ ...a, avg: a.restitution / a.count })).sort((a,b) => b.avg - a.avg);
+const maxAvg = Math.max(...moneyPerGrant.map(a => a.avg));
+const rm = document.getElementById('rateMoney');
+moneyPerGrant.forEach(a => {
+  const pct = (a.avg / maxAvg) * 100;
+  const row = document.createElement('div');
+  row.className = 'rate-row';
+  row.innerHTML = `
+    <div class="nm">${a.name.split(' ').slice(-1)[0]}<span style="color:var(--text-faint); font-size: 11px; text-transform:uppercase; letter-spacing:0.08em; margin-left: 6px;">${a.term ? a.term.replace(' Term','') : ''}</span></div>
+    <div class="pty" style="color:var(--accent)">${formatMoney(a.avg)}</div>
+    <div class="b"><div class="f" style="width:${pct}%; background:var(--accent);"></div></div>
+    <div class="ct">avg</div>
+  `;
+  rm.appendChild(row);
+});
+
+// year ticker
+const YEARS = [];
+for (let y = 1993; y <= 2026; y++) YEARS.push(y);
+const yearOwner = (y) => {
+  if (y >= 2025) return ['trump-2', 'Trump 2'];
+  if (y >= 2021) return ['biden', 'Biden'];
+  if (y >= 2017) return ['trump-1', 'Trump 1'];
+  if (y >= 2013) return ['obama-2', 'Obama 2'];
+  if (y >= 2009) return ['obama-1', 'Obama 1'];
+  if (y >= 2005) return ['bush-2', 'Bush 2'];
+  if (y >= 2001) return ['bush-1', 'Bush 1'];
+  if (y >= 1997) return ['clinton-2', 'Clinton 2'];
+  return ['clinton-1', 'Clinton 1'];
+};
+// fake per-year counts for demo
+const YEAR_COUNTS = { 1993:0,1994:1,1995:0,1996:18,1997:0,1998:62,1999:128,2000:108,2001:140,2002:8,2003:8,2004:6,2005:23,2006:60,2007:32,2008:54,2009:0,2010:9,2011:14,2012:0,2013:0,2014:21,2015:99,2016:1784,2017:170,2018:34,2019:24,2020:142,2021:78,2022:18,2023:11,2024:172,2025:115,2026:6 };
+const tickerEl = document.getElementById('tickerStrip');
+// show 12 most recent years
+YEARS.slice(-12).forEach(y => {
+  const [id, lbl] = yearOwner(y);
+  const a = ADMINS.find(x => x.id === id) || {};
+  const cell = document.createElement('div');
+  cell.className = 'tk-cell';
+  const ct = YEAR_COUNTS[y] || 0;
+  cell.innerHTML = `
+    <div class="yr">${y}</div>
+    <div class="ct" style="${ct ? '' : 'color:var(--text-ghost);'}">${ct.toLocaleString()}</div>
+    <div class="pres" style="color:${a.color || 'var(--text-faint)'}">${lbl}</div>
+  `;
+  tickerEl.appendChild(cell);
+});
+</script>
+</body>
+</html>

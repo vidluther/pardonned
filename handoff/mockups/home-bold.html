@@ -1,0 +1,763 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pardonned — Tracking presidential clemency since 1993</title>
+<link rel="stylesheet" href="../styles/tokens.css">
+<style>
+/* ===== Editorial hero ===== */
+.hero-bold {
+  padding: 56px 0 0;
+  position: relative;
+}
+.hero-bold .eyebrow {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--accent);
+  font-weight: 500;
+  margin-bottom: 28px;
+}
+.hero-bold h1 {
+  font-family: var(--serif);
+  font-size: 84px;
+  line-height: 0.98;
+  letter-spacing: -0.025em;
+  margin-bottom: 32px;
+  max-width: 980px;
+}
+.hero-bold h1 .red { color: var(--accent); }
+.hero-bold h1 .quiet { color: var(--text-faint); }
+.hero-bold .deck {
+  font-size: 18px;
+  color: var(--text-body);
+  max-width: 620px;
+  line-height: 1.65;
+  margin-bottom: 56px;
+}
+
+/* big number wall */
+.numwall {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr 1fr;
+  border-top: 2px solid var(--text-primary);
+  padding-top: 28px;
+  margin-bottom: 80px;
+  gap: 0;
+}
+.nw {
+  padding-right: 24px;
+  border-right: 1px solid var(--border-default);
+  padding-left: 24px;
+}
+.nw:first-child { padding-left: 0; }
+.nw:last-child { border-right: none; }
+.nw .lbl {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-faint);
+  font-weight: 500;
+  margin-bottom: 10px;
+}
+.nw .big {
+  font-family: var(--serif);
+  font-size: 64px;
+  line-height: 0.95;
+  letter-spacing: -0.025em;
+  margin-bottom: 8px;
+  font-variant-numeric: tabular-nums;
+}
+.nw .big.accent { color: var(--accent); }
+.nw .sub {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* ===== NEWSWIRE TICKER ===== */
+.wire {
+  border-top: 2px solid var(--text-primary);
+  border-bottom: 1px solid var(--border-default);
+  margin: 56px 0 0;
+  background: var(--bg-card);
+}
+.wire-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border-default);
+  gap: 24px;
+}
+.wire-head .left { display: flex; align-items: center; gap: 14px; }
+.wire-head .stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--accent);
+  padding: 4px 10px;
+  background: var(--accent-tint);
+  border-radius: 2px;
+}
+.wire-head .stamp .dot {
+  width: 6px; height: 6px; background: var(--accent); border-radius: 50%;
+  animation: pulse 1.6s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.7); }
+}
+.wire-head h3 {
+  font-family: var(--serif);
+  font-size: 24px;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+.wire-head .right {
+  display: flex; align-items: center; gap: 18px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-faint);
+  font-weight: 500;
+}
+.wire-head .view-all {
+  color: var(--accent);
+  border-bottom: 1px solid var(--accent-border);
+  padding-bottom: 1px;
+}
+.wire-head .view-all:hover { border-bottom-color: var(--accent); }
+
+.wire-list { display: flex; flex-direction: column; }
+.wire-item {
+  display: grid;
+  grid-template-columns: 110px 1fr 200px 110px 24px;
+  gap: 24px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border-default);
+  align-items: center;
+  text-decoration: none;
+  color: var(--text-primary);
+  transition: background 0.15s;
+}
+.wire-item:last-child { border-bottom: none; }
+.wire-item:hover { background: var(--bg-page); }
+.wire-item .stamp-time {
+  font-family: var(--mono, ui-monospace, "SF Mono", Menlo, monospace);
+  font-size: 11px;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.4;
+}
+.wire-item .stamp-time .when { color: var(--accent); display: block; font-weight: 600; }
+.wire-item .body .who { font-family: var(--serif); font-size: 19px; letter-spacing: -0.005em; line-height: 1.2; }
+.wire-item .body .what { font-size: 12px; color: var(--text-secondary); margin-top: 4px; line-height: 1.5; }
+.wire-item .pres-mini { font-size: 12px; color: var(--text-body); }
+.wire-item .pres-mini .term { font-size: 10px; color: var(--text-faint); display: block; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.08em; }
+.wire-item .pres-mini .pty { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 8px; vertical-align: middle; position: relative; top: -2px; }
+.wire-item .money-mini { text-align: right; font-family: var(--serif); font-size: 17px; color: var(--accent); font-variant-numeric: tabular-nums; letter-spacing: -0.005em; }
+.wire-item .money-mini.zero { color: var(--text-ghost); font-family: var(--sans); font-size: 12px; }
+.wire-item .arr { color: var(--text-faint); text-align: right; }
+
+/* ===== Comparison: ranked admins ===== */
+.section-header {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 56px;
+  align-items: baseline;
+  border-top: 2px solid var(--text-primary);
+  padding: 28px 0 28px;
+}
+.section-title {
+  font-family: var(--serif);
+  font-size: 42px;
+  line-height: 1.05;
+  letter-spacing: -0.015em;
+  max-width: 720px;
+  margin-bottom: 0;
+}
+.section-deck {
+  font-size: 14px;
+  color: var(--text-secondary);
+  max-width: 540px;
+  line-height: 1.65;
+  margin: 0;
+}
+
+.compare-bold {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  border-top: 1px solid var(--border-default);
+}
+.cb-row {
+  display: grid;
+  grid-template-columns: 60px 280px 1fr 180px 24px;
+  gap: 28px;
+  padding: 22px 0;
+  border-bottom: 1px solid var(--border-default);
+  align-items: center;
+  text-decoration: none;
+  color: var(--text-primary);
+  transition: background 0.15s;
+}
+.cb-row:hover { background: var(--bg-muted); padding-left: 16px; padding-right: 16px; margin-left: -16px; margin-right: -16px;}
+.cb-rank {
+  font-family: var(--serif);
+  font-size: 36px;
+  color: var(--text-faint);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+.cb-pres .name {
+  font-family: var(--serif);
+  font-size: 24px;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+.cb-pres .term {
+  font-size: 12px;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-top: 6px;
+}
+.cb-pres .party {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 8px;
+  vertical-align: middle;
+  position: relative;
+  top: -3px;
+}
+.cb-bar-wrap { padding-right: 12px; }
+.cb-barlbl {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-faint);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.cb-barlbl .count {
+  font-family: var(--serif);
+  font-size: 22px;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  text-transform: none;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+.cb-bar {
+  height: 10px;
+  background: var(--bg-muted);
+  border-radius: 0;
+  overflow: hidden;
+  position: relative;
+}
+.cb-bar-fill {
+  height: 100%;
+  background: var(--text-primary);
+}
+.cb-money {
+  text-align: right;
+}
+.cb-money .amount {
+  font-family: var(--serif);
+  font-size: 28px;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+.cb-money .amount.zero { color: var(--text-ghost); }
+.cb-money .lbl {
+  font-size: 10px;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-top: 6px;
+}
+.cb-arrow { color: var(--text-faint); text-align: right; font-size: 18px; }
+
+/* ===== Pull quote / callout ===== */
+.callout {
+  background: var(--accent-tint);
+  border-top: 2px solid var(--accent);
+  padding: 56px 56px 48px;
+  margin: 80px 0;
+  position: relative;
+}
+.callout .label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--accent);
+  font-weight: 500;
+  margin-bottom: 24px;
+}
+.callout .text {
+  font-family: var(--serif);
+  font-size: 36px;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  color: var(--text-primary);
+  max-width: 880px;
+}
+.callout .text .red { color: var(--accent); }
+
+/* ===== Restitution leaderboard (editorial table) ===== */
+.lb-bold {
+  border-top: 2px solid var(--text-primary);
+}
+.lb-row-bold {
+  display: grid;
+  grid-template-columns: 60px 1fr 180px 200px;
+  gap: 24px;
+  padding: 22px 0;
+  border-bottom: 1px solid var(--border-default);
+  align-items: baseline;
+  text-decoration: none;
+  color: var(--text-primary);
+  transition: background 0.15s;
+}
+.lb-row-bold:hover { background: var(--bg-muted); padding-left: 12px; padding-right: 12px; margin-left: -12px; margin-right: -12px; }
+.lb-row-bold.head {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-faint);
+  font-weight: 500;
+  padding: 10px 0 14px;
+  cursor: default;
+}
+.lb-row-bold.head:hover { background: transparent; padding: 10px 0 14px; margin: 0; }
+.lb-rank-bold {
+  font-family: var(--serif);
+  font-size: 18px;
+  color: var(--text-faint);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.lb-name-bold {
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+}
+.lb-offense-bold {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+  line-height: 1.5;
+}
+.lb-pres-bold {
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: left;
+}
+.lb-pres-bold .yr { color: var(--text-faint); display:block; font-size: 12px; margin-top:2px; }
+.lb-money-bold {
+  font-family: var(--serif);
+  font-size: 32px;
+  color: var(--accent);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.015em;
+  line-height: 1;
+}
+
+/* ===== Recent activity rail ===== */
+.activity-rail {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 56px;
+  padding: 60px 0;
+  border-top: 1px solid var(--border-default);
+}
+.ar-side h3 {
+  font-family: var(--serif);
+  font-size: 28px;
+  letter-spacing: -0.01em;
+  margin-bottom: 12px;
+}
+.ar-side p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0;
+}
+.ar-feed { display: flex; flex-direction: column; gap: 0; }
+.ar-day {
+  border-bottom: 1px solid var(--border-default);
+  padding: 18px 0;
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  gap: 24px;
+  align-items: baseline;
+}
+.ar-day:first-child { padding-top: 0; }
+.ar-day .date {
+  font-family: var(--serif);
+  font-size: 18px;
+  letter-spacing: -0.01em;
+}
+.ar-day .meta {
+  font-size: 11px;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 4px;
+}
+.ar-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ar-chip {
+  font-size: 13px;
+  color: var(--text-primary);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-default);
+  padding: 4px 10px;
+  border-radius: 4px;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+.ar-chip:hover { background: var(--bg-muted); }
+.ar-chip.commutation { color: #2A6A7A; }
+
+/* ===== Categories: typographic ===== */
+.cat-list {
+  border-top: 1px solid var(--border-default);
+}
+.cat-row {
+  display: grid;
+  grid-template-columns: 100px 1fr 200px;
+  gap: 20px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--border-default);
+  align-items: center;
+  text-decoration: none;
+  color: var(--text-primary);
+  transition: background 0.15s;
+}
+.cat-row:hover { background: var(--bg-muted); padding-left: 12px; padding-right: 12px; margin-left: -12px; margin-right: -12px; }
+.cat-row .num {
+  font-family: var(--serif);
+  font-size: 28px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+.cat-row .label-text {
+  font-size: 16px;
+  font-weight: 500;
+}
+.cat-row .bar-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.cat-row .pct-bar {
+  flex: 1;
+  height: 4px;
+  background: var(--bg-muted);
+  position: relative;
+}
+.cat-row .pct-fill { height: 100%; }
+.cat-row .pct {
+  font-size: 11px;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+  min-width: 40px;
+  text-align: right;
+}
+</style>
+</head>
+<body>
+
+<header class="site-nav">
+  <div class="site-nav-inner">
+    <a href="index.html" class="wordmark">Pardonn<span class="accent">e</span>d<span class="wordmark-tag">Clemency tracker</span></a>
+    <nav class="nav-links">
+      <a href="home-bold.html" class="active">Home</a>
+      <a href="search-bold.html">Search</a>
+      <a href="all-presidents.html">Presidents</a>
+      <a href="recent.html">Recent</a>
+      <a href="#">About</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- HERO -->
+  <section class="hero-bold page-1040">
+    <div class="eyebrow">Presidential clemency · 1993 → present</div>
+    <h1><span class="quiet">3,205</span> grants.<br><span class="red">$1.47B</span> in restitution forgiven.<br>Five presidents.</h1>
+    <p class="deck">A complete public record of federal pardons and commutations, sourced directly from the Department of Justice. Compare administrations side-by-side, follow the dollars owed to victims, and read every original warrant.</p>
+
+    <div class="numwall">
+      <div class="nw">
+        <div class="lbl">Total grants</div>
+        <div class="big mono-num">3,205</div>
+        <div class="sub">Pardons and commutations issued since January 20, 1993.</div>
+      </div>
+      <div class="nw">
+        <div class="lbl">Restitution</div>
+        <div class="big accent">$1.47B</div>
+        <div class="sub">Owed to victims of crime, written off by clemency.</div>
+      </div>
+      <div class="nw">
+        <div class="lbl">Administrations</div>
+        <div class="big mono-num">9</div>
+        <div class="sub">Across five presidents — Clinton, Bush, Obama, Trump, Biden.</div>
+      </div>
+      <div class="nw">
+        <div class="lbl">Latest</div>
+        <div class="big" style="font-size:30px; line-height:1.2;">Apr 23<br><span style="color:var(--text-faint); font-size:18px;">2026</span></div>
+        <div class="sub">Paul Walczak — tax fraud — $4.4M restitution.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- NEWSWIRE TICKER -->
+  <section class="page-1040">
+    <div class="wire">
+      <div class="wire-head">
+        <div class="left">
+          <span class="stamp"><span class="dot"></span>Live</span>
+          <h3>Recent grants</h3>
+        </div>
+        <div class="right">
+          <span>Updated <span style="color:var(--text-body)">2 hrs ago</span></span>
+          <a href="recent.html" class="view-all">View all recent →</a>
+        </div>
+      </div>
+      <div class="wire-list" id="wireList"></div>
+    </div>
+  </section>
+
+  <!-- COMPARE -->
+  <section class="page-1040" style="padding: 0 0 80px;">
+    <div class="section-header">
+      <h2 class="section-title">By administration.</h2>
+      <p class="section-deck">Ranked by total grants. The bar shows scale; the figure on the right shows restitution forgiven — money owed to victims that recipients no longer have to pay back.</p>
+    </div>
+
+    <div class="compare-bold" id="compareBold"></div>
+  </section>
+
+  <!-- CALLOUT -->
+  <section class="page-1040">
+    <div class="callout">
+      <div class="label">Combined impact</div>
+      <p class="text">Across five presidents, federal clemency has erased <span class="red">$1.47 billion</span> in court-ordered restitution — money owed to <span class="red">victims of crime</span> that they will not recover.</p>
+    </div>
+  </section>
+
+  <!-- LEADERBOARD -->
+  <section class="page-1040" style="padding: 0 0 80px;">
+    <div class="section-header">
+      <h2 class="section-title">Largest restitution forgiven.</h2>
+      <p class="section-deck">The single grants representing the most money owed to victims that no longer has to be paid back. Court-ordered restitution figures from the original DOJ warrant.</p>
+    </div>
+
+    <div class="lb-bold">
+      <div class="lb-row-bold head">
+        <div style="text-align:right;">#</div>
+        <div>Recipient · Offense</div>
+        <div>President</div>
+        <div style="text-align:right;">Restitution</div>
+      </div>
+      <div id="lbBold"></div>
+    </div>
+  </section>
+
+  <!-- ACTIVITY -->
+  <section class="page-1040">
+    <div class="activity-rail">
+      <div class="ar-side">
+        <div class="overline" style="margin-bottom:14px;">Latest activity</div>
+        <h3>The most recent clemency dates.</h3>
+        <p>Each cluster groups grants issued on the same day. Click a name to view the warrant.</p>
+      </div>
+      <div class="ar-feed" id="arFeed"></div>
+    </div>
+  </section>
+
+  <!-- CATEGORIES -->
+  <section class="page-1040" style="padding: 80px 0;">
+    <div class="section-header">
+      <h2 class="section-title">By offense category.</h2>
+      <p class="section-deck">Of 3,205 total grants, the vast majority are drug offenses from the Obama-era clemency initiative. Recent administrations have shifted toward financial and political cases.</p>
+    </div>
+    <div class="cat-list" id="catList"></div>
+  </section>
+
+  <!-- SOURCE -->
+  <section class="page-1040" style="padding: 0 0 80px;">
+    <div style="border-top: 1px solid var(--border-default); padding: 32px 0; display:flex; justify-content:space-between; align-items:baseline; gap: 32px; flex-wrap:wrap;">
+      <p style="font-size:13px; color:var(--text-secondary); max-width:580px; margin:0; line-height:1.6;">All data is drawn from the <strong style="color:var(--text-primary); font-weight:500;">DOJ Office of the Pardon Attorney</strong>. Every grant page links to the original warrant PDF. Pardonned is not affiliated with the U.S. government.</p>
+      <a href="#" style="font-size:13px; color:var(--accent); border-bottom: 1px solid var(--accent-border); padding-bottom: 1px;">View raw database ↗</a>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="site-footer-inner">
+    <div><a href="index.html" class="wordmark">Pardonn<span class="accent">e</span>d</a></div>
+    <div class="site-footer-meta">
+      Data source: DOJ Office of the Pardon Attorney · Not affiliated with the U.S. government<br>
+      Last updated: May 2, 2026 @ 1103 hrs EST
+    </div>
+  </div>
+</footer>
+
+<script src="data/sample.js"></script>
+<script>
+const { ADMINS, GRANTS, CATEGORIES, RESTITUTION_LEADERBOARD, formatMoney, formatDate, adminById } = window.PARDONNED;
+
+// Newswire ticker — most recent 5 grants
+function relStamp(s) {
+  const d = new Date(s + 'T00:00:00');
+  const now = new Date('2026-05-02');
+  const days = Math.floor((now - d) / 86400000);
+  if (days === 0) return 'TODAY';
+  if (days === 1) return 'YESTERDAY';
+  if (days < 7) return `${days}D AGO`;
+  if (days < 30) return `${Math.floor(days/7)}W AGO`;
+  if (days < 365) return `${Math.floor(days/30)}MO AGO`;
+  return `${Math.floor(days/365)}Y AGO`;
+}
+const wireList = document.getElementById('wireList');
+const wireGrants = [...GRANTS].sort((a,b) => b.date.localeCompare(a.date)).slice(0, 5);
+wireGrants.forEach(g => {
+  const a = adminById(g.president);
+  const item = document.createElement('a');
+  item.className = 'wire-item';
+  item.href = `detail-bold.html?id=${g.id}`;
+  item.innerHTML = `
+    <div class="stamp-time">
+      <span class="when">${relStamp(g.date)}</span>
+      ${formatDate(g.date)}
+    </div>
+    <div class="body">
+      <div class="who">${g.name} <span style="color:var(--text-faint); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; margin-left: 8px; font-family: var(--sans);">${g.type}</span></div>
+      <div class="what">${g.offense}${g.district && g.district !== '—' ? ' · ' + g.district : ''}</div>
+    </div>
+    <div class="pres-mini">
+      <span class="pty" style="background:${a.party === 'D' ? '#2A6A7A' : '#C23B22'};"></span>${a.name.split(' ').slice(-1)[0]}
+      <span class="term">${a.term ? a.term.replace(' Term', '').toLowerCase() + ' term' : a.years}</span>
+    </div>
+    <div class="money-mini ${g.restitution > 0 ? '' : 'zero'}">${g.restitution > 0 ? formatMoney(g.restitution) : 'no restitution'}</div>
+    <div class="arr">→</div>
+  `;
+  wireList.appendChild(item);
+});
+
+// Compare (ranked)
+const ranked = [...ADMINS].sort((a,b) => b.count - a.count);
+const maxC = Math.max(...ranked.map(a => a.count));
+const cb = document.getElementById('compareBold');
+ranked.forEach((a, i) => {
+  const pct = (a.count / maxC) * 100;
+  const row = document.createElement('a');
+  row.className = 'cb-row';
+  row.href = 'president-bold.html';
+  row.innerHTML = `
+    <div class="cb-rank">${i + 1}</div>
+    <div class="cb-pres">
+      <div class="name"><span class="party party-${a.party}"></span>${a.name}</div>
+      <div class="term">${a.term || '—'} · ${a.years}</div>
+    </div>
+    <div class="cb-bar-wrap">
+      <div class="cb-barlbl"><span>Grants</span><span class="count">${a.count.toLocaleString()}</span></div>
+      <div class="cb-bar"><div class="cb-bar-fill" style="width:${pct}%; background:${a.color};"></div></div>
+    </div>
+    <div class="cb-money">
+      <div class="amount ${a.restitution > 0 ? '' : 'zero'}">${a.restitution > 0 ? formatMoney(a.restitution) : '$0'}</div>
+      <div class="lbl">Restitution</div>
+    </div>
+    <div class="cb-arrow">→</div>
+  `;
+  cb.appendChild(row);
+});
+
+// Leaderboard
+const lb = document.getElementById('lbBold');
+RESTITUTION_LEADERBOARD.slice(0, 10).forEach((g, i) => {
+  const a = adminById(g.president);
+  const row = document.createElement('a');
+  row.className = 'lb-row-bold';
+  row.href = `detail-bold.html?id=${g.id}`;
+  row.innerHTML = `
+    <div class="lb-rank-bold">${i + 1}</div>
+    <div>
+      <div class="lb-name-bold">${g.name}</div>
+      <div class="lb-offense-bold">${g.offense} · ${g.district}</div>
+    </div>
+    <div class="lb-pres-bold">${a.name}<span class="yr">${a.years}</span></div>
+    <div class="lb-money-bold">${formatMoney(g.restitution)}</div>
+  `;
+  lb.appendChild(row);
+});
+
+// Activity
+const arFeed = document.getElementById('arFeed');
+const sortedG = [...GRANTS].sort((a,b) => b.date.localeCompare(a.date));
+const grouped = {};
+sortedG.forEach(g => { (grouped[g.date] = grouped[g.date] || []).push(g); });
+Object.keys(grouped).sort((a,b) => b.localeCompare(a)).slice(0, 6).forEach(date => {
+  const items = grouped[date];
+  const a = adminById(items[0].president);
+  const pardons = items.filter(g => g.type === 'pardon').length;
+  const comms = items.filter(g => g.type === 'commutation').length;
+  let label = [];
+  if (pardons) label.push(`${pardons} ${pardons === 1 ? 'pardon' : 'pardons'}`);
+  if (comms) label.push(`${comms} ${comms === 1 ? 'commutation' : 'commutations'}`);
+  const day = document.createElement('div');
+  day.className = 'ar-day';
+  day.innerHTML = `
+    <div>
+      <div class="date">${formatDate(date)}</div>
+      <div class="meta">${label.join(' · ')}<br>${a.name.split(' ').slice(-1)[0]}</div>
+    </div>
+    <div class="ar-chips">
+      ${items.map(g => `<a href="detail-bold.html?id=${g.id}" class="ar-chip ${g.type === 'commutation' ? 'commutation' : ''}">${g.name}</a>`).join('')}
+    </div>
+  `;
+  arFeed.appendChild(day);
+});
+
+// Categories
+const cl = document.getElementById('catList');
+const totalCat = CATEGORIES.reduce((s, c) => s + c.count, 0);
+CATEGORIES.forEach(c => {
+  const pct = (c.count / totalCat) * 100;
+  const row = document.createElement('a');
+  row.className = 'cat-row';
+  row.href = `search-bold.html?cat=${c.id}`;
+  row.innerHTML = `
+    <div class="num" style="color:${c.color}">${c.count.toLocaleString()}</div>
+    <div class="label-text">${c.label}</div>
+    <div class="bar-cell">
+      <div class="pct-bar"><div class="pct-fill" style="width:${pct}%; background:${c.color};"></div></div>
+      <div class="pct">${pct.toFixed(1)}%</div>
+    </div>
+  `;
+  cl.appendChild(row);
+});
+</script>
+</body>
+</html>

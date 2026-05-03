@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Search — Pardonned</title>
+<link rel="stylesheet" href="../styles/tokens.css">
+<style>
+.page-head { padding: 56px 0 32px; }
+.page-head .crumb { font-size: 12px; color: var(--text-muted); margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.08em; }
+.page-head h1 { font-family: var(--serif); font-size: 42px; letter-spacing: -0.015em; margin-bottom: 12px; }
+.page-head p { font-size: 15px; color: var(--text-secondary); max-width: 620px; margin: 0; }
+
+.filter-bar {
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  padding: 18px 20px;
+  margin-bottom: 24px;
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr 1fr;
+  gap: 12px;
+}
+.field { display:flex; flex-direction:column; gap:6px; }
+.field label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-faint);
+  font-weight: 500;
+}
+.field input, .field select {
+  background: var(--bg-muted);
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  padding: 9px 12px;
+  font-size: 13px;
+  color: var(--text-primary);
+  font-family: inherit;
+  width: 100%;
+}
+.field input:focus, .field select:focus { outline: 1px solid var(--accent); border-color: var(--accent); }
+.field .icon-input { position: relative; }
+.field .icon-input::before {
+  content: '⌕';
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-faint);
+  font-size: 14px;
+}
+.field .icon-input input { padding-left: 30px; }
+
+.results-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 16px;
+  padding: 0 4px;
+  font-size: 13px;
+  color: var(--text-faint);
+}
+.results-meta .count { color: var(--text-secondary); }
+.results-meta .sort {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.results-meta .sort select {
+  background: transparent;
+  border: 1px solid var(--border-default);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--text-body);
+}
+
+/* result cards */
+.results { display: flex; flex-direction: column; gap: 8px; }
+.result {
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  padding: 18px 24px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 24px;
+  align-items: start;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s, border-color 0.15s;
+}
+.result:hover { background: var(--bg-muted); border-color: var(--border-soft); }
+.result-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.result-name {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-primary);
+  letter-spacing: -0.005em;
+}
+.result-offense {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  margin-bottom: 8px;
+}
+.result-meta {
+  font-size: 12px;
+  color: var(--text-faint);
+  display: flex;
+  gap: 14px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+.result-meta .dot { color: var(--border-soft); }
+.result-right {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 130px;
+}
+.result-right .date { font-size: 12px; color: var(--text-faint); }
+.result-right .money { font-size: 16px; font-weight: 500; color: var(--accent); font-variant-numeric: tabular-nums; margin-top: 2px; }
+.result-right .money-lbl { font-size: 10px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.08em; }
+
+/* category color dot */
+.cat-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: middle;
+  position: relative;
+  top: -1px;
+}
+
+/* pres pills row */
+.pres-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 24px;
+  padding: 0 4px;
+}
+.pres-pill {
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: var(--bg-muted);
+  border: 1px solid var(--border-default);
+  color: var(--text-muted);
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+.pres-pill:hover { background: var(--bg-subtle); color: var(--text-body); }
+.pres-pill.active {
+  background: var(--accent-bg);
+  color: var(--accent);
+  border-color: var(--accent-border);
+}
+.pres-pill .ct {
+  font-size: 11px;
+  background: rgba(0,0,0,0.05);
+  padding: 1px 6px;
+  border-radius: 10px;
+  color: var(--text-faint);
+}
+.pres-pill.active .ct { background: rgba(194,59,34,0.1); color: var(--accent); }
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 32px;
+  gap: 8px;
+}
+.pagination a, .pagination span {
+  padding: 6px 12px;
+  border: 1px solid var(--border-default);
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--text-muted);
+  background: var(--bg-card);
+  text-decoration: none;
+}
+.pagination .current { background: var(--text-primary); color: white; border-color: var(--text-primary); }
+.pagination a:hover { background: var(--bg-muted); }
+</style>
+</head>
+<body>
+
+<header class="site-nav">
+  <div class="site-nav-inner">
+    <a href="index.html" class="wordmark">Pardonn<span class="accent">e</span>d<span class="wordmark-tag">Clemency tracker</span></a>
+    <nav class="nav-links">
+      <a href="home-safe.html">Home</a>
+      <a href="search-safe.html" class="active">Search</a>
+      <a href="#">Presidents</a>
+      <a href="#">About</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page-1040">
+  <div class="page-head">
+    <div class="crumb">Clemency database</div>
+    <h1>Search grants</h1>
+    <p>Filter and search across <strong>3,205 clemency grants</strong> issued by five presidents since 1993. Data sourced from the DOJ Office of the Pardon Attorney.</p>
+  </div>
+
+  <!-- pres pills -->
+  <div class="pres-pills">
+    <a class="pres-pill active" href="#">All <span class="ct">3,205</span></a>
+    <a class="pres-pill" href="#">Trump (2nd) <span class="ct">121</span></a>
+    <a class="pres-pill" href="#">Biden <span class="ct">257</span></a>
+    <a class="pres-pill" href="#">Trump (1st) <span class="ct">238</span></a>
+    <a class="pres-pill" href="#">Obama (2nd) <span class="ct">1,904</span></a>
+    <a class="pres-pill" href="#">Obama (1st) <span class="ct">23</span></a>
+    <a class="pres-pill" href="#">Bush (2nd) <span class="ct">169</span></a>
+    <a class="pres-pill" href="#">Bush (1st) <span class="ct">31</span></a>
+    <a class="pres-pill" href="#">Clinton (2nd) <span class="ct">406</span></a>
+    <a class="pres-pill" href="#">Clinton (1st) <span class="ct">56</span></a>
+  </div>
+
+  <!-- filters -->
+  <div class="filter-bar">
+    <div class="field">
+      <label>Search</label>
+      <div class="icon-input"><input type="text" placeholder="Name, offense, district…"></div>
+    </div>
+    <div class="field">
+      <label>Grant type</label>
+      <select><option>All types</option><option>Pardon</option><option>Commutation</option></select>
+    </div>
+    <div class="field">
+      <label>Category</label>
+      <select id="catSel"><option>All categories</option></select>
+    </div>
+    <div class="field">
+      <label>Date range</label>
+      <select><option>All time (1993–)</option><option>Trump (2nd, 2025–)</option><option>Biden (2021–25)</option><option>Trump (1st, 2017–21)</option><option>Obama (2009–17)</option><option>Bush (2001–09)</option><option>Clinton (1993–01)</option></select>
+    </div>
+  </div>
+
+  <div class="results-meta">
+    <div class="count"><strong style="color:var(--text-primary); font-weight:500;">26 of 3,205</strong> grants shown · <a href="#" style="color:var(--accent); border-bottom: 1px solid var(--accent-border);">Clear all</a></div>
+    <div class="sort">Sort by
+      <select><option>Most recent</option><option>Oldest</option><option>Largest restitution</option><option>Name (A–Z)</option></select>
+    </div>
+  </div>
+
+  <div class="results" id="results"></div>
+
+  <div class="pagination">
+    <a href="#">‹ Prev</a>
+    <span class="current">1</span>
+    <a href="#">2</a>
+    <a href="#">3</a>
+    <span>…</span>
+    <a href="#">128</a>
+    <a href="#">Next ›</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="site-footer-inner">
+    <div><a href="index.html" class="wordmark">Pardonn<span class="accent">e</span>d</a></div>
+    <div class="site-footer-meta">
+      Data source: DOJ Office of the Pardon Attorney · Not affiliated with the U.S. government<br>
+      Last updated: May 2, 2026 @ 1103 hrs EST
+    </div>
+  </div>
+</footer>
+
+<script src="data/sample.js"></script>
+<script>
+const { GRANTS, CATEGORIES, formatMoney, formatDate, adminById } = window.PARDONNED;
+
+// fill category select
+const cs = document.getElementById('catSel');
+CATEGORIES.forEach(c => { const o = document.createElement('option'); o.textContent = `${c.label} (${c.count.toLocaleString()})`; cs.appendChild(o); });
+
+// build results
+const sorted = [...GRANTS].sort((a,b) => b.date.localeCompare(a.date));
+const wrap = document.getElementById('results');
+sorted.forEach(g => {
+  const a = adminById(g.president);
+  const cat = CATEGORIES.find(c => c.id === g.category) || { color: '#7A7870', label: g.categoryLabel };
+  const el = document.createElement('a');
+  el.className = 'result';
+  el.href = `detail-safe.html?id=${g.id}`;
+  el.innerHTML = `
+    <div>
+      <div class="result-head">
+        <span class="result-name">${g.name}</span>
+        <span class="badge ${g.type === 'pardon' ? 'badge-pardon' : 'badge-commutation'}">${g.type === 'pardon' ? 'Pardon' : 'Commutation'}</span>
+        <span class="badge badge-cat" style="color:${cat.color};"><span class="cat-dot" style="background:${cat.color};"></span>${cat.label}</span>
+      </div>
+      <div class="result-offense">${g.offense}</div>
+      <div class="result-meta">
+        <span>${a.name}${a.term ? ', ' + a.term.replace(' Term', ' term').toLowerCase() : ''}</span>
+        <span class="dot">·</span>
+        <span>${g.district}</span>
+        <span class="dot">·</span>
+        <span>Sentence: ${g.sentence}</span>
+      </div>
+    </div>
+    <div class="result-right">
+      <div class="date">${formatDate(g.date)}</div>
+      ${g.restitution > 0 ? `<div class="money">${formatMoney(g.restitution)}</div><div class="money-lbl">Restitution</div>` : `<div style="color:var(--text-ghost); font-size:13px;">No restitution</div>`}
+    </div>
+  `;
+  wrap.appendChild(el);
+});
+</script>
+</body>
+</html>

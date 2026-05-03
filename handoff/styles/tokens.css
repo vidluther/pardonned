@@ -1,0 +1,233 @@
+/* Pardonned — design tokens (from DESIGN.md) */
+
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Serif+Display&display=swap");
+
+:root {
+  /* neutrals */
+  --bg-page: #FAFAF7;
+  --bg-card: #FFFFFF;
+  --bg-muted: #F6F5F0;
+  --bg-subtle: #F2F1EC;
+  --border-default: #E8E6E0;
+  --border-soft: #D0CEC8;
+  --text-primary: #1A1918;
+  --text-body: #4A4840;
+  --text-secondary: #6A6860;
+  --text-muted: #7A7870;
+  --text-faint: #9A9890;
+  --text-ghost: #B0AEA8;
+
+  /* accent */
+  --accent: #C23B22;
+  --accent-bg: rgba(194, 59, 34, 0.08);
+  --accent-border: rgba(194, 59, 34, 0.12);
+  --accent-tint: rgba(194, 59, 34, 0.04);
+
+  /* category colors */
+  --cat-j6: #C23B22;
+  --cat-face: #B8652A;
+  --cat-fraud: #8A6B1E;
+  --cat-crypto: #2A6A7A;
+  --cat-political: #6A4B7A;
+  --cat-drug: #3A6A4A;
+  --cat-other: #7A7870;
+  --cat-violent: #6A2A2A;
+  --cat-firearms: #4A4030;
+  --cat-immigration: #2A4A6A;
+
+  /* type system */
+  --serif: "DM Serif Display", Georgia, serif;
+  --sans: "DM Sans", system-ui, sans-serif;
+
+  /* layout */
+  --radius-card: 8px;
+  --radius-pill: 4px;
+  --radius-round: 20px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg-page);
+  color: var(--text-primary);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a { color: inherit; text-decoration: none; }
+
+/* ---------- Wordmark + nav ---------- */
+
+.site-nav {
+  border-bottom: 1px solid var(--border-default);
+  background: var(--bg-page);
+}
+.site-nav-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 18px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 32px;
+}
+.wordmark {
+  font-family: var(--serif);
+  font-size: 26px;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+.wordmark .accent { color: var(--accent); }
+.wordmark-tag {
+  margin-left: 14px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-faint);
+  font-weight: 500;
+}
+.nav-links {
+  display: flex;
+  gap: 28px;
+  align-items: baseline;
+}
+.nav-links a {
+  font-size: 14px;
+  color: var(--text-muted);
+  padding-bottom: 2px;
+  border-bottom: 1px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+.nav-links a:hover { color: var(--text-primary); }
+.nav-links a.active {
+  color: var(--text-primary);
+  border-bottom-color: var(--accent);
+}
+
+/* ---------- Footer ---------- */
+
+.site-footer {
+  border-top: 1px solid var(--border-default);
+  margin-top: 80px;
+  padding: 36px 0 60px;
+  background: var(--bg-page);
+}
+.site-footer-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 40px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 24px;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+.site-footer .wordmark { font-size: 18px; }
+.site-footer .wordmark .accent { opacity: 0.35; }
+.site-footer-meta { line-height: 1.8; }
+
+/* ---------- Common type utilities ---------- */
+
+.overline {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-faint);
+  font-weight: 500;
+}
+.serif { font-family: var(--serif); font-weight: 400; }
+.mono-num { font-variant-numeric: tabular-nums; }
+
+h1, h2, h3 { font-family: var(--serif); font-weight: 400; margin: 0; line-height: 1.2; }
+
+/* ---------- Containers ---------- */
+
+.page-960 { max-width: 1000px; margin: 0 auto; padding: 0 40px; }
+.page-1040 { max-width: 1080px; margin: 0 auto; padding: 0 40px; }
+.page-880 { max-width: 920px; margin: 0 auto; padding: 0 40px; }
+
+.divider {
+  height: 1px;
+  background: var(--border-default);
+  margin: 60px 0;
+}
+.divider.gradient {
+  background: linear-gradient(90deg, transparent, rgba(194,59,34,0.2), transparent);
+}
+
+/* ---------- Badges ---------- */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+.badge-pardon { background: var(--accent-bg); color: var(--accent); }
+.badge-commutation { background: rgba(42, 106, 122, 0.1); color: #2A6A7A; }
+.badge-cat {
+  background: var(--bg-muted);
+  border: 1px solid var(--border-default);
+}
+
+/* ---------- Source link ---------- */
+.source-link {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--bg-muted);
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  padding: 14px 18px;
+  text-decoration: none;
+  color: var(--text-primary);
+  transition: background 0.15s;
+}
+.source-link:hover { background: var(--bg-subtle); }
+.source-link .icon { font-size: 18px; opacity: 0.5; }
+.source-link .title { font-size: 14px; }
+.source-link .subtitle { font-size: 12px; color: var(--text-faint); margin-top: 2px; }
+.source-link .arrow { margin-left: auto; color: var(--text-faint); font-size: 13px; }
+
+/* ---------- Tables (bare-bones for shared use) ---------- */
+
+table.data {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+table.data thead th {
+  text-align: left;
+  font-weight: 500;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-faint);
+  padding: 12px 12px;
+  border-bottom: 1px solid var(--border-default);
+}
+table.data tbody td {
+  padding: 14px 12px;
+  border-bottom: 1px solid var(--border-default);
+  vertical-align: top;
+}
+table.data tbody tr:hover { background: var(--bg-muted); }
+table.data .num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ---------- Restitution figure ---------- */
+
+.money { color: var(--accent); font-weight: 500; font-variant-numeric: tabular-nums; }
+.dim { color: var(--text-ghost); }
+
+/* ---------- Reset for buttons ---------- */
+button { font: inherit; cursor: pointer; }

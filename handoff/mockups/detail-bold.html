@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trevor Milton — Pardonned</title>
+<link rel="stylesheet" href="../styles/tokens.css">
+<style>
+.crumb { padding: 28px 0 0; font-size: 12px; color: var(--text-muted); display: flex; gap: 8px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 500; }
+.crumb a { color: var(--text-muted); }
+.crumb .sep { color: var(--border-soft); }
+
+/* Editorial masthead */
+.detail-mast {
+  padding: 36px 0 56px;
+  border-bottom: 2px solid var(--text-primary);
+}
+.dm-meta { display: flex; gap: 14px; align-items: baseline; margin-bottom: 22px; flex-wrap: wrap; font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; font-weight: 500; }
+.dm-meta .pard { color: var(--accent); }
+.dm-meta .by { color: var(--text-faint); }
+.dm-meta .dot { color: var(--border-soft); }
+.detail-mast h1 {
+  font-family: var(--serif);
+  font-size: 96px;
+  letter-spacing: -0.03em;
+  line-height: 0.95;
+  margin-bottom: 28px;
+}
+.detail-mast .dek {
+  font-size: 18px;
+  color: var(--text-body);
+  line-height: 1.65;
+  max-width: 720px;
+}
+.detail-mast .dek .red { color: var(--accent); font-weight: 500; }
+
+/* Money pull */
+.money-pull {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-bottom: 1px solid var(--border-default);
+}
+.mp {
+  padding: 36px 28px 36px 0;
+  border-right: 1px solid var(--border-default);
+  padding-left: 28px;
+}
+.mp:first-child { padding-left: 0; }
+.mp:last-child { border-right: none; padding-right: 0; }
+.mp .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-faint); font-weight: 500; margin-bottom: 14px; }
+.mp .big { font-family: var(--serif); font-size: 56px; letter-spacing: -0.025em; line-height: 0.95; font-variant-numeric: tabular-nums; margin-bottom: 8px; }
+.mp .big.accent { color: var(--accent); }
+.mp .big.zero { color: var(--text-ghost); font-size: 36px; }
+.mp .sub { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+
+/* tabs */
+.tab-strip { display: flex; border-bottom: 1px solid var(--border-default); margin: 56px 0 48px; }
+.tab {
+  padding: 14px 22px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  background: none;
+  border: none;
+  font-family: inherit;
+  cursor: pointer;
+}
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab:hover { color: var(--text-primary); }
+
+.detail-grid { display: grid; grid-template-columns: 1fr 320px; gap: 56px; padding-bottom: 60px; align-items: start; }
+
+.section-block { margin-bottom: 56px; }
+.section-block .label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+  font-weight: 500;
+  margin-bottom: 14px;
+}
+.section-block h2 {
+  font-family: var(--serif);
+  font-size: 32px;
+  letter-spacing: -0.015em;
+  line-height: 1.1;
+  margin-bottom: 24px;
+}
+
+/* offense list - editorial */
+.off-list { border-top: 1px solid var(--border-default); }
+.off-row {
+  display: grid;
+  grid-template-columns: 50px 1fr 200px;
+  gap: 20px;
+  padding: 22px 0;
+  border-bottom: 1px solid var(--border-default);
+  align-items: baseline;
+}
+.off-row .n {
+  font-family: var(--serif);
+  font-size: 28px;
+  color: var(--text-faint);
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+.off-row .text { font-size: 17px; color: var(--text-primary); line-height: 1.4; }
+.off-row .stat { font-size: 11px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.08em; text-align: right; font-weight: 500; }
+
+/* pull quote */
+.pull {
+  background: var(--accent-tint);
+  border-left: 3px solid var(--accent);
+  padding: 36px 40px;
+  margin: 32px 0;
+}
+.pull .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--accent); margin-bottom: 16px; font-weight: 500; }
+.pull .text {
+  font-family: var(--serif);
+  font-size: 24px;
+  line-height: 1.4;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+.pull .src { font-size: 12px; color: var(--text-faint); margin-top: 18px; text-transform: uppercase; letter-spacing: 0.08em; }
+
+/* aside */
+.aside-block {
+  margin-bottom: 36px;
+  padding-bottom: 28px;
+  border-bottom: 1px solid var(--border-default);
+}
+.aside-block:last-child { border-bottom: none; }
+.aside-block h4 {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--text-faint);
+  font-weight: 500;
+  margin: 0 0 18px;
+}
+.kv { display: flex; flex-direction: column; gap: 14px; }
+.kv-row { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; font-size: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border-default); }
+.kv-row:last-child { border-bottom: none; padding-bottom: 0; }
+.kv-row .k { color: var(--text-faint); font-size: 13px; }
+.kv-row .v { color: var(--text-primary); text-align: right; font-weight: 500; }
+.kv-row .v.unknown { color: var(--text-ghost); font-weight: 400; }
+
+/* doc links */
+.doc-link {
+  display: block;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border-default);
+  text-decoration: none;
+  color: var(--text-primary);
+  transition: padding 0.15s;
+}
+.doc-link:last-child { border-bottom: none; }
+.doc-link:hover { padding-left: 4px; }
+.doc-link .title { font-size: 14px; font-weight: 500; display: flex; gap: 8px; align-items: baseline; }
+.doc-link .arrow { color: var(--accent); margin-left: auto; font-size: 14px; }
+.doc-link .sub { font-size: 12px; color: var(--text-faint); margin-top: 4px; }
+
+/* same day */
+.chip {
+  font-size: 13px;
+  color: var(--text-primary);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-default);
+  padding: 4px 10px;
+  border-radius: 4px;
+  text-decoration: none;
+  display: inline-block;
+  margin: 0 4px 4px 0;
+}
+.chip:hover { background: var(--bg-muted); }
+.chip.commutation { color: #2A6A7A; }
+</style>
+</head>
+<body>
+
+<header class="site-nav">
+  <div class="site-nav-inner">
+    <a href="index.html" class="wordmark">Pardonn<span class="accent">e</span>d<span class="wordmark-tag">Clemency tracker</span></a>
+    <nav class="nav-links">
+      <a href="home-bold.html">Home</a>
+      <a href="search-bold.html">Search</a>
+      <a href="all-presidents.html">Presidents</a>
+      <a href="recent.html">Recent</a>
+      <a href="#">About</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page-1040">
+  <div class="crumb">
+    <a href="search-bold.html">Search</a>
+    <span class="sep">/</span>
+    <span style="color:var(--text-body);">Trevor Milton</span>
+  </div>
+
+  <header class="detail-mast">
+    <div class="dm-meta">
+      <span class="pard">Pardon</span>
+      <span class="dot">·</span>
+      <span class="by">Granted by Donald J. Trump · 2nd term</span>
+      <span class="dot">·</span>
+      <span class="by">March 28, 2025</span>
+    </div>
+    <h1>Trevor Milton.</h1>
+    <p class="dek">Founder of the electric-vehicle company Nikola Corp., convicted in 2022 of securities fraud and wire fraud for misleading investors about the company's technology. Pardoned before reporting to prison; <span class="red">$680 million in restitution to defrauded investors</span> is no longer enforceable.</p>
+  </header>
+
+  <div class="money-pull">
+    <div class="mp">
+      <div class="lbl">Sentenced to</div>
+      <div class="big">48mo</div>
+      <div class="sub">Federal prison, S.D.N.Y., Dec 2023.</div>
+    </div>
+    <div class="mp">
+      <div class="lbl">Time served</div>
+      <div class="big zero">0</div>
+      <div class="sub">Pardoned before reporting date.</div>
+    </div>
+    <div class="mp">
+      <div class="lbl">Restitution forgiven</div>
+      <div class="big accent">$680M</div>
+      <div class="sub">Owed to defrauded Nikola investors.</div>
+    </div>
+    <div class="mp">
+      <div class="lbl">Fine forgiven</div>
+      <div class="big">$1M</div>
+      <div class="sub">Owed to U.S. Treasury.</div>
+    </div>
+  </div>
+
+  <div class="tab-strip">
+    <button class="tab active">Overview</button>
+    <button class="tab">Offenses · 3</button>
+    <button class="tab">Source documents</button>
+    <button class="tab">Related</button>
+  </div>
+
+  <div class="detail-grid">
+    <div>
+      <div class="section-block">
+        <div class="label">The conviction</div>
+        <h2>Three federal counts.</h2>
+        <div class="off-list">
+          <div class="off-row">
+            <div class="n">01</div>
+            <div class="text">Securities fraud</div>
+            <div class="stat">15 U.S.C. § 78j(b)</div>
+          </div>
+          <div class="off-row">
+            <div class="n">02</div>
+            <div class="text">Wire fraud</div>
+            <div class="stat">18 U.S.C. § 1343</div>
+          </div>
+          <div class="off-row">
+            <div class="n">03</div>
+            <div class="text">Securities fraud (additional count)</div>
+            <div class="stat">15 U.S.C. § 78ff</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-block">
+        <div class="label">From the warrant</div>
+        <h2>The original sentence.</h2>
+        <div class="pull">
+          <div class="lbl">As recorded by the court</div>
+          <p class="text">"Sentenced on December 18, 2023 to 48 months imprisonment, three years supervised release, and ordered to pay restitution in the amount of $675,963,477.00 and a fine of $1,000,000.00."</p>
+          <div class="src">United States v. Milton, S.D.N.Y. · Source: DOJ warrant</div>
+        </div>
+      </div>
+
+      <div class="section-block">
+        <div class="label">Scope of clemency</div>
+        <h2>What the pardon erased.</h2>
+        <div class="pull" style="background:transparent; border-left-color: var(--text-primary);">
+          <div class="lbl" style="color:var(--text-faint);">Pardon warrant text</div>
+          <p class="text">"A full and unconditional pardon for the offenses described above, remitting the unserved portion of the sentence of imprisonment and any unpaid balance of the restitution and fine."</p>
+          <div class="src">Signed by the President · March 28, 2025</div>
+        </div>
+      </div>
+    </div>
+
+    <aside>
+      <div class="aside-block">
+        <h4>Case details</h4>
+        <div class="kv">
+          <div class="kv-row"><div class="k">Clemency type</div><div class="v">Pardon</div></div>
+          <div class="kv-row"><div class="k">Granted</div><div class="v">Mar 28, 2025</div></div>
+          <div class="kv-row"><div class="k">President</div><div class="v">Trump · 2nd</div></div>
+          <div class="kv-row"><div class="k">District</div><div class="v">S.D.N.Y.</div></div>
+          <div class="kv-row"><div class="k">Convicted</div><div class="v">Oct 14, 2022</div></div>
+          <div class="kv-row"><div class="k">Sentenced</div><div class="v">Dec 18, 2023</div></div>
+          <div class="kv-row"><div class="k">Category</div><div class="v">Financial fraud</div></div>
+        </div>
+      </div>
+
+      <div class="aside-block">
+        <h4>Source documents</h4>
+        <a href="#" class="doc-link">
+          <div class="title">Pardon warrant <span class="arrow">↗</span></div>
+          <div class="sub">PDF · DOJ Office of the Pardon Attorney</div>
+        </a>
+        <a href="#" class="doc-link">
+          <div class="title">DOJ clemency listing <span class="arrow">↗</span></div>
+          <div class="sub">justice.gov/pardon</div>
+        </a>
+        <a href="#" class="doc-link">
+          <div class="title">SDNY case docket <span class="arrow">↗</span></div>
+          <div class="sub">PACER · 1:21-cr-00478</div>
+        </a>
+      </div>
+
+      <div class="aside-block">
+        <h4>Same-day grants · 3</h4>
+        <div>
+          <a href="#" class="chip">Devon Archer</a>
+          <a href="#" class="chip commutation">Carlos Watson</a>
+          <a href="#" class="chip">Paul Walczak</a>
+        </div>
+      </div>
+
+      <div class="aside-block">
+        <h4>In context</h4>
+        <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin: 0;">This is the <strong style="color:var(--text-primary);">largest single restitution amount</strong> ever forgiven by federal clemency in the Pardonned database, exceeding the previous record (Marc Rich, 2001) by 14×.</p>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="site-footer-inner">
+    <div><a href="index.html" class="wordmark">Pardonn<span class="accent">e</span>d</a></div>
+    <div class="site-footer-meta">Data source: DOJ Office of the Pardon Attorney · Not affiliated with the U.S. government<br>Last updated: May 2, 2026 @ 1103 hrs EST</div>
+  </div>
+</footer>
+
+</body>
+</html>

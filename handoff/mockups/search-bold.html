@@ -1,0 +1,615 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Search — Pardonned</title>
+<link rel="stylesheet" href="../styles/tokens.css">
+<style>
+.page-head { padding: 56px 0 40px; display:grid; grid-template-columns: 1fr 380px; gap: 56px; align-items:end; }
+.page-head .crumb { font-size: 11px; color: var(--accent); margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.14em; font-weight: 500; }
+.page-head h1 { font-family: var(--serif); font-size: 64px; letter-spacing: -0.02em; margin-bottom: 14px; line-height: 1; }
+.page-head p { font-size: 14px; color: var(--text-secondary); line-height: 1.65; margin: 0; }
+
+.search-bar {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  gap: 0;
+  border-top: 2px solid var(--text-primary);
+  border-bottom: 1px solid var(--border-default);
+  padding: 0;
+  margin-bottom: 0;
+}
+.search-bar input, .search-bar select {
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--border-default);
+  padding: 18px 20px;
+  font-size: 14px;
+  color: var(--text-primary);
+  font-family: inherit;
+  outline: none;
+}
+.search-bar input { font-size: 16px; }
+.search-bar input::placeholder { color: var(--text-faint); }
+.search-bar select { background: transparent; appearance: none; padding-right: 36px; cursor: pointer; min-width: 160px; background-image: linear-gradient(45deg, transparent 50%, var(--text-faint) 50%), linear-gradient(135deg, var(--text-faint) 50%, transparent 50%); background-position: calc(100% - 18px) 22px, calc(100% - 13px) 22px; background-size: 5px 5px; background-repeat: no-repeat; }
+.search-bar select:last-child { border-right: none; }
+
+/* DATE FILTER ROW */
+.filter-row {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid var(--border-default);
+  font-size: 13px;
+}
+.filter-row .lbl-cell {
+  padding: 14px 20px 14px 0;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-faint);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-right: 1px solid var(--border-default);
+  padding-right: 20px;
+}
+.filter-row .lbl-cell::before { content: ""; display: inline-block; width: 6px; height: 6px; background: var(--accent); border-radius: 50%; }
+.date-toggle {
+  display: flex;
+  align-items: stretch;
+  border-right: 1px solid var(--border-default);
+}
+.date-toggle button {
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--border-default);
+  padding: 14px 18px;
+  font-family: inherit;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-weight: 500;
+  transition: color 0.15s, background 0.15s;
+}
+.date-toggle button:last-child { border-right: none; }
+.date-toggle button:hover { color: var(--text-primary); }
+.date-toggle button.active { color: var(--accent); background: var(--accent-tint); }
+.date-inputs {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex: 1;
+}
+.date-inputs .field {
+  display: flex;
+  align-items: center;
+  border-right: 1px solid var(--border-default);
+  padding: 0 16px;
+  flex: 1;
+  position: relative;
+}
+.date-inputs .field:last-child { border-right: none; }
+.date-inputs .field-lbl {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-faint);
+  font-weight: 500;
+  margin-right: 12px;
+}
+.date-inputs input[type="date"] {
+  background: transparent;
+  border: none;
+  padding: 14px 0;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--text-primary);
+  outline: none;
+  font-variant-numeric: tabular-nums;
+  flex: 1;
+  cursor: pointer;
+}
+.date-inputs input[type="date"]:disabled {
+  color: var(--text-ghost);
+  cursor: not-allowed;
+}
+.date-inputs input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.6);
+  cursor: pointer;
+}
+
+/* preset chips on the right */
+.date-presets {
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 8px;
+  border-left: 1px solid var(--border-default);
+  background: var(--bg-muted);
+}
+.date-presets .lbl {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-faint);
+  font-weight: 500;
+  margin-right: 4px;
+}
+.date-presets button {
+  background: transparent;
+  border: 1px solid var(--border-default);
+  padding: 5px 10px;
+  font-family: inherit;
+  font-size: 11px;
+  color: var(--text-body);
+  cursor: pointer;
+  border-radius: 2px;
+  font-weight: 500;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.date-presets button:hover { border-color: var(--text-primary); color: var(--text-primary); }
+
+/* active filter pills */
+.active-filters {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 0 12px;
+  border-bottom: 1px solid var(--border-default);
+  font-size: 12px;
+  color: var(--text-muted);
+  flex-wrap: wrap;
+}
+.active-filters .pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--accent-tint);
+  color: var(--accent);
+  padding: 5px 6px 5px 12px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.active-filters .pill .x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: white;
+  cursor: pointer;
+  font-size: 11px;
+  border: none;
+  font-family: inherit;
+}
+.active-filters .lbl-prefix { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-faint); font-weight: 500; }
+.active-filters .clear-all { color: var(--text-faint); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer; background: none; border: none; font-family: inherit; font-weight: 500; padding: 0; margin-left: auto; }
+.active-filters .clear-all:hover { color: var(--accent); }
+.active-filters.empty { display: none; }
+
+/* pres rail */
+.pres-rail {
+  display: flex;
+  border-bottom: 1px solid var(--border-default);
+  overflow-x: auto;
+  margin-bottom: 28px;
+}
+.pres-tab {
+  padding: 14px 20px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  white-space: nowrap;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+  font-weight: 500;
+  transition: color 0.15s, border-color 0.15s;
+}
+.pres-tab:hover { color: var(--text-primary); }
+.pres-tab.active { color: var(--text-primary); border-bottom-color: var(--accent); }
+.pres-tab .lbl { font-weight: 500; }
+.pres-tab .ct { font-family: var(--serif); font-size: 22px; letter-spacing: -0.01em; color: var(--text-primary); text-transform: none; font-variant-numeric: tabular-nums; }
+.pres-tab.active .ct { color: var(--accent); }
+
+.results-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 500;
+}
+
+/* dense table */
+table.search-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  border-top: 1px solid var(--border-default);
+}
+table.search-table thead th {
+  text-align: left;
+  font-weight: 500;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-faint);
+  padding: 14px 12px;
+  border-bottom: 1px solid var(--border-default);
+  background: var(--bg-page);
+  position: sticky;
+  top: 0;
+  cursor: pointer;
+}
+table.search-table thead th:hover { color: var(--text-primary); }
+table.search-table thead th.num, table.search-table tbody td.num { text-align: right; font-variant-numeric: tabular-nums; }
+table.search-table tbody tr {
+  border-bottom: 1px solid var(--border-default);
+  transition: background 0.1s;
+  cursor: pointer;
+}
+table.search-table tbody tr:hover { background: var(--bg-muted); }
+table.search-table tbody td {
+  padding: 16px 12px;
+  vertical-align: top;
+}
+.t-name { font-size: 15px; font-weight: 500; color: var(--text-primary); letter-spacing: -0.005em; }
+.t-offense { font-size: 12px; color: var(--text-secondary); margin-top: 4px; line-height: 1.5; max-width: 380px; }
+.t-pres { font-size: 13px; color: var(--text-body); }
+.t-pres .term { font-size: 11px; color: var(--text-faint); display:block; margin-top: 2px; }
+.t-date { font-size: 13px; color: var(--text-body); }
+.t-date .rel { font-size: 11px; color: var(--text-faint); display:block; margin-top: 2px; }
+.t-money { font-family: var(--serif); font-size: 18px; color: var(--accent); letter-spacing: -0.005em; line-height: 1.1; }
+.t-money.zero { color: var(--text-ghost); font-family: var(--sans); font-size: 13px; font-weight: 400; }
+.t-cat-dot { display:inline-block; width:8px; height:8px; border-radius:50%; vertical-align:middle; margin-right: 6px; position:relative; top: -1px; }
+.t-cat { font-size: 12px; color: var(--text-secondary); }
+.t-type {
+  display: inline-block;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 2px 7px;
+  border-radius: 2px;
+  font-weight: 500;
+}
+.t-type.pardon { background: var(--accent-bg); color: var(--accent); }
+.t-type.commutation { background: rgba(42,106,122,0.1); color: #2A6A7A; }
+
+/* footer pagination */
+.page-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 0 80px;
+  border-top: 1px solid var(--border-default);
+  margin-top: 0;
+  font-size: 13px;
+  color: var(--text-faint);
+}
+.page-foot .pages { display: flex; gap: 4px; }
+.page-foot .pages a, .page-foot .pages span {
+  padding: 6px 12px;
+  font-size: 13px;
+  color: var(--text-muted);
+  border: 1px solid transparent;
+  border-radius: 2px;
+  text-decoration: none;
+  font-variant-numeric: tabular-nums;
+}
+.page-foot .pages a:hover { background: var(--bg-muted); color: var(--text-primary); }
+.page-foot .pages .current { background: var(--text-primary); color: white; }
+</style>
+</head>
+<body>
+
+<header class="site-nav">
+  <div class="site-nav-inner">
+    <a href="index.html" class="wordmark">Pardonn<span class="accent">e</span>d<span class="wordmark-tag">Clemency tracker</span></a>
+    <nav class="nav-links">
+      <a href="home-bold.html">Home</a>
+      <a href="search-bold.html" class="active">Search</a>
+      <a href="all-presidents.html">Presidents</a>
+      <a href="recent.html">Recent</a>
+      <a href="#">About</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page-1040">
+  <div class="page-head">
+    <div>
+      <div class="crumb">Clemency database</div>
+      <h1>Search 3,205 grants.</h1>
+    </div>
+    <p>Every federal pardon and commutation since 1993, sourced from the DOJ Office of the Pardon Attorney. Click any column header to sort.</p>
+  </div>
+
+  <div class="search-bar">
+    <input type="text" placeholder="Search by name, offense, district…">
+    <select><option>All grant types</option><option>Pardons only</option><option>Commutations only</option></select>
+    <select id="catSel"><option>All categories</option></select>
+    <select><option>Sort: most recent</option><option>Largest restitution</option><option>Oldest first</option><option>Name (A–Z)</option></select>
+  </div>
+
+  <div class="filter-row">
+    <div class="lbl-cell">Date</div>
+    <div class="date-toggle" id="dateMode">
+      <button data-mode="any" class="active">Any time</button>
+      <button data-mode="before">Before</button>
+      <button data-mode="after">After</button>
+      <button data-mode="between">Between</button>
+    </div>
+    <div class="date-inputs">
+      <div class="field">
+        <span class="field-lbl" id="fromLbl">From</span>
+        <input type="date" id="dateFrom" disabled value="2025-01-25">
+      </div>
+      <div class="field">
+        <span class="field-lbl">To</span>
+        <input type="date" id="dateTo" disabled value="2026-05-02">
+      </div>
+    </div>
+    <div class="date-presets">
+      <span class="lbl">Quick</span>
+      <button data-preset="30d">Last 30d</button>
+      <button data-preset="trump2-start">Before Jan 25, 2025</button>
+      <button data-preset="biden">Biden term</button>
+    </div>
+  </div>
+
+  <div class="active-filters empty" id="activeFilters">
+    <span class="lbl-prefix">Filters</span>
+    <button class="clear-all" id="clearAll">Clear all</button>
+  </div>
+
+  <!-- pres rail -->
+  <div class="pres-rail">
+    <a href="#" class="pres-tab active"><span class="ct">3,205</span><span class="lbl">All</span></a>
+    <a href="#" class="pres-tab"><span class="ct">121</span><span class="lbl">Trump · 2nd</span></a>
+    <a href="#" class="pres-tab"><span class="ct">257</span><span class="lbl">Biden</span></a>
+    <a href="#" class="pres-tab"><span class="ct">238</span><span class="lbl">Trump · 1st</span></a>
+    <a href="#" class="pres-tab"><span class="ct">1,904</span><span class="lbl">Obama · 2nd</span></a>
+    <a href="#" class="pres-tab"><span class="ct">169</span><span class="lbl">Bush · 2nd</span></a>
+    <a href="#" class="pres-tab"><span class="ct">406</span><span class="lbl">Clinton · 2nd</span></a>
+    <a href="#" class="pres-tab"><span class="ct">56</span><span class="lbl">Clinton · 1st</span></a>
+  </div>
+
+  <div class="results-meta">
+    <div id="resultsCount">26 of 3,205 grants</div>
+    <div>Sorted by date — newest first</div>
+  </div>
+
+  <table class="search-table" id="searchTable">
+    <thead>
+      <tr>
+        <th style="width: 40%;">Recipient · Offense</th>
+        <th style="width: 14%;">Type</th>
+        <th style="width: 14%;">Category</th>
+        <th style="width: 12%;">President</th>
+        <th style="width: 10%;">Date</th>
+        <th class="num" style="width: 10%;">Restitution ↓</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <div class="page-foot">
+    <div>Showing 1–26 of 3,205</div>
+    <div class="pages">
+      <a href="#">‹</a>
+      <span class="current">1</span>
+      <a href="#">2</a>
+      <a href="#">3</a>
+      <span>…</span>
+      <a href="#">128</a>
+      <a href="#">›</a>
+    </div>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="site-footer-inner">
+    <div><a href="index.html" class="wordmark">Pardonn<span class="accent">e</span>d</a></div>
+    <div class="site-footer-meta">Data source: DOJ Office of the Pardon Attorney · Not affiliated with the U.S. government<br>Last updated: May 2, 2026 @ 1103 hrs EST</div>
+  </div>
+</footer>
+
+<script src="data/sample.js"></script>
+<script>
+const { GRANTS, CATEGORIES, formatMoney, formatDate, adminById } = window.PARDONNED;
+
+// fill cat select
+const cs = document.getElementById('catSel');
+CATEGORIES.forEach(c => { const o = document.createElement('option'); o.textContent = `${c.label} (${c.count.toLocaleString()})`; cs.appendChild(o); });
+
+const tbody = document.querySelector('#searchTable tbody');
+
+function relDate(s) {
+  const d = new Date(s + 'T00:00:00');
+  const now = new Date('2026-05-02');
+  const days = Math.floor((now - d) / 86400000);
+  if (days < 30) return `${days}d ago`;
+  if (days < 365) return `${Math.floor(days/30)}mo ago`;
+  return `${Math.floor(days/365)}y ago`;
+}
+
+// === DATE FILTER STATE ===
+const filterState = { mode: 'any', from: '2025-01-25', to: '2026-05-02' };
+
+const dateModeEl = document.getElementById('dateMode');
+const fromEl = document.getElementById('dateFrom');
+const toEl = document.getElementById('dateTo');
+const fromLblEl = document.getElementById('fromLbl');
+const activeFiltersEl = document.getElementById('activeFilters');
+const resultsCountEl = document.getElementById('resultsCount');
+
+function updateDateUI() {
+  // toggle button states
+  dateModeEl.querySelectorAll('button').forEach(b => {
+    b.classList.toggle('active', b.dataset.mode === filterState.mode);
+  });
+
+  // input states + labels
+  if (filterState.mode === 'any') {
+    fromEl.disabled = true; toEl.disabled = true;
+    fromLblEl.textContent = 'From';
+    toEl.parentElement.style.display = 'flex';
+  } else if (filterState.mode === 'before') {
+    fromEl.disabled = true; toEl.disabled = false;
+    fromLblEl.textContent = 'From';
+    fromEl.parentElement.style.display = 'none';
+    toEl.parentElement.style.flex = '1';
+    toEl.parentElement.querySelector('.field-lbl').textContent = 'Before';
+  } else if (filterState.mode === 'after') {
+    fromEl.disabled = false; toEl.disabled = true;
+    fromLblEl.textContent = 'After';
+    fromEl.parentElement.style.display = 'flex';
+    fromEl.parentElement.style.flex = '1';
+    toEl.parentElement.style.display = 'none';
+  } else { // between
+    fromEl.disabled = false; toEl.disabled = false;
+    fromLblEl.textContent = 'From';
+    fromEl.parentElement.style.display = 'flex';
+    toEl.parentElement.style.display = 'flex';
+    fromEl.parentElement.style.flex = '1';
+    toEl.parentElement.style.flex = '1';
+    toEl.parentElement.querySelector('.field-lbl').textContent = 'To';
+  }
+  // reset visibility for 'any'
+  if (filterState.mode === 'any') {
+    fromEl.parentElement.style.display = 'flex';
+    toEl.parentElement.style.display = 'flex';
+    toEl.parentElement.querySelector('.field-lbl').textContent = 'To';
+  }
+
+  fromEl.value = filterState.from;
+  toEl.value = filterState.to;
+
+  // active-filter pills
+  activeFiltersEl.innerHTML = '';
+  const pills = [];
+  if (filterState.mode === 'before') pills.push(`Before ${formatDate(filterState.to)}`);
+  else if (filterState.mode === 'after') pills.push(`After ${formatDate(filterState.from)}`);
+  else if (filterState.mode === 'between') pills.push(`${formatDate(filterState.from)} → ${formatDate(filterState.to)}`);
+
+  if (pills.length === 0) {
+    activeFiltersEl.classList.add('empty');
+  } else {
+    activeFiltersEl.classList.remove('empty');
+    const prefix = document.createElement('span');
+    prefix.className = 'lbl-prefix';
+    prefix.textContent = 'Filters';
+    activeFiltersEl.appendChild(prefix);
+    pills.forEach(text => {
+      const pill = document.createElement('span');
+      pill.className = 'pill';
+      pill.innerHTML = `${text} <button class="x" aria-label="Remove">×</button>`;
+      pill.querySelector('.x').onclick = () => { filterState.mode = 'any'; updateAll(); };
+      activeFiltersEl.appendChild(pill);
+    });
+    const clear = document.createElement('button');
+    clear.className = 'clear-all';
+    clear.textContent = 'Clear all';
+    clear.onclick = () => { filterState.mode = 'any'; updateAll(); };
+    activeFiltersEl.appendChild(clear);
+  }
+}
+
+function applyFilter() {
+  let rows = [...GRANTS].sort((a,b) => b.date.localeCompare(a.date));
+  if (filterState.mode === 'before') rows = rows.filter(g => g.date < filterState.to);
+  else if (filterState.mode === 'after') rows = rows.filter(g => g.date >= filterState.from);
+  else if (filterState.mode === 'between') rows = rows.filter(g => g.date >= filterState.from && g.date <= filterState.to);
+  return rows;
+}
+
+function render() {
+  const rows = applyFilter();
+  resultsCountEl.textContent = `${rows.length} of ${GRANTS.length} sample grants${filterState.mode !== 'any' ? ' (filtered)' : ''}`;
+
+  tbody.innerHTML = '';
+  if (rows.length === 0) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td colspan="6" style="padding: 64px 20px; text-align: center; color: var(--text-faint); font-size: 14px;">No grants match the current date range.</td>`;
+    tbody.appendChild(tr);
+    return;
+  }
+  rows.forEach(g => {
+    const a = adminById(g.president);
+    const cat = CATEGORIES.find(c => c.id === g.category) || { color: '#7A7870', label: g.categoryLabel };
+    const tr = document.createElement('tr');
+    tr.onclick = () => location.href = `detail-bold.html?id=${g.id}`;
+    tr.innerHTML = `
+      <td>
+        <div class="t-name">${g.name}</div>
+        <div class="t-offense">${g.offense}</div>
+      </td>
+      <td><span class="t-type ${g.type}">${g.type}</span></td>
+      <td><span class="t-cat"><span class="t-cat-dot" style="background:${cat.color};"></span>${cat.label}</span></td>
+      <td><div class="t-pres">${a.name.split(' ').slice(-1)[0]}<span class="term">${a.term ? a.term.replace(' Term','').toLowerCase() + ' term' : ''}</span></div></td>
+      <td><div class="t-date">${formatDate(g.date)}<span class="rel">${relDate(g.date)}</span></div></td>
+      <td class="num">${g.restitution > 0 ? `<div class="t-money">${formatMoney(g.restitution)}</div>` : `<div class="t-money zero">—</div>`}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function updateAll() { updateDateUI(); render(); }
+
+// wire mode toggle
+dateModeEl.querySelectorAll('button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    filterState.mode = btn.dataset.mode;
+    updateAll();
+  });
+});
+
+// wire date inputs
+fromEl.addEventListener('change', e => { filterState.from = e.target.value; updateAll(); });
+toEl.addEventListener('change', e => { filterState.to = e.target.value; updateAll(); });
+
+// wire presets
+document.querySelectorAll('.date-presets button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const p = btn.dataset.preset;
+    if (p === '30d') {
+      filterState.mode = 'after';
+      filterState.from = '2026-04-02';
+    } else if (p === 'trump2-start') {
+      filterState.mode = 'before';
+      filterState.to = '2025-01-25';
+    } else if (p === 'biden') {
+      filterState.mode = 'between';
+      filterState.from = '2021-01-20';
+      filterState.to = '2025-01-20';
+    }
+    updateAll();
+  });
+});
+
+document.getElementById('clearAll').addEventListener('click', () => {
+  filterState.mode = 'any';
+  updateAll();
+});
+
+updateAll();
+</script>
+</body>
+</html>

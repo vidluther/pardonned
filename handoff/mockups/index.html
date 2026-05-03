@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pardonned Redesign — All variations</title>
+<link rel="stylesheet" href="../styles/tokens.css">
+<base href="./">
+<style>
+.idx-head { padding: 72px 0 48px; }
+.idx-head .kicker { font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em; color: var(--accent); font-weight: 500; margin-bottom: 22px; }
+.idx-head h1 { font-family: var(--serif); font-size: 64px; letter-spacing: -0.025em; line-height: 1; margin-bottom: 24px; }
+.idx-head p { font-size: 17px; color: var(--text-body); line-height: 1.65; max-width: 720px; margin: 0; }
+
+.notes {
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  padding: 28px 32px;
+  margin-bottom: 64px;
+  font-size: 14px;
+  color: var(--text-body);
+  line-height: 1.7;
+}
+.notes h3 { font-family: var(--serif); font-size: 18px; margin: 0 0 12px; letter-spacing: -0.005em; }
+.notes ul { margin: 0; padding-left: 18px; }
+.notes li { margin-bottom: 4px; }
+.notes strong { color: var(--text-primary); font-weight: 500; }
+
+.section-row { margin-bottom: 56px; }
+.sr-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 20px; gap: 24px; }
+.sr-head h2 { font-family: var(--serif); font-size: 32px; letter-spacing: -0.015em; }
+.sr-head .sub { font-size: 13px; color: var(--text-secondary); max-width: 460px; text-align: right; }
+
+.variant-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.variant {
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  padding: 28px 32px;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: background 0.15s, border-color 0.15s;
+}
+.variant:hover { background: var(--bg-muted); border-color: var(--border-soft); }
+.variant .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-faint); font-weight: 500; }
+.variant.bold .lbl { color: var(--accent); }
+.variant h3 { font-family: var(--serif); font-size: 26px; letter-spacing: -0.015em; line-height: 1.15; margin: 0; }
+.variant p { font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin: 0; }
+.variant .meta { display: flex; gap: 16px; align-items: baseline; padding-top: 4px; }
+.variant .open { font-size: 13px; color: var(--accent); border-bottom: 1px solid var(--accent-border); padding-bottom: 1px; }
+</style>
+</head>
+<body>
+
+<header class="site-nav">
+  <div class="site-nav-inner">
+    <a href="index.html" class="wordmark">Pardonn<span class="accent">e</span>d<span class="wordmark-tag">Redesign</span></a>
+    <nav class="nav-links">
+      <a href="index.html" class="active">Overview</a>
+      <a href="home-safe.html">Home</a>
+      <a href="search-safe.html">Search</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page-1040">
+  <header class="idx-head">
+    <div class="kicker">Pardonned · redesign exploration · May 2026</div>
+    <h1>Two directions per page.</h1>
+    <p>Restructured home, search, per-president, and detail pages — each in a "safe" version (close to the existing visual language) and a "bold" version (more editorial, larger type, more committed use of the red accent). All pages share the same <strong>DM Serif Display + DM Sans</strong> system and color tokens from your DESIGN.md.</p>
+  </header>
+
+  <div class="notes">
+    <h3>What changed from the live site</h3>
+    <ul>
+      <li><strong>By-administration comparison strip</strong> on the home page — the missing module for ranking presidents by grants and restitution.</li>
+      <li><strong>Restitution leaderboard</strong> as a first-class home-page section — the dollar story is now the headline, not buried.</li>
+      <li><strong>Per-president overview pages</strong> with category breakdown, monthly heatmap, and timeline of major actions.</li>
+      <li><strong>Search:</strong> safe version cleans up filter density; bold version becomes a proper sortable data table with comparative columns.</li>
+      <li><strong>Detail pages:</strong> a "known/unknown" stat strip surfaces money clearly; the warrant text gets pull-quote treatment so sparse cases still feel substantial.</li>
+      <li><strong>Same color/type tokens throughout</strong> — pulled directly from your DESIGN.md.</li>
+    </ul>
+  </div>
+
+  <!-- HOME -->
+  <section class="section-row">
+    <div class="sr-head">
+      <h2>Home</h2>
+      <p class="sub">Hero stats, by-administration compare, restitution leaderboard, latest activity, categories.</p>
+    </div>
+    <div class="variant-grid">
+      <a href="home-safe.html" class="variant">
+        <div class="lbl">Option A · Safe</div>
+        <h3>Restructured home with comparison strip</h3>
+        <p>Hero with 4 headline stats, sortable admin comparison rows, restitution leaderboard alongside a timeline rail, and the existing category grid.</p>
+        <div class="meta"><span class="open">Open →</span></div>
+      </a>
+      <a href="home-bold.html" class="variant bold">
+        <div class="lbl">Option B · Bold</div>
+        <h3>Editorial-driven, big numbers</h3>
+        <p>Display-scale headline featuring the dollar figure, ranked admin list with prominent bars, pull-quote callout for combined impact, typographic categories.</p>
+        <div class="meta"><span class="open">Open →</span></div>
+      </a>
+    </div>
+  </section>
+
+  <!-- SEARCH -->
+  <section class="section-row">
+    <div class="sr-head">
+      <h2>Search</h2>
+      <p class="sub">Filtering 3,205 grants — president, type, category, date.</p>
+    </div>
+    <div class="variant-grid">
+      <a href="search-safe.html" class="variant">
+        <div class="lbl">Option A · Safe</div>
+        <h3>Card-based results with president pills</h3>
+        <p>Filter bar above pills for quick admin switching. Result cards keep the existing scannable layout with restitution surfaced on the right.</p>
+        <div class="meta"><span class="open">Open →</span></div>
+      </a>
+      <a href="search-bold.html" class="variant bold">
+        <div class="lbl">Option B · Bold · <span style="color:var(--accent)">updated</span></div>
+        <h3>Sortable data table + date filter</h3>
+        <p>A real data table with sortable columns. Stats-rich president-tab rail at the top makes term-by-term filtering instant. Now with a before/after/between date filter and quick presets ("Before Jan 25, 2025", "Biden term").</p>
+        <div class="meta"><span class="open">Open →</span></div>
+      </a>
+    </div>
+  </section>
+
+  <!-- RECENT -->
+  <section class="section-row">
+    <div class="sr-head">
+      <h2>Recent grants <span style="color:var(--text-faint); font-size: 18px;">(new)</span></h2>
+      <p class="sub">A live feed for the moments between database refreshes — plus a ticker on the home page.</p>
+    </div>
+    <div class="variant-grid">
+      <a href="home-bold.html" class="variant bold">
+        <div class="lbl">Module · Home ticker</div>
+        <h3>Newswire strip on home</h3>
+        <p>A live-stamped wire of the 5 most recent grants, sitting under the hero. Pulsing "Live" tag, relative timestamps (TODAY, 9D AGO), money on the right, links straight to the warrant. "View all recent →" goes to the feed page.</p>
+        <div class="meta"><span class="open">Open home (bold) →</span></div>
+      </a>
+      <a href="recent.html" class="variant bold">
+        <div class="lbl">Page · /recent</div>
+        <h3>Reverse-chrono feed, grouped by week</h3>
+        <p>Editorial chronological feed: 30/90-day counters, sticky filter rail, week groups with serif date headings and one-line summaries ("3 grants from Trump. $710M in restitution forgiven."). Pull-quote treatment for the Jan 6 inauguration week.</p>
+        <div class="meta"><span class="open">Open →</span></div>
+      </a>
+    </div>
+  </section>
+
+  <!-- ALL PRESIDENTS -->
+  <section class="section-row">
+    <div class="sr-head">
+      <h2>All-presidents comparison <span style="color:var(--text-faint); font-size: 18px;">(new)</span></h2>
+      <p class="sub">A single page that ranks every administration by volume and by dollars, with composition stacks and pace metrics.</p>
+    </div>
+    <div class="variant-grid" style="grid-template-columns: 1fr;">
+      <a href="all-presidents.html" class="variant bold">
+        <div class="lbl">Cross-administration view</div>
+        <h3>Ranked twice, then composed</h3>
+        <p>Same nine terms — first ranked by total grants, then re-ranked by restitution forgiven (the order changes dramatically). Composition stacks show category mix per term; rate cards normalize for term length; a year-ticker condenses 1993–2026 into a strip.</p>
+        <div class="meta"><span class="open">Open →</span></div>
+      </a>
+    </div>
+  </section>
+
+  <!-- PRESIDENT -->
+  <section class="section-row">
+    <div class="sr-head">
+      <h2>Per-president page <span style="color:var(--text-faint); font-size: 18px;">(new)</span></h2>
+      <p class="sub">A page per administration, e.g. /president/trump-2 — currently missing from the live site.</p>
+    </div>
+    <div class="variant-grid">
+      <a href="president-safe.html" class="variant">
+        <div class="lbl">Option A · Safe</div>
+        <h3>Stats + breakdown panels</h3>
+        <p>Term-tab strip, four headline stats, side-by-side category bars and month heatmap, then largest-restitution grants from this term.</p>
+        <div class="meta"><span class="open">Open →</span></div>
+      </a>
+      <a href="president-bold.html" class="variant bold">
+        <div class="lbl">Option B · Bold</div>
+        <h3>Editorial profile</h3>
+        <p>Large name masthead, three-column hero stats, composition list paired with major-actions timeline, sortable grants table.</p>
+        <div class="meta"><span class="open">Open →</span></div>
+      </a>
+    </div>
+  </section>
+
+  <!-- DETAIL -->
+  <section class="section-row" style="margin-bottom: 96px;">
+    <div class="sr-head">
+      <h2>Pardon detail</h2>
+      <p class="sub">Trevor Milton (Nikola securities fraud, $680M restitution) shown as the example.</p>
+    </div>
+    <div class="variant-grid">
+      <a href="detail-safe.html" class="variant">
+        <div class="lbl">Option A · Safe</div>
+        <h3>Tabbed layout with money-strip header</h3>
+        <p>Four-stat known-strip exposes sentence/fine/restitution/time-served above tabs. Aside features sources prominently, plus same-day grants.</p>
+        <div class="meta"><span class="open">Open →</span></div>
+      </a>
+      <a href="detail-bold.html" class="variant bold">
+        <div class="lbl">Option B · Bold</div>
+        <h3>Editorial case file</h3>
+        <p>Display name, money pulled to a large strip, warrant text in pull-quote treatment. Aside includes "in context" placement against the database record.</p>
+        <div class="meta"><span class="open">Open →</span></div>
+      </a>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="site-footer-inner">
+    <div><a href="index.html" class="wordmark">Pardonn<span class="accent">e</span>d</a></div>
+    <div class="site-footer-meta">Redesign mockups by Claude · May 2026<br>Sample data drawn from pardonned.com (April 2026 snapshot) — selective, not exhaustive</div>
+  </div>
+</footer>
+
+</body>
+</html>
