@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { formatAdministrationDisplayName, getAdministrationIndex } from "../president-names";
+import {
+  formatAdministrationDisplayName,
+  getAdministrationIndex,
+  getCurrentAdministration,
+} from "../president-names";
 
 describe("formatAdministrationDisplayName", () => {
   it("returns just the name for a single-term president", () => {
@@ -73,58 +77,58 @@ describe("formatAdministrationDisplayName", () => {
   });
 });
 
-describe("getAdministrationIndex", () => {
-  const fixture = [
-    {
-      data: {
-        administration_slug: "biden-1",
-        president_name: "Joe Biden",
-        term_number: 1,
-        term_start_date: "2021-01-20",
-      },
+const fixture = [
+  {
+    data: {
+      administration_slug: "biden-1",
+      president_name: "Joe Biden",
+      term_number: 1,
+      term_start_date: "2021-01-20",
     },
-    {
-      data: {
-        administration_slug: "biden-1",
-        president_name: "Joe Biden",
-        term_number: 1,
-        term_start_date: "2021-01-20",
-      },
+  },
+  {
+    data: {
+      administration_slug: "biden-1",
+      president_name: "Joe Biden",
+      term_number: 1,
+      term_start_date: "2021-01-20",
     },
-    {
-      data: {
-        administration_slug: "trump-1",
-        president_name: "Donald Trump",
-        term_number: 1,
-        term_start_date: "2017-01-20",
-      },
+  },
+  {
+    data: {
+      administration_slug: "trump-1",
+      president_name: "Donald Trump",
+      term_number: 1,
+      term_start_date: "2017-01-20",
     },
-    {
-      data: {
-        administration_slug: "trump-2",
-        president_name: "Donald Trump",
-        term_number: 2,
-        term_start_date: "2025-01-20",
-      },
+  },
+  {
+    data: {
+      administration_slug: "trump-2",
+      president_name: "Donald Trump",
+      term_number: 2,
+      term_start_date: "2025-01-20",
     },
-    {
-      data: {
-        administration_slug: "trump-2",
-        president_name: "Donald Trump",
-        term_number: 2,
-        term_start_date: "2025-01-20",
-      },
+  },
+  {
+    data: {
+      administration_slug: "trump-2",
+      president_name: "Donald Trump",
+      term_number: 2,
+      term_start_date: "2025-01-20",
     },
-    {
-      data: {
-        administration_slug: "trump-2",
-        president_name: "Donald Trump",
-        term_number: 2,
-        term_start_date: "2025-01-20",
-      },
+  },
+  {
+    data: {
+      administration_slug: "trump-2",
+      president_name: "Donald Trump",
+      term_number: 2,
+      term_start_date: "2025-01-20",
     },
-  ];
+  },
+];
 
+describe("getAdministrationIndex", () => {
   it("builds one entry per unique administration slug", () => {
     const index = getAdministrationIndex(fixture);
     expect(index.size).toBe(3);
@@ -169,5 +173,70 @@ describe("getAdministrationIndex", () => {
   it("returns an empty map for an empty collection", () => {
     const index = getAdministrationIndex([]);
     expect(index.size).toBe(0);
+  });
+});
+
+describe("getCurrentAdministration", () => {
+  it("returns the admin with the most recent term_start_date", () => {
+    const result = getCurrentAdministration(fixture);
+    expect(result?.slug).toBe("trump-2");
+  });
+
+  it("returns null for empty input", () => {
+    expect(getCurrentAdministration([])).toBeNull();
+  });
+
+  it("breaks ties on identical start dates by higher term_number first", () => {
+    const tied = [
+      {
+        data: {
+          administration_slug: "a-1",
+          president_name: "President A",
+          term_number: 1,
+          term_start_date: "2025-01-20",
+        },
+      },
+      {
+        data: {
+          administration_slug: "b-2",
+          president_name: "President B",
+          term_number: 2,
+          term_start_date: "2025-01-20",
+        },
+      },
+    ];
+    expect(getCurrentAdministration(tied)?.slug).toBe("b-2");
+  });
+
+  it("works with a single-admin dataset", () => {
+    const sole = [
+      {
+        data: {
+          administration_slug: "trump-2",
+          president_name: "Donald Trump",
+          term_number: 2,
+          term_start_date: "2025-01-20",
+        },
+      },
+    ];
+    expect(getCurrentAdministration(sole)?.slug).toBe("trump-2");
+  });
+
+  it("auto-rotates when a future admin's data lands (no code change)", () => {
+    // Validates the data-driven design: as soon as the next admin's
+    // grants appear in the dataset with a later term_start_date, the
+    // helper returns them without modification.
+    const next = [
+      ...fixture,
+      {
+        data: {
+          administration_slug: "vance-1",
+          president_name: "JD Vance",
+          term_number: 1,
+          term_start_date: "2029-01-20",
+        },
+      },
+    ];
+    expect(getCurrentAdministration(next)?.slug).toBe("vance-1");
   });
 });

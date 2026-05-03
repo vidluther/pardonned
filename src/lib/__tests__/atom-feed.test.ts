@@ -205,4 +205,39 @@ describe("buildAtomFeed", () => {
     expect(xml).toContain('href="https://staging.pardonned.com/recent.xml"');
     expect(xml).toContain('href="https://staging.pardonned.com/recent"');
   });
+
+  it("accepts a separate termContextEntries set so display-name suffixes resolve correctly when rendering a scoped subset", () => {
+    // Render only Trump-2 entries, but include both Trump terms in the
+    // context so the helper still recognizes Trump as multi-term.
+    const trump2Only = [
+      makeEntry({
+        slug: "person-a",
+        recipient_name: "Person A",
+        president_name: "Donald J. Trump",
+        term_number: 2,
+      }),
+    ];
+    const fullContext = [
+      ...trump2Only,
+      makeEntry({
+        slug: "person-b",
+        recipient_name: "Person B",
+        president_name: "Donald J. Trump",
+        term_number: 1,
+      }),
+    ];
+
+    const xmlWithoutContext = buildAtomFeed(trump2Only, baseOptions);
+    expect(xmlWithoutContext).toContain("<author><name>Donald J. Trump</name></author>");
+
+    const xmlWithContext = buildAtomFeed(trump2Only, {
+      ...baseOptions,
+      termContextEntries: fullContext,
+    });
+    expect(xmlWithContext).toContain("<author><name>Donald J. Trump (Second Term)</name></author>");
+    // Only Trump-2's entry actually appears in the feed despite the full context
+    expect((xmlWithContext.match(/<entry>/g) ?? []).length).toBe(1);
+    expect(xmlWithContext).toContain("Person A");
+    expect(xmlWithContext).not.toContain("Person B");
+  });
 });

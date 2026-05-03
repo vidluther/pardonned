@@ -22,6 +22,13 @@ export interface AtomFeedOptions {
   authorName: string;
   /** Maximum number of entries to include. Default 50. */
   limit?: number;
+  /**
+   * Optional fuller set of entries used solely to derive per-president
+   * term counts (so multi-term display-name suffixes resolve correctly
+   * when `entries` is a scoped subset, e.g. current-administration only).
+   * Defaults to `entries` itself.
+   */
+  termContextEntries?: AtomEntry[];
 }
 
 const DEFAULT_LIMIT = 50;
@@ -71,7 +78,7 @@ export function buildAtomFeed(entries: AtomEntry[], options: AtomFeedOptions): s
   const feedUpdated =
     sorted.length > 0 ? toRfc3339(sorted[0].data.grant_date) : new Date().toISOString();
 
-  const termsPerPresident = buildTermsIndex(entries);
+  const termsPerPresident = buildTermsIndex(options.termContextEntries ?? entries);
 
   const entriesXml = sorted
     .map((entry) => {

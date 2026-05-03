@@ -1,0 +1,786 @@
+---
+import Layout from "../layouts/Layout.astro";
+import "../styles/global.css";
+
+import { getCollection } from "astro:content";
+import {
+    getAdministrationIndex,
+    getCurrentAdministration,
+} from "../lib/president-names";
+import { getCategoryColor } from "../lib/category-colors";
+import {
+    formatCompactMoney,
+    formatGrantDateLong,
+} from "../lib/format";
+
+const currentPath = Astro.url.pathname;
+
+const allGrants = await getCollection("pardonDetails");
+const adminIndex = getAdministrationIndex(allGrants);
+
+// Scope: this feed is the *current* administration's clemency record only.
+// Earlier administrations live in /search. Data-driven via term_start_date —
+// when the next administration's grants land, this rotates automatically.
+const currentAdmin = getCurrentAdministration(allGrants);
+const currentAdminGrants = currentAdmin
+    ? allGrants.filter(
+          (e) => e.data.administration_slug === currentAdmin.slug,
+      )
+    : [];
+
+const sortedGrants = currentAdminGrants
+    .slice()
+    .sort((a, b) => b.data.grant_date.localeCompare(a.data.grant_date));
+
+const termStartYear = currentAdmin?.termStartDate.slice(0, 4) ?? "";
+const termEndYear = sortedGrants[0]?.data.term_end_date?.slice(0, 4) ?? "";
+const termRange = termEndYear
+    ? `${termStartYear}–${termEndYear}`
+    : `${termStartYear}–`;
+
+interface MonthGroup {
+    key: string; // "2025-12"
+    label: string; // "December 2025"
+    entries: typeof sortedGrants;
+    pardons: number;
+    commutations: number;
+    restitution: number;
+}
+
+const months: MonthGroup[] = [];
+const monthIndex = new Map<string, MonthGroup>();
+for (const entry of sortedGrants) {
+    const key = entry.data.grant_date.slice(0, 7);
+    let group = monthIndex.get(key);
+    if (!group) {
+        const [yyyy, mm] = key.split("-");
+        const label = new Date(
+            Number(yyyy),
+            Number(mm) - 1,
+            1,
+        ).toLocaleDateString("en-US", { month: "long", year: "numeric" });
+        group = {
+            key,
+            label,
+            entries: [],
+            pardons: 0,
+            commutations: 0,
+            restitution: 0,
+        };
+        monthIndex.set(key, group);
+        months.push(group);
+    }
+    group.entries.push(entry);
+    if (entry.data.clemency_type === "pardon") group.pardons++;
+    else group.commutations++;
+    if (entry.data.restitution != null) group.restitution += entry.data.restitution;
+}
+
+// Initial reveal cap — first N months render visible, rest hidden until the
+// "Load older" button reveals them. Per the issue spec.
+const INITIAL_VISIBLE_MONTHS = 2;
+
+const lastUpdatedDate = sortedGrants[0]?.data.grant_date;
+const lastUpdatedFormatted = lastUpdatedDate
+    ? formatGrantDateLong(lastUpdatedDate)
+    : null;
+
+function dayLabel(isoDate: string): string {
+    const [, , dd] = isoDate.split("-");
+    return String(Number(dd));
+}
+---
+
+<Layout
+    title="Recent grants"
+    description="A chronological feed of federal pardons and commutations, newest first. Each entry links to the original DOJ warrant."
+    ogImage="/og/recent.png"
+    currentPath={currentPath}
+>
+    <main class="recent-bold">
+        <div class="rb-crumb">
+            <a href="/">Home</a>
+            <span class="rb-crumb-sep">/</span>
+            <span class="rb-crumb-here">Recent</span>
+        </div>
+
+        <header class="rb-mast">
+            <div class="rb-mast-top">
+                <span class="rb-stamp">
+                    <span class="rb-stamp-dot" aria-hidden="true"></span>
+                    Live feed · {termRange}
+                </span>
+                {lastUpdatedFormatted && (
+                    <span class="rb-updated">
+                        Last grant on <b>{lastUpdatedFormatted}</b>
+                    </span>
+                )}
+            </div>
+            <h1 class="rb-headline">
+                <span class="rb-quiet">Clemency by</span><br />
+                {currentAdmin?.displayName ?? "the current administration"}.
+            </h1>
+            <p class="rb-deck">
+                Every federal pardon and commutation issued during the
+                current administration, newest first. Each entry links to
+                the original DOJ warrant. For
+                <a href="/search" class="rb-deck-link">previous administrations</a>
+                or filtered queries, use search. Subscribe via
+                <a href="/recent.xml" class="rb-deck-link">Atom feed</a>.
+            </p>
+        </header>
+
+        <div class="rb-feed" id="rb-feed">
+            {months.map((month, i) => {
+                const isInitiallyHidden = i >= INITIAL_VISIBLE_MONTHS;
+                return (
+                    <section
+                        class:list={[
+                            "rb-month",
+                            isInitiallyHidden && "rb-month-hidden",
+                        ]}
+                        data-month-rank={i}
+                        data-month-label={month.label}
+                    >
+                        <header class="rb-month-head">
+                            <h2 class="rb-month-title">{month.label}</h2>
+                            <p class="rb-month-summary">
+                                <b>
+                                    {month.entries.length}
+                                    {" "}
+                                    {month.entries.length === 1
+                                        ? "grant"
+                                        : "grants"}
+                                </b>
+                                {" — "}
+                                {month.pardons > 0 && (
+                                    <span>
+                                        {month.pardons}
+                                        {" "}
+                                        {month.pardons === 1
+                                            ? "pardon"
+                                            : "pardons"}
+                                    </span>
+                                )}
+                                {month.pardons > 0 && month.commutations > 0 && ", "}
+                                {month.commutations > 0 && (
+                                    <span>
+                                        {month.commutations}
+                                        {" "}
+                                        {month.commutations === 1
+                                            ? "commutation"
+                                            : "commutations"}
+                                    </span>
+                                )}
+                                {month.restitution > 0 && (
+                                    <>
+                                        {". "}
+                                        <span class="rb-red">
+                                            {formatCompactMoney(
+                                                month.restitution,
+                                            )}
+                                        </span>{" "}
+                                        in restitution forgiven.
+                                    </>
+                                )}
+                            </p>
+                        </header>
+
+                        <div class="rb-entries">
+                            {month.entries.map((entry) => {
+                                const d = entry.data;
+                                const adminDisplay =
+                                    adminIndex.get(d.administration_slug)
+                                        ?.displayName ?? d.president_name;
+                                const catColor = getCategoryColor(
+                                    d.offense_category,
+                                );
+                                const catLabel = d.offense_category.replace(
+                                    /\b\w/g,
+                                    (c) => c.toUpperCase(),
+                                );
+                                const restitution = d.restitution ?? 0;
+                                const typeLabel =
+                                    d.clemency_type === "pardon"
+                                        ? "Pardon"
+                                        : "Commutation";
+                                return (
+                                    <a
+                                        class="rb-entry"
+                                        href={`/pardon/details/${d.slug}`}
+                                        data-grant-slug={d.slug}
+                                        data-grant-date={d.grant_date}
+                                    >
+                                        <div class="rb-day" aria-hidden="true">
+                                            {dayLabel(d.grant_date)}
+                                        </div>
+                                        <div class="rb-body">
+                                            <div class="rb-who">
+                                                {d.recipient_name}
+                                                <span
+                                                    class:list={[
+                                                        "rb-type-tag",
+                                                        d.clemency_type ===
+                                                            "pardon"
+                                                            ? "rb-type-pardon"
+                                                            : "rb-type-commutation",
+                                                    ]}
+                                                >
+                                                    {typeLabel}
+                                                </span>
+                                            </div>
+                                            <div class="rb-what">
+                                                <span
+                                                    class="rb-cat-dot"
+                                                    style={`background:${catColor};`}
+                                                    aria-hidden="true"
+                                                ></span>
+                                                <span
+                                                    class="rb-cat-label"
+                                                    style={`color:${catColor};`}
+                                                >
+                                                    {catLabel}
+                                                </span>
+                                                {d.offense && (
+                                                    <span class="rb-offense">
+                                                        {" · "}
+                                                        {d.offense}
+                                                    </span>
+                                                )}
+                                                {d.district && (
+                                                    <span class="rb-district">
+                                                        {" · "}
+                                                        {d.district}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div class="rb-pres">
+                                            <a
+                                                href={`/president/${d.administration_slug}`}
+                                                class="rb-pres-link"
+                                                onclick="event.stopPropagation();"
+                                                data-admin-slug={d.administration_slug}
+                                            >
+                                                {adminDisplay}
+                                            </a>
+                                        </div>
+                                        <div
+                                            class:list={[
+                                                "rb-money",
+                                                restitution === 0 &&
+                                                    "rb-money-zero",
+                                            ]}
+                                        >
+                                            {restitution > 0
+                                                ? formatCompactMoney(restitution)
+                                                : "no restitution"}
+                                        </div>
+                                        <div
+                                            class="rb-arr"
+                                            aria-hidden="true"
+                                        >→</div>
+                                    </a>
+                                );
+                            })}
+                        </div>
+                    </section>
+                );
+            })}
+        </div>
+
+        <div class="rb-feed-foot">
+            {months.length > INITIAL_VISIBLE_MONTHS && (
+                <button
+                    type="button"
+                    id="rb-load-older"
+                    class="rb-load-older"
+                >
+                    Load older
+                </button>
+            )}
+            <div class="rb-feed-end">
+                <p>
+                    This feed shows
+                    {" "}
+                    {sortedGrants.length.toLocaleString()}
+                    {" "}
+                    {sortedGrants.length === 1 ? "grant" : "grants"} from
+                    the current administration. For previous presidents'
+                    records, including all 3,205 grants since 1993, use
+                    search with administration and date filters.
+                </p>
+                <a href="/search" class="rb-feed-end-cta">
+                    Open full search →
+                </a>
+            </div>
+        </div>
+    </main>
+</Layout>
+
+<script
+    is:inline
+    define:vars={{ initialVisible: INITIAL_VISIBLE_MONTHS }}
+>
+    document.addEventListener("DOMContentLoaded", () => {
+        const monthBlocks = Array.from(
+            document.querySelectorAll(".rb-month[data-month-rank]"),
+        );
+        const button = document.getElementById("rb-load-older");
+        let revealed = initialVisible;
+
+        function updateButton() {
+            if (!button) return;
+            if (revealed >= monthBlocks.length) {
+                button.hidden = true;
+            }
+        }
+
+        button?.addEventListener("click", () => {
+            if (revealed >= monthBlocks.length) return;
+            const next = monthBlocks[revealed];
+            next.classList.remove("rb-month-hidden");
+            const monthLabel = next.getAttribute("data-month-label");
+            const rank = Number(next.getAttribute("data-month-rank"));
+            window.posthog?.capture("recent_month_loaded", {
+                month: monthLabel,
+                rank,
+            });
+            revealed += 1;
+            updateButton();
+            // Scroll the newly-revealed section into view (top of viewport)
+            next.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+        updateButton();
+
+        // Track entry clicks (separate from president link inside the entry)
+        document
+            .querySelectorAll("a.rb-entry[data-grant-slug]")
+            .forEach((entry) => {
+                entry.addEventListener("click", (e) => {
+                    // Don't double-fire when the user clicked the inner president link
+                    if (
+                        e.target instanceof HTMLElement &&
+                        e.target.closest(".rb-pres-link")
+                    ) {
+                        return;
+                    }
+                    window.posthog?.capture("recent_entry_clicked", {
+                        slug: entry.getAttribute("data-grant-slug"),
+                        date: entry.getAttribute("data-grant-date"),
+                    });
+                });
+            });
+
+        // Track president-link clicks within entries
+        document
+            .querySelectorAll("a.rb-pres-link[data-admin-slug]")
+            .forEach((link) => {
+                link.addEventListener("click", () => {
+                    window.posthog?.capture("administration_clicked", {
+                        slug: link.getAttribute("data-admin-slug"),
+                        source: "recent_feed",
+                    });
+                });
+            });
+    });
+</script>
+
+<style>
+    .recent-bold {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 0 40px;
+    }
+
+    /* Breadcrumb */
+    .rb-crumb {
+        padding: 28px 0 0;
+        font-size: 12px;
+        color: var(--text-muted);
+        display: flex;
+        gap: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-weight: 500;
+    }
+    .rb-crumb a {
+        color: var(--text-muted);
+        text-decoration: none;
+    }
+    .rb-crumb a:hover {
+        color: var(--text-primary);
+    }
+    .rb-crumb-sep {
+        color: var(--border-soft);
+    }
+    .rb-crumb-here {
+        color: var(--text-body);
+        text-transform: none;
+        letter-spacing: 0;
+    }
+
+    /* Masthead */
+    .rb-mast {
+        padding: 32px 0 48px;
+        border-bottom: var(--rule-emphasis);
+    }
+    .rb-mast-top {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 24px;
+        margin-bottom: 28px;
+        flex-wrap: wrap;
+    }
+    .rb-stamp {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+        color: var(--accent);
+        padding: 6px 12px;
+        background: var(--accent-tint);
+        border-radius: 2px;
+    }
+    .rb-stamp-dot {
+        width: 6px;
+        height: 6px;
+        background: var(--accent);
+        border-radius: 50%;
+        animation: rb-pulse 1.6s ease-in-out infinite;
+    }
+    @keyframes rb-pulse {
+        0%,
+        100% {
+            opacity: 1;
+            transform: scale(1);
+        }
+        50% {
+            opacity: 0.4;
+            transform: scale(0.7);
+        }
+    }
+    .rb-updated {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--text-faint);
+        font-weight: 500;
+    }
+    .rb-updated b {
+        color: var(--text-body);
+        font-weight: 500;
+    }
+    .rb-headline {
+        font-family: var(--serif);
+        font-size: 76px;
+        letter-spacing: -0.03em;
+        line-height: 0.95;
+        margin: 0 0 24px 0;
+        max-width: 920px;
+        font-weight: 400;
+        color: var(--text-primary);
+    }
+    .rb-quiet {
+        color: var(--text-faint);
+    }
+    .rb-red {
+        color: var(--accent);
+    }
+    .rb-deck {
+        font-size: 17px;
+        color: var(--text-body);
+        line-height: 1.6;
+        max-width: 700px;
+        margin: 0;
+    }
+    .rb-deck-link {
+        color: var(--accent);
+        border-bottom: 1px solid var(--accent-border);
+        text-decoration: none;
+    }
+    .rb-deck-link:hover {
+        border-bottom-color: var(--accent);
+    }
+
+    /* Feed */
+    .rb-feed {
+        padding: 0;
+    }
+    .rb-month {
+        padding: 48px 0 0;
+        border-bottom: 1px solid var(--border-default);
+    }
+    .rb-month-hidden {
+        display: none;
+    }
+    .rb-month-head {
+        display: grid;
+        grid-template-columns: 240px 1fr;
+        gap: 40px;
+        align-items: baseline;
+        margin-bottom: 28px;
+    }
+    .rb-month-title {
+        font-family: var(--serif);
+        font-size: 36px;
+        letter-spacing: -0.02em;
+        line-height: 1.05;
+        margin: 0;
+        font-weight: 400;
+    }
+    .rb-month-summary {
+        font-size: 14px;
+        color: var(--text-secondary);
+        line-height: 1.65;
+        max-width: 580px;
+        margin: 0;
+    }
+    .rb-month-summary b {
+        color: var(--text-primary);
+        font-weight: 500;
+    }
+
+    /* Entries */
+    .rb-entries {
+        display: flex;
+        flex-direction: column;
+    }
+    .rb-entry {
+        display: grid;
+        grid-template-columns: 80px 1fr 220px 140px 24px;
+        gap: 32px;
+        padding: 22px 0;
+        border-top: 1px solid var(--border-default);
+        align-items: start;
+        text-decoration: none;
+        color: var(--text-primary);
+        transition: background 0.15s;
+    }
+    .rb-entry:hover {
+        background: var(--bg-card);
+    }
+    .rb-entry:hover .rb-arr {
+        color: var(--accent);
+    }
+    .rb-day {
+        font-family: var(--serif);
+        font-size: 32px;
+        color: var(--text-primary);
+        letter-spacing: -0.02em;
+        line-height: 1;
+        font-variant-numeric: tabular-nums;
+        text-align: right;
+    }
+    .rb-body {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 0;
+    }
+    .rb-who {
+        font-family: var(--serif);
+        font-size: 22px;
+        letter-spacing: -0.01em;
+        line-height: 1.2;
+    }
+    .rb-type-tag {
+        display: inline-block;
+        font-family: var(--sans);
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        font-weight: 500;
+        padding: 2px 8px;
+        border-radius: 2px;
+        vertical-align: middle;
+        margin-left: 10px;
+        position: relative;
+        top: -3px;
+    }
+    .rb-type-pardon {
+        background: var(--accent-tint);
+        color: var(--accent);
+    }
+    .rb-type-commutation {
+        background: rgba(42, 106, 122, 0.1);
+        color: #2a6a7a;
+    }
+    .rb-what {
+        font-size: 13px;
+        color: var(--text-secondary);
+        line-height: 1.55;
+    }
+    .rb-cat-dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-right: 6px;
+        vertical-align: middle;
+        position: relative;
+        top: -1px;
+    }
+    .rb-cat-label {
+        font-weight: 500;
+    }
+    .rb-offense,
+    .rb-district {
+        color: var(--text-secondary);
+    }
+    .rb-pres {
+        font-size: 13px;
+        color: var(--text-body);
+        padding-top: 4px;
+        min-width: 0;
+    }
+    .rb-pres-link {
+        color: var(--text-body);
+        text-decoration: none;
+        border-bottom: 1px solid transparent;
+        transition: border-color 0.15s, color 0.15s;
+    }
+    .rb-pres-link:hover {
+        color: var(--text-primary);
+        border-bottom-color: var(--border-soft);
+    }
+    .rb-money {
+        text-align: right;
+        font-family: var(--serif);
+        font-size: 20px;
+        color: var(--accent);
+        font-variant-numeric: tabular-nums;
+        letter-spacing: -0.01em;
+        padding-top: 6px;
+    }
+    .rb-money-zero {
+        color: var(--text-ghost);
+        font-family: var(--sans);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-weight: 500;
+    }
+    .rb-arr {
+        text-align: right;
+        color: var(--text-faint);
+        padding-top: 8px;
+        font-size: 18px;
+        transition: color 0.15s;
+    }
+
+    /* Feed footer */
+    .rb-feed-foot {
+        padding: 56px 0 80px;
+        border-top: 1px solid var(--border-default);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 36px;
+    }
+    .rb-load-older {
+        background: transparent;
+        border: 1px solid var(--border-soft);
+        color: var(--text-body);
+        font-family: inherit;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        font-weight: 500;
+        padding: 14px 36px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+    .rb-load-older:hover {
+        background: var(--bg-muted);
+        border-color: var(--text-muted);
+        color: var(--text-primary);
+    }
+    .rb-feed-end {
+        text-align: center;
+        max-width: 520px;
+    }
+    .rb-feed-end p {
+        font-size: 14px;
+        color: var(--text-secondary);
+        line-height: 1.6;
+        margin: 0 0 16px 0;
+    }
+    .rb-feed-end-cta {
+        display: inline-block;
+        font-size: 13px;
+        color: var(--accent);
+        border-bottom: 1px solid var(--accent-border);
+        padding-bottom: 1px;
+        text-decoration: none;
+    }
+    .rb-feed-end-cta:hover {
+        border-bottom-color: var(--accent);
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+        .recent-bold {
+            padding: 0 20px;
+        }
+        .rb-headline {
+            font-size: 44px;
+        }
+        .rb-mast {
+            padding: 24px 0 32px;
+        }
+        .rb-month {
+            padding: 32px 0 0;
+        }
+        .rb-month-head {
+            grid-template-columns: 1fr;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .rb-month-title {
+            font-size: 28px;
+        }
+        .rb-entry {
+            grid-template-columns: 48px 1fr;
+            grid-template-areas:
+                "day body"
+                ".   pres"
+                ".   money";
+            row-gap: 8px;
+            gap: 16px;
+            padding: 18px 0;
+        }
+        .rb-day {
+            grid-area: day;
+            font-size: 24px;
+        }
+        .rb-body {
+            grid-area: body;
+        }
+        .rb-pres {
+            grid-area: pres;
+            padding-top: 0;
+        }
+        .rb-money {
+            grid-area: money;
+            text-align: left;
+            padding-top: 0;
+            font-size: 17px;
+        }
+        .rb-arr {
+            display: none;
+        }
+        .rb-who {
+            font-size: 18px;
+        }
+        .rb-feed-foot {
+            padding: 40px 0 60px;
+            gap: 24px;
+        }
+    }
+</style>
