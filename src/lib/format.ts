@@ -44,3 +44,48 @@ export function formatGrantDateShort(isoDate: string): string {
     day: "numeric",
   });
 }
+
+/**
+ * Format a `sentence_in_months` value as a human-readable phrase.
+ * Returns an em-dash for null/undefined.
+ *
+ *   3   → "3 months"
+ *   12  → "1 year"
+ *   30  → "2 years, 6 months"
+ *   240 → "20 years"
+ */
+export function formatSentenceMonths(months: number | null | undefined): string {
+  if (months == null) return "—";
+  if (months < 12) return `${months} ${months === 1 ? "month" : "months"}`;
+  const years = Math.floor(months / 12);
+  const remainder = months % 12;
+  const yearsLabel = `${years} ${years === 1 ? "year" : "years"}`;
+  if (remainder === 0) return yearsLabel;
+  return `${yearsLabel}, ${remainder} ${remainder === 1 ? "month" : "months"}`;
+}
+
+/**
+ * Compact sentence formatter for tight display (e.g. detail-page money
+ * strip). Returns a short form like "48mo", "4yr", "10yr 6mo".
+ */
+export function formatSentenceCompact(months: number | null | undefined): string {
+  if (months == null) return "—";
+  if (months < 12) return `${months}mo`;
+  const years = Math.floor(months / 12);
+  const remainder = months % 12;
+  if (remainder === 0) return `${years}yr`;
+  return `${years}yr ${remainder}mo`;
+}
+
+/**
+ * Precise USD currency. Used on the row-level metadata grid where
+ * absence is meaningful — returns "—" for null and "$0" for zero.
+ */
+export function formatCurrencyPrecise(amount: number | null | undefined): string {
+  if (amount == null) return "—";
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
