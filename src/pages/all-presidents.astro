@@ -1,0 +1,828 @@
+---
+import Layout from "../layouts/Layout.astro";
+import "../styles/global.css";
+
+import { getCollection } from "astro:content";
+import { computeStats, filterByAdministration } from "../lib/pardon-stats";
+import { getAdministrationIndex } from "../lib/president-names";
+import { getCategoryColor } from "../lib/category-colors";
+import { formatCompactMoney } from "../lib/format";
+
+const currentPath = Astro.url.pathname;
+const MODERN_ERA_START = "1993-01-01";
+
+const allGrants = await getCollection("pardonDetails");
+const modernEraGrants = allGrants.filter(
+    (e) => e.data.term_start_date >= MODERN_ERA_START,
+);
+
+const adminIndex = getAdministrationIndex(modernEraGrants);
+const modernAdmins = Array.from(adminIndex.values());
+
+// Build per-admin row data with stats
+interface AdminRow {
+    slug: string;
+    displayName: string;
+    presidentName: string;
+    termNumber: number;
+    termStartDate: string;
+    termEndDate: string | null;
+    yearRange: string;
+    grants: number;
+    pardons: number;
+    commutations: number;
+    restitution: number;
+    fines: number;
+    byCategory: Record<string, number>;
+}
+
+const adminRows: AdminRow[] = modernAdmins.map((admin) => {
+    const entries = filterByAdministration(modernEraGrants, admin.slug);
+    const stats = computeStats(entries);
+    const termEndDate = entries[0]?.data.term_end_date ?? null;
+    const startYear = admin.termStartDate.slice(0, 4);
+    const endYear = termEndDate ? termEndDate.slice(0, 4) : "";
+    return {
+        slug: admin.slug,
+        displayName: admin.displayName,
+        presidentName: admin.presidentName,
+        termNumber: admin.termNumber,
+        termStartDate: admin.termStartDate,
+        termEndDate,
+        yearRange: endYear ? `${startYear}–${endYear}` : `${startYear}–`,
+        grants: stats.totalGrants,
+        pardons: stats.totalPardons,
+        commutations: stats.totalCommutations,
+        restitution: stats.totalRestitutionAbandoned,
+        fines: stats.totalFinesAbandoned,
+        byCategory: stats.byCategory,
+    };
+});
+
+// Default sort: total grants desc (server-rendered; JS only enhances re-sort)
+adminRows.sort((a, b) => b.grants - a.grants);
+
+// Page-level totals
+const totalStats = computeStats(modernEraGrants);
+const presidentNames = new Set(modernAdmins.map((a) => a.presidentName));
+const presidentCount = presidentNames.size;
+const oldestStartYear = modernAdmins
+    .map((a) => a.termStartDate.slice(0, 4))
+    .sort()[0];
+const newestEndYear = adminRows
+    .map((r) => (r.termEndDate ? r.termEndDate.slice(0, 4) : null))
+    .filter(Boolean)
+    .sort()
+    .reverse()[0];
+const yearsCovered = newestEndYear
+    ? Number(newestEndYear) - Number(oldestStartYear)
+    : new Date().getFullYear() - Number(oldestStartYear);
+const avgPerTerm =
+    modernAdmins.length > 0
+        ? Math.round(totalStats.totalGrants / modernAdmins.length)
+        : 0;
+
+// Composition: collect every category that appears in the modern era,
+// ordered by overall count desc — used for the stacked-bar legend.
+const allCategoriesSorted = Object.entries(totalStats.byCategory)
+    .sort(([, a], [, b]) => b - a)
+    .map(([key]) => key);
+
+// Headline year range for the eyebrow
+const eyebrowYears = newestEndYear
+    ? `${oldestStartYear} → ${newestEndYear}`
+    : `${oldestStartYear} → present`;
+---
+
+<Layout
+    title="All presidents"
+    description="Side-by-side clemency comparison of every U.S. presidential administration since 1993. Sortable by grants, restitution, and term."
+    ogImage="/og/all-presidents.png"
+    currentPath={currentPath}
+>
+    <main class="ap-page">
+        <div class="ap-crumb">
+            <a href="/">Home</a>
+            <span class="ap-crumb-sep">/</span>
+            <span class="ap-crumb-here">All presidents</span>
+        </div>
+
+        <header class="ap-mast">
+            <div class="ap-mast-kicker">
+                Cross-administration comparison · {eyebrowYears}
+            </div>
+            <h1 class="ap-mast-headline">
+                <span class="ap-quiet">{presidentCount} presidents.</span><br />
+                {modernAdmins.length} terms.<br />
+                <span class="ap-red">
+                    {formatCompactMoney(totalStats.totalRestitutionAbandoned)}
+                </span>
+                in restitution.
+            </h1>
+            <p class="ap-mast-deck">
+                A side-by-side look at every administration's clemency record
+                since {oldestStartYear} — by volume, by money forgiven, and by
+                composition. Drawn from the same DOJ source for every term.
+                Click any column header to re-sort.
+            </p>
+        </header>
+
+        <!-- Totals strip -->
+        <section class="ap-totals">
+            <div class="ap-tcell">
+                <div class="ap-tlbl">Grants tracked</div>
+                <div class="ap-tbig">
+                    {totalStats.totalGrants.toLocaleString()}
+                </div>
+                <div class="ap-tsub">
+                    Pardons + commutations across all administrations.
+                </div>
+            </div>
+            <div class="ap-tcell">
+                <div class="ap-tlbl">Restitution forgiven</div>
+                <div class="ap-tbig ap-tbig-accent">
+                    {formatCompactMoney(totalStats.totalRestitutionAbandoned)}
+                </div>
+                <div class="ap-tsub">
+                    Money owed to victims that recipients no longer have to pay back.
+                </div>
+            </div>
+            <div class="ap-tcell">
+                <div class="ap-tlbl">Years covered</div>
+                <div class="ap-tbig">{yearsCovered}</div>
+                <div class="ap-tsub">
+                    January {oldestStartYear} to present.
+                </div>
+            </div>
+            <div class="ap-tcell">
+                <div class="ap-tlbl">Avg per term</div>
+                <div class="ap-tbig">{avgPerTerm.toLocaleString()}</div>
+                <div class="ap-tsub">
+                    Wide variance — Obama's second term skews the mean.
+                </div>
+            </div>
+        </section>
+
+        <!-- Sortable comparison table -->
+        <section class="ap-section">
+            <h2 class="ap-section-title">Ranked by total grants.</h2>
+            <p class="ap-section-deck">
+                Each term shown separately. Default sort is by total grants;
+                click any column header to re-sort. Page works without JavaScript
+                for the default view.
+            </p>
+
+            <table class="ap-table" id="ap-table">
+                <thead>
+                    <tr>
+                        <th class="ap-num">
+                            <button type="button" class="ap-sort-btn" data-sort-key="rank" data-default-dir="asc" aria-sort="none">
+                                #
+                            </button>
+                        </th>
+                        <th>
+                            <button type="button" class="ap-sort-btn" data-sort-key="presidentName" data-default-dir="asc" aria-sort="none">
+                                President · Term
+                            </button>
+                        </th>
+                        <th class="ap-num">
+                            <button type="button" class="ap-sort-btn" data-sort-key="grants" data-default-dir="desc" aria-sort="descending">
+                                Grants <span class="ap-sort-mark">▼</span>
+                            </button>
+                        </th>
+                        <th class="ap-num">
+                            <button type="button" class="ap-sort-btn" data-sort-key="pardons" data-default-dir="desc" aria-sort="none">
+                                Pardons
+                            </button>
+                        </th>
+                        <th class="ap-num">
+                            <button type="button" class="ap-sort-btn" data-sort-key="commutations" data-default-dir="desc" aria-sort="none">
+                                Commutations
+                            </button>
+                        </th>
+                        <th class="ap-num">
+                            <button type="button" class="ap-sort-btn" data-sort-key="restitution" data-default-dir="desc" aria-sort="none">
+                                Restitution
+                            </button>
+                        </th>
+                        <th class="ap-num">
+                            <button type="button" class="ap-sort-btn" data-sort-key="fines" data-default-dir="desc" aria-sort="none">
+                                Fines
+                            </button>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody id="ap-tbody">
+                    {adminRows.map((row, i) => (
+                        <tr
+                            class="ap-row"
+                            data-slug={row.slug}
+                            data-rank={i + 1}
+                            data-grants={row.grants}
+                            data-pardons={row.pardons}
+                            data-commutations={row.commutations}
+                            data-restitution={row.restitution}
+                            data-fines={row.fines}
+                            data-president-name={row.presidentName}
+                            data-term-start={row.termStartDate}
+                        >
+                            <td class="ap-num ap-rank-cell">{i + 1}</td>
+                            <td>
+                                <div class="ap-pres-name">
+                                    {row.presidentName}
+                                </div>
+                                <div class="ap-pres-term">
+                                    {row.displayName.includes("Term")
+                                        ? row.displayName.replace(/^[^(]+\(/, "").replace(")", "")
+                                        : "Sole term"}
+                                    {" · "}
+                                    {row.yearRange}
+                                </div>
+                            </td>
+                            <td class="ap-num ap-cell-grants">
+                                {row.grants.toLocaleString()}
+                            </td>
+                            <td class="ap-num">
+                                {row.pardons.toLocaleString()}
+                            </td>
+                            <td class="ap-num">
+                                {row.commutations.toLocaleString()}
+                            </td>
+                            <td class:list={["ap-num", "ap-money", row.restitution === 0 && "ap-money-zero"]}>
+                                {row.restitution > 0
+                                    ? formatCompactMoney(row.restitution)
+                                    : "—"}
+                            </td>
+                            <td class:list={["ap-num", "ap-money", row.fines === 0 && "ap-money-zero"]}>
+                                {row.fines > 0
+                                    ? formatCompactMoney(row.fines)
+                                    : "—"}
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Composition by category — stacked horizontal bars -->
+        <section class="ap-section">
+            <h2 class="ap-section-title">Composition by category.</h2>
+            <p class="ap-section-deck">
+                Each row shows the offense-category mix of one term's grants,
+                scaled to fill the row. The legend below maps colors to
+                categories.
+            </p>
+
+            <div class="ap-stack">
+                <div class="ap-stack-row ap-stack-head">
+                    <div>President · Term</div>
+                    <div>Composition (proportional)</div>
+                    <div class="ap-num">Total</div>
+                </div>
+                {adminRows.map((row) => {
+                    const segments = Object.entries(row.byCategory)
+                        .sort(([a], [b]) => {
+                            const ai = allCategoriesSorted.indexOf(a);
+                            const bi = allCategoriesSorted.indexOf(b);
+                            return ai - bi;
+                        })
+                        .map(([key, count]) => ({
+                            key,
+                            count,
+                            color: getCategoryColor(key),
+                            pct: (count / row.grants) * 100,
+                        }));
+                    return (
+                        <div class="ap-stack-row">
+                            <div class="ap-stack-pres">
+                                <div class="ap-stack-pres-name">
+                                    {row.presidentName}
+                                </div>
+                                <div class="ap-stack-pres-term">
+                                    {row.displayName.includes("Term")
+                                        ? row.displayName.replace(/^[^(]+\(/, "").replace(")", "")
+                                        : "Sole term"}
+                                    {" · "}
+                                    {row.yearRange}
+                                </div>
+                            </div>
+                            <div class="ap-stack-bar" role="img" aria-label={`Composition of ${row.displayName}'s grants`}>
+                                {segments.map((seg) => (
+                                    <span
+                                        class="ap-stack-seg"
+                                        style={`width:${seg.pct}%; background:${seg.color};`}
+                                        title={`${seg.key.replace(/\b\w/g, (c) => c.toUpperCase())}: ${seg.count.toLocaleString()} (${seg.pct.toFixed(1)}%)`}
+                                    ></span>
+                                ))}
+                            </div>
+                            <div class="ap-num ap-stack-total">
+                                {row.grants.toLocaleString()}
+                            </div>
+                        </div>
+                    );
+                })}
+
+                <div class="ap-stack-legend">
+                    {allCategoriesSorted.map((cat) => (
+                        <div class="ap-stack-legend-item">
+                            <span class="ap-stack-legend-sw" style={`background:${getCategoryColor(cat)};`}></span>
+                            <span class="ap-stack-legend-label">
+                                {cat.replace(/\b\w/g, (c) => c.toUpperCase())}
+                            </span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </section>
+    </main>
+</Layout>
+
+<script is:inline>
+    document.addEventListener("DOMContentLoaded", () => {
+        const tbody = document.getElementById("ap-tbody");
+        if (!tbody) return;
+
+        // Snapshot the rows once. Sorting reorders this array and re-appends
+        // to keep it deterministic across multiple sorts.
+        const rows = Array.from(tbody.querySelectorAll("tr.ap-row"));
+        const buttons = Array.from(document.querySelectorAll("button.ap-sort-btn"));
+
+        let currentKey = "grants";
+        let currentDir = "desc";
+
+        function ariaFor(dir) {
+            return dir === "asc" ? "ascending" : "descending";
+        }
+
+        function compareRows(a, b, key, dir) {
+            // Pull values typed correctly for each column
+            let av;
+            let bv;
+            if (key === "rank") {
+                av = Number(a.dataset.rank);
+                bv = Number(b.dataset.rank);
+            } else if (key === "presidentName") {
+                // Tie-break by term_start_date asc within same name
+                const an = a.dataset.presidentName + a.dataset.termStart;
+                const bn = b.dataset.presidentName + b.dataset.termStart;
+                if (an < bn) return dir === "asc" ? -1 : 1;
+                if (an > bn) return dir === "asc" ? 1 : -1;
+                return 0;
+            } else {
+                av = Number(a.dataset[key]);
+                bv = Number(b.dataset[key]);
+            }
+            // Null/zero handling: null/NaN sort to bottom regardless of direction
+            const aIsNull = av === null || Number.isNaN(av);
+            const bIsNull = bv === null || Number.isNaN(bv);
+            if (aIsNull && !bIsNull) return 1;
+            if (!aIsNull && bIsNull) return -1;
+            if (aIsNull && bIsNull) return 0;
+            if (av === bv) return 0;
+            const cmp = av < bv ? -1 : 1;
+            return dir === "asc" ? cmp : -cmp;
+        }
+
+        function sortBy(key, dir) {
+            currentKey = key;
+            currentDir = dir;
+            const sorted = rows.slice().sort((a, b) => compareRows(a, b, key, dir));
+            // Re-append in the new order
+            const frag = document.createDocumentFragment();
+            sorted.forEach((row, i) => {
+                // Re-write the rank cell to reflect the visual row position
+                const rankCell = row.querySelector(".ap-rank-cell");
+                if (rankCell) rankCell.textContent = String(i + 1);
+                frag.appendChild(row);
+            });
+            tbody.appendChild(frag);
+            // Update header aria-sort + sort marks
+            buttons.forEach((btn) => {
+                const btnKey = btn.dataset.sortKey;
+                const isActive = btnKey === key;
+                btn.setAttribute("aria-sort", isActive ? ariaFor(dir) : "none");
+                const mark = btn.querySelector(".ap-sort-mark");
+                if (mark) mark.remove();
+                if (isActive) {
+                    const m = document.createElement("span");
+                    m.className = "ap-sort-mark";
+                    m.textContent = dir === "asc" ? "▲" : "▼";
+                    btn.appendChild(m);
+                }
+            });
+        }
+
+        buttons.forEach((btn) => {
+            btn.addEventListener("click", () => {
+                const key = btn.dataset.sortKey;
+                let dir;
+                if (currentKey === key) {
+                    dir = currentDir === "asc" ? "desc" : "asc";
+                } else {
+                    dir = btn.dataset.defaultDir || "desc";
+                }
+                sortBy(key, dir);
+                window.posthog?.capture("all_presidents_sorted", {
+                    column: key,
+                    direction: dir,
+                });
+            });
+        });
+
+        // Make whole rows clickable → /president/<slug>
+        tbody.addEventListener("click", (e) => {
+            const tr = e.target.closest("tr.ap-row");
+            if (!tr) return;
+            const slug = tr.dataset.slug;
+            if (!slug) return;
+            window.posthog?.capture("administration_clicked", {
+                slug,
+                source: "all_presidents",
+            });
+            window.location.href = "/president/" + slug;
+        });
+    });
+</script>
+
+<style>
+    .ap-page {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 0 40px;
+    }
+
+    /* Breadcrumb */
+    .ap-crumb {
+        padding: 28px 0 0;
+        font-size: 12px;
+        color: var(--text-muted);
+        display: flex;
+        gap: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-weight: 500;
+    }
+    .ap-crumb a {
+        color: var(--text-muted);
+        text-decoration: none;
+    }
+    .ap-crumb a:hover {
+        color: var(--text-primary);
+    }
+    .ap-crumb-sep {
+        color: var(--border-soft);
+    }
+    .ap-crumb-here {
+        color: var(--text-body);
+        text-transform: none;
+        letter-spacing: 0;
+    }
+
+    /* Masthead */
+    .ap-mast {
+        padding: 32px 0 56px;
+        border-bottom: var(--rule-emphasis);
+    }
+    .ap-mast-kicker {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
+        color: var(--accent);
+        margin-bottom: 24px;
+        font-weight: 500;
+    }
+    .ap-mast-headline {
+        font-family: var(--serif);
+        font-size: 80px;
+        letter-spacing: -0.03em;
+        line-height: 0.95;
+        margin: 0 0 28px 0;
+        max-width: 920px;
+        font-weight: 400;
+        color: var(--text-primary);
+    }
+    .ap-quiet {
+        color: var(--text-faint);
+    }
+    .ap-red {
+        color: var(--accent);
+    }
+    .ap-mast-deck {
+        font-size: 17px;
+        color: var(--text-body);
+        line-height: 1.6;
+        max-width: 720px;
+        margin: 0;
+    }
+
+    /* Totals strip */
+    .ap-totals {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        border-bottom: 1px solid var(--border-default);
+    }
+    .ap-tcell {
+        padding: 32px 28px;
+        border-right: 1px solid var(--border-default);
+    }
+    .ap-tcell:first-child {
+        padding-left: 0;
+    }
+    .ap-tcell:last-child {
+        padding-right: 0;
+        border-right: none;
+    }
+    .ap-tlbl {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--text-faint);
+        font-weight: 500;
+        margin-bottom: 12px;
+    }
+    .ap-tbig {
+        font-family: var(--serif);
+        font-size: 56px;
+        line-height: 0.95;
+        letter-spacing: -0.025em;
+        font-variant-numeric: tabular-nums;
+        margin-bottom: 8px;
+        color: var(--text-primary);
+    }
+    .ap-tbig-accent {
+        color: var(--accent);
+    }
+    .ap-tsub {
+        font-size: 12px;
+        color: var(--text-secondary);
+        line-height: 1.5;
+    }
+
+    /* Section */
+    .ap-section {
+        padding: 56px 0;
+        border-bottom: 1px solid var(--border-default);
+    }
+    .ap-section:last-child {
+        border-bottom: none;
+        padding-bottom: 80px;
+    }
+    .ap-section-title {
+        font-family: var(--serif);
+        font-size: 40px;
+        letter-spacing: -0.015em;
+        line-height: 1.05;
+        margin: 0 0 12px 0;
+        font-weight: 400;
+    }
+    .ap-section-deck {
+        font-size: 14px;
+        color: var(--text-secondary);
+        max-width: 640px;
+        line-height: 1.65;
+        margin: 0 0 36px 0;
+    }
+
+    /* Sortable table */
+    .ap-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+        border-top: var(--rule-emphasis);
+    }
+    .ap-table thead th {
+        text-align: left;
+        font-weight: 500;
+        padding: 0;
+        border-bottom: 1px solid var(--border-default);
+    }
+    .ap-table thead th.ap-num,
+    .ap-table tbody td.ap-num {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+    .ap-sort-btn {
+        background: transparent;
+        border: none;
+        padding: 14px 12px;
+        font-family: inherit;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--text-faint);
+        font-weight: 500;
+        cursor: pointer;
+        text-align: inherit;
+        width: 100%;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: color 0.15s;
+    }
+    .ap-table th.ap-num .ap-sort-btn {
+        justify-content: flex-end;
+    }
+    .ap-sort-btn:hover {
+        color: var(--text-primary);
+    }
+    .ap-sort-btn[aria-sort="ascending"],
+    .ap-sort-btn[aria-sort="descending"] {
+        color: var(--accent);
+    }
+    .ap-sort-mark {
+        font-size: 10px;
+        line-height: 1;
+        color: var(--accent);
+    }
+    .ap-table tbody tr {
+        border-bottom: 1px solid var(--border-default);
+        cursor: pointer;
+        transition: background 0.1s;
+    }
+    .ap-table tbody tr:hover {
+        background: var(--bg-muted);
+    }
+    .ap-table tbody td {
+        padding: 18px 12px;
+        vertical-align: top;
+    }
+    .ap-rank-cell {
+        font-family: var(--serif);
+        font-size: 22px;
+        color: var(--text-faint);
+        letter-spacing: -0.01em;
+        line-height: 1;
+    }
+    .ap-pres-name {
+        font-family: var(--serif);
+        font-size: 20px;
+        letter-spacing: -0.01em;
+        color: var(--text-primary);
+        line-height: 1.15;
+    }
+    .ap-pres-term {
+        font-size: 11px;
+        color: var(--text-faint);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-top: 6px;
+        font-variant-numeric: tabular-nums;
+    }
+    .ap-cell-grants {
+        font-family: var(--serif);
+        font-size: 22px;
+        letter-spacing: -0.01em;
+        color: var(--text-primary);
+    }
+    .ap-money {
+        font-family: var(--serif);
+        font-size: 18px;
+        color: var(--accent);
+        letter-spacing: -0.005em;
+    }
+    .ap-money-zero {
+        color: var(--text-ghost);
+        font-family: var(--sans);
+        font-size: 13px;
+    }
+
+    /* Stacked composition */
+    .ap-stack {
+        display: flex;
+        flex-direction: column;
+    }
+    .ap-stack-row {
+        display: grid;
+        grid-template-columns: 240px 1fr 80px;
+        gap: 20px;
+        padding: 18px 0;
+        border-bottom: 1px solid var(--border-default);
+        align-items: center;
+    }
+    .ap-stack-head {
+        border-top: var(--rule-emphasis);
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--text-faint);
+        font-weight: 500;
+        padding: 14px 0;
+    }
+    .ap-stack-head .ap-num {
+        text-align: right;
+    }
+    .ap-stack-pres {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    .ap-stack-pres-name {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text-primary);
+    }
+    .ap-stack-pres-term {
+        font-size: 11px;
+        color: var(--text-faint);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+    }
+    .ap-stack-bar {
+        height: 24px;
+        display: flex;
+        overflow: hidden;
+        background: var(--bg-muted);
+    }
+    .ap-stack-seg {
+        height: 100%;
+        transition: opacity 0.15s;
+    }
+    .ap-stack-seg:hover {
+        opacity: 0.8;
+    }
+    .ap-stack-total {
+        font-family: var(--serif);
+        font-size: 18px;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: -0.01em;
+    }
+    .ap-stack-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 18px;
+        margin-top: 28px;
+        padding-top: 24px;
+        border-top: 1px solid var(--border-default);
+    }
+    .ap-stack-legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        color: var(--text-body);
+    }
+    .ap-stack-legend-sw {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+    }
+    .ap-stack-legend-label {
+        text-transform: capitalize;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+        .ap-page {
+            padding: 0 20px;
+        }
+        .ap-mast-headline {
+            font-size: 44px;
+        }
+        .ap-totals {
+            grid-template-columns: 1fr 1fr;
+        }
+        .ap-tcell {
+            padding: 24px 16px;
+            border-right: none;
+        }
+        .ap-tcell:nth-child(odd) {
+            padding-left: 0;
+            border-right: 1px solid var(--border-default);
+        }
+        .ap-tcell:nth-child(even) {
+            padding-right: 0;
+        }
+        .ap-tcell:nth-child(1),
+        .ap-tcell:nth-child(2) {
+            border-bottom: 1px solid var(--border-default);
+        }
+        .ap-tbig {
+            font-size: 36px;
+        }
+        .ap-section-title {
+            font-size: 28px;
+        }
+        .ap-table {
+            font-size: 12px;
+        }
+        .ap-table thead th:nth-child(4),
+        .ap-table thead th:nth-child(5),
+        .ap-table thead th:nth-child(7),
+        .ap-table tbody td:nth-child(4),
+        .ap-table tbody td:nth-child(5),
+        .ap-table tbody td:nth-child(7) {
+            display: none;
+        }
+        .ap-pres-name {
+            font-size: 15px;
+        }
+        .ap-cell-grants {
+            font-size: 16px;
+        }
+        .ap-stack-row {
+            grid-template-columns: 140px 1fr 60px;
+            gap: 12px;
+        }
+    }
+</style>

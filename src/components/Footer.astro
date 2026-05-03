@@ -51,6 +51,8 @@ try {
         {mainNavigation.map((item) => (
           <a
             href={item.href}
+            data-footer-kind="nav"
+            data-footer-label={item.label}
             class="text-nav text-text-muted hover:text-text-primary transition-colors"
           >
             {item.label}
@@ -68,6 +70,8 @@ try {
           target="_blank"
           aria-label={`${link.label} — ${link.handle}`}
           title={link.handle}
+          data-footer-kind="social"
+          data-footer-label={link.label}
           class="inline-flex items-center justify-center p-2 rounded-md text-text-muted hover:text-text-primary hover:bg-muted transition-colors"
         >
           <svg
@@ -91,6 +95,8 @@ try {
       Last updated: {lastUpdated} · <a
         href="/pardonned.db"
         download
+        data-footer-kind="db_download"
+        data-footer-label="raw_db"
         class="text-text-muted hover:text-text-primary transition-colors underline-offset-2 hover:underline"
       >Click here to view the raw db for yourself</a>
     </p>
@@ -99,8 +105,23 @@ try {
         href="https://luther.io"
         rel="author noopener"
         target="_blank"
+        data-footer-kind="author"
+        data-footer-label="vid_luther"
         class="text-text-muted hover:text-text-primary transition-colors underline-offset-2 hover:underline"
       >Vid Luther</a> and AI
     </p>
   </div>
 </footer>
+
+<script is:inline>
+  document.querySelector('footer')?.addEventListener('click', (e) => {
+    const link = e.target instanceof Element ? e.target.closest('a[data-footer-kind]') : null;
+    if (!link) return;
+    window.posthog?.capture('footer_link_clicked', {
+      kind: link.getAttribute('data-footer-kind'),
+      label: link.getAttribute('data-footer-label'),
+      href: link.getAttribute('href'),
+      from_path: window.location.pathname,
+    });
+  });
+</script>

@@ -114,3 +114,31 @@ export function getAdministrationIndex(
 
   return index;
 }
+
+/**
+ * Identify the current administration — the one with the most recent
+ * `term_start_date` in the dataset. Returns null for an empty dataset.
+ *
+ * Used by `/recent` and its companion Atom feed to scope the feed to
+ * the incumbent administration only. Data-driven: when the next
+ * administration's grants start landing, the helper returns that admin
+ * automatically without code changes.
+ *
+ * Ties on term_start_date break toward the higher term_number, then by
+ * slug for deterministic ordering.
+ */
+export function getCurrentAdministration(
+  entries: AdministrationIndexInput[],
+): AdministrationIndexEntry | null {
+  const index = getAdministrationIndex(entries);
+  if (index.size === 0) return null;
+  const admins = Array.from(index.values());
+  admins.sort((a, b) => {
+    const dc = b.termStartDate.localeCompare(a.termStartDate);
+    if (dc !== 0) return dc;
+    const tc = b.termNumber - a.termNumber;
+    if (tc !== 0) return tc;
+    return a.slug.localeCompare(b.slug);
+  });
+  return admins[0];
+}

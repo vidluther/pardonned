@@ -1,26 +1,15 @@
 ---
 import Layout from "../../layouts/Layout.astro";
-import StatGrid from "../../components/StatGrid.astro";
-import CategoryGrid from "../../components/CategoryGrid.astro";
+import MoneyFigure from "../../components/MoneyFigure.astro";
 import Timeline from "../../components/Timeline.astro";
 import SourceBanner from "../../components/SourceBanner.astro";
-import FilterPill from "../../components/FilterPill.astro";
 import "../../styles/global.css";
 
 import { getCollection } from "astro:content";
 import { computeStats, filterByAdministration } from "../../lib/pardon-stats";
 import { getAdministrationIndex } from "../../lib/president-names";
-
-const categoryColors: Record<string, string> = {
-    fraud: "#8A6B1E",
-    "drug offense": "#3A6A4A",
-    firearms: "#C23B22",
-    "FACE act": "#B8652A",
-    "financial crime": "#2A6A7A",
-    "violent crime": "#6A4B7A",
-    immigration: "#7A6A3A",
-    other: "#7A7870",
-};
+import { getCategoryColor } from "../../lib/category-colors";
+import { formatCompactMoney, formatGrantDateLong } from "../../lib/format";
 
 export async function getStaticPaths() {
     const allGrants = await getCollection("pardonDetails");
@@ -29,26 +18,76 @@ export async function getStaticPaths() {
         b.termStartDate.localeCompare(a.termStartDate),
     );
 
-    return sortedAdmins.map((admin) => ({
-        params: { slug: admin.slug },
-        props: {
-            admin,
-            entries: filterByAdministration(allGrants, admin.slug),
-            allAdmins: sortedAdmins,
-        },
-    }));
+    return sortedAdmins.map((admin, i) => {
+        const entries = filterByAdministration(allGrants, admin.slug);
+        // term_end_date isn't on the admin index; derive from any entry.
+        // For incumbents the field is null and we render an open-ended range.
+        const termEndDate = entries[0]?.data.term_end_date ?? null;
+
+        // Chronological neighbours. sortedAdmins is desc by termStartDate, so
+        //   newer = sortedAdmins[i - 1]   (later in time)
+        //   older = sortedAdmins[i + 1]   (earlier in time)
+        // We label them "Next" / "Previous" by chronology.
+        const newer = i > 0 ? sortedAdmins[i - 1] : null;
+        const older = i < sortedAdmins.length - 1 ? sortedAdmins[i + 1] : null;
+
+        return {
+            params: { slug: admin.slug },
+            props: {
+                admin,
+                entries,
+                termEndDate,
+                newer: newer
+                    ? { slug: newer.slug, displayName: newer.displayName, termStartDate: newer.termStartDate }
+                    : null,
+                older: older
+                    ? { slug: older.slug, displayName: older.displayName, termStartDate: older.termStartDate }
+                    : null,
+            },
+        };
+    });
 }
 
-const { admin, entries, allAdmins } = Astro.props;
+const { admin, entries, termEndDate, newer, older } = Astro.props;
 const stats = computeStats(entries);
 
-const categoryCounts = Object.entries(stats.byCategory).map(([key, count]) => ({
-    key,
-    name: key.replace(/\b\w/g, (c) => c.toUpperCase()),
-    count,
-    color: categoryColors[key] ?? "#7A7880",
-}));
+// Category breakdown — sorted desc, with proportional bars
+const categoryRows = Object.entries(stats.byCategory)
+    .map(([key, count]) => ({
+        key,
+        name: key.replace(/\b\w/g, (c) => c.toUpperCase()),
+        count,
+        color: getCategoryColor(key),
+    }))
+    .sort((a, b) => b.count - a.count);
+const maxCategoryCount = Math.max(1, ...categoryRows.map((r) => r.count));
 
+// Term subtitle: "Second Term · 2025–" / "First Term · 2021–2025" / single-term: "2017–2021"
+const termOrdinals: Record<number, string> = {
+    1: "First Term",
+    2: "Second Term",
+    3: "Third Term",
+    4: "Fourth Term",
+};
+const termStartYear = admin.termStartDate.slice(0, 4);
+const termEndYear = termEndDate ? termEndDate.slice(0, 4) : "";
+const yearRange = termEndYear ? `${termStartYear}–${termEndYear}` : `${termStartYear}–`;
+const isOnlyTerm = !admin.displayName.includes("Term");
+const termSubtitle = isOnlyTerm
+    ? yearRange
+    : `${termOrdinals[admin.termNumber] ?? `Term ${admin.termNumber}`} · ${yearRange}`;
+
+// Bare president name (drop the "(Second Term)" suffix for the masthead h1)
+const presidentName = admin.displayName.replace(/\s*\([^)]+\)\s*$/, "");
+
+// Data-driven J6 footnote. Auto-disappears once January-6 records land in the
+// data with `offense_category === "january 6"` (separate AI-reclassification
+// effort). Only rendered for Trump administrations.
+const j6Count = stats.byCategory["january 6"] ?? 0;
+const showJ6Footnote = admin.slug.startsWith("trump-") && j6Count === 0;
+
+// Build Timeline entries (preserved from prior implementation — same shape
+// the existing Timeline component expects, only the visual treatment differs)
 const groupedByDate = entries.reduce(
     (acc, entry) => {
         const date = entry.data.grant_date;
@@ -58,61 +97,34 @@ const groupedByDate = entries.reduce(
     },
     {} as Record<string, (typeof entries)[number]["data"][]>,
 );
-
-const sortedDates = Object.keys(groupedByDate).sort((a, b) =>
-    b.localeCompare(a),
-);
+const sortedDates = Object.keys(groupedByDate).sort((a, b) => b.localeCompare(a));
 
 const timelineEntries = sortedDates.map((date, i) => {
     const grants = groupedByDate[date];
     const names = grants.map((g) => g.recipient_name);
     const categories = [...new Set(grants.map((g) => g.offense_category))];
     const pardons = grants.filter((g) => g.clemency_type === "pardon").length;
-    const commutations = grants.filter(
-        (g) => g.clemency_type === "commutation",
-    ).length;
-
+    const commutations = grants.filter((g) => g.clemency_type === "commutation").length;
     const hrefs = grants.reduce(
         (acc, grant) => {
-            acc[grant.recipient_name] =
-                `/pardon/details/${grant.slug}`;
+            acc[grant.recipient_name] = `/pardon/details/${grant.slug}`;
             return acc;
         },
         {} as Record<string, string>,
     );
-
     const parts: string[] = [];
-    if (pardons > 0)
-        parts.push(`${pardons} ${pardons === 1 ? "pardon" : "pardons"}`);
+    if (pardons > 0) parts.push(`${pardons} ${pardons === 1 ? "pardon" : "pardons"}`);
     if (commutations > 0)
-        parts.push(
-            `${commutations} ${commutations === 1 ? "commutation" : "commutations"}`,
-        );
-
-    const grantLabel = parts.join(", ");
-    const [y, m, d] = date.split("-");
-    const formattedDate = new Date(
-        Number(y),
-        Number(m) - 1,
-        Number(d),
-    ).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-    });
-
+        parts.push(`${commutations} ${commutations === 1 ? "commutation" : "commutations"}`);
     return {
-        date: formattedDate,
-        grants: grantLabel,
+        date: formatGrantDateLong(date),
+        grants: parts.join(", "),
         names,
         highlight: categories.join(", "),
         isLatest: i === 0,
         hrefs,
     };
 });
-
-const isTrump = admin.slug.startsWith("trump-");
-const footnote = isTrump ? "Does not include January 6th" : undefined;
 ---
 
 <Layout
@@ -121,94 +133,600 @@ const footnote = isTrump ? "Does not include January 6th" : undefined;
     ogImage={`/og/president/${admin.slug}.png`}
     currentPath={`/president/${admin.slug}`}
 >
-    <!-- President Navigation Pills -->
-    <nav class="max-w-home mx-auto px-5 md:px-10 pt-8 pb-2">
-        <div class="flex flex-wrap gap-2">
-            <FilterPill label="All" href="/" />
-            {allAdmins.map((a) => (
-                <FilterPill
-                    label={a.displayName}
-                    count={a.count}
-                    href={`/president/${a.slug}`}
-                    active={a.slug === admin.slug}
-                />
-            ))}
+    <main class="president-page-bold">
+        <!-- Breadcrumb -->
+        <div class="pp-crumb">
+            <a href="/">Home</a>
+            <span class="pp-crumb-sep">/</span>
+            <a href="/all-presidents">Presidents</a>
+            <span class="pp-crumb-sep">/</span>
+            <span class="pp-crumb-here">{presidentName}</span>
         </div>
-    </nav>
 
-    <!-- Hero Section -->
-    <section class="py-10 md:py-20 px-5 md:px-10 max-w-home mx-auto text-center">
-        <h1 class="hero-headline mb-6 max-w-3xl mx-auto">
-            Pardons granted by {admin.displayName}
-        </h1>
-        {isTrump && (
-            <h2 class="hero-subtitle mb-8">Not Including the January 6th Pardons</h2>
-        )}
-        <StatGrid stats={stats} animated={true} footnote={footnote} />
-    </section>
+        <!-- Editorial masthead -->
+        <header class="pp-mast">
+            <div class="pp-mast-kicker">Clemency record</div>
+            <h1 class="pp-mast-name">
+                {presidentName}.
+                <span class="pp-mast-term">{termSubtitle}</span>
+            </h1>
+            {showJ6Footnote && (
+                <p class="pp-mast-footnote">
+                    Counts below do not include January 6 defendants — pending classification in the dataset.
+                </p>
+            )}
+        </header>
 
-    <!-- Gradient Divider -->
-    <div class="max-w-home mx-auto px-5 md:px-10">
-        <div class="divider-gradient"></div>
-    </div>
+        <!-- 4-stat number wall -->
+        <section class="pp-numwall">
+            <div class="pp-nw">
+                <div class="pp-nw-lbl">Grants</div>
+                <div class="pp-nw-big">{stats.totalGrants.toLocaleString()}</div>
+                <div class="pp-nw-sub">Pardons and commutations issued during this term.</div>
+            </div>
+            <div class="pp-nw">
+                <div class="pp-nw-lbl">Pardons</div>
+                <div class="pp-nw-big">{stats.totalPardons.toLocaleString()}</div>
+                <div class="pp-nw-sub">
+                    {stats.totalGrants > 0
+                        ? `${Math.round((stats.totalPardons / stats.totalGrants) * 100)}% of grants.`
+                        : "—"}
+                </div>
+            </div>
+            <div class="pp-nw">
+                <div class="pp-nw-lbl">Commutations</div>
+                <div class="pp-nw-big">{stats.totalCommutations.toLocaleString()}</div>
+                <div class="pp-nw-sub">
+                    {stats.totalGrants > 0
+                        ? `${Math.round((stats.totalCommutations / stats.totalGrants) * 100)}% of grants.`
+                        : "—"}
+                </div>
+            </div>
+            <div class="pp-nw">
+                <div class="pp-nw-lbl">Restitution forgiven</div>
+                <div class="pp-nw-big pp-nw-accent">
+                    {formatCompactMoney(stats.totalRestitutionAbandoned)}
+                </div>
+                <div class="pp-nw-sub">
+                    Money owed to victims that recipients no longer have to pay back.
+                </div>
+            </div>
+        </section>
 
-    <!-- Categories Section -->
-    <section class="py-10 md:py-section px-5 md:px-10 max-w-home mx-auto" data-animate>
-        <h2 class="text-section font-serif text-text-primary mb-2">
-            By Offense Category
-        </h2>
-        <p class="text-nav text-text-faint mb-10">
-            Breakdown of all pardons by type of offense
-        </p>
-        <CategoryGrid
-            categoryCounts={categoryCounts}
-            columns={3}
-            hrefPattern={`/search?president=${admin.slug}&category={key}`}
-        />
-    </section>
+        <!-- Composition + Timeline split layout -->
+        <section class="pp-split">
+            <div>
+                <h2 class="pp-section-title">Composition.</h2>
+                <p class="pp-section-deck">
+                    Where this term's grants concentrate, by offense category.
+                </p>
+                <div class="pp-cat-list">
+                    {categoryRows.map((row) => {
+                        const pct = (row.count / maxCategoryCount) * 100;
+                        return (
+                            <a
+                                class="pp-cat-row"
+                                href={`/search?president=${admin.slug}&category=${encodeURIComponent(row.key)}`}
+                                data-category={row.key}
+                            >
+                                <div class="pp-cat-nm">
+                                    <span class="pp-cat-dot" style={`background:${row.color};`} aria-hidden="true"></span>
+                                    <span class="pp-cat-name">{row.name}</span>
+                                </div>
+                                <div class="pp-cat-bar">
+                                    <div class="pp-cat-fill" style={`width:${pct}%; background:${row.color};`}></div>
+                                </div>
+                                <div class="pp-cat-ct">{row.count.toLocaleString()}</div>
+                            </a>
+                        );
+                    })}
+                </div>
+            </div>
+            <div>
+                <h2 class="pp-section-title">Timeline.</h2>
+                <p class="pp-section-deck">
+                    Every clemency action in reverse chronological order.
+                </p>
+                <Timeline entries={timelineEntries} />
 
-    <!-- Flat Divider -->
-    <div class="max-w-home mx-auto px-5 md:px-10">
-        <div class="divider-flat"></div>
-    </div>
+                <div class="pp-timeline-cta">
+                    <a
+                        href={`/search?president=${admin.slug}`}
+                        class="pp-timeline-cta-link"
+                        data-search-cta
+                    >
+                        View all {stats.totalGrants.toLocaleString()} grants from this term →
+                    </a>
+                </div>
+            </div>
+        </section>
 
-    <!-- Timeline Section -->
-    <section class="py-10 md:py-section px-5 md:px-10 max-w-home mx-auto" data-animate>
-        <h2 class="text-section font-serif text-text-primary mb-2">Timeline</h2>
-        <p class="text-nav text-text-faint mb-10">
-            Every clemency action in reverse chronological order
-        </p>
-        <Timeline entries={timelineEntries} />
+        <!-- Footer cross-link strip: chronological prev/next + view-all -->
+        <nav class="pp-footer-nav" aria-label="Administration navigation">
+            <div class="pp-footer-cell pp-footer-prev">
+                {older ? (
+                    <a
+                        href={`/president/${older.slug}`}
+                        class="pp-foot-link"
+                        data-direction="older"
+                        data-to-slug={older.slug}
+                    >
+                        <span class="pp-foot-arrow" aria-hidden="true">←</span>
+                        <span class="pp-foot-stack">
+                            <span class="pp-foot-label">Previous administration</span>
+                            <span class="pp-foot-name">{older.displayName}</span>
+                            <span class="pp-foot-year">{older.termStartDate.slice(0, 4)}</span>
+                        </span>
+                    </a>
+                ) : (
+                    <span class="pp-foot-empty">—</span>
+                )}
+            </div>
+            <div class="pp-footer-cell pp-footer-back">
+                <a href="/all-presidents" class="pp-back-link">
+                    View all administrations →
+                </a>
+            </div>
+            <div class="pp-footer-cell pp-footer-next">
+                {newer ? (
+                    <a
+                        href={`/president/${newer.slug}`}
+                        class="pp-foot-link pp-foot-link-right"
+                        data-direction="newer"
+                        data-to-slug={newer.slug}
+                    >
+                        <span class="pp-foot-stack">
+                            <span class="pp-foot-label">Next administration</span>
+                            <span class="pp-foot-name">{newer.displayName}</span>
+                            <span class="pp-foot-year">{newer.termStartDate.slice(0, 4)}</span>
+                        </span>
+                        <span class="pp-foot-arrow" aria-hidden="true">→</span>
+                    </a>
+                ) : (
+                    <span class="pp-foot-empty">—</span>
+                )}
+            </div>
+        </nav>
 
-        <div class="text-center mt-5">
-            <a href={`/search?president=${admin.slug}`} class="load-more-btn inline-block no-underline">
-                Search all pardons →
-            </a>
-        </div>
-    </section>
-
-    <!-- Source Banner -->
-    <section class="max-w-source mx-auto px-5 md:px-8 mb-10">
-        <SourceBanner />
-    </section>
+        <!-- Source attribution -->
+        <section class="pp-source-band">
+            <SourceBanner />
+        </section>
+    </main>
 </Layout>
 
 <script src="/scripts/animate-on-scroll.js" is:inline></script>
 
-<script is:inline>
-  document.addEventListener('DOMContentLoaded', () => {
-    document.querySelector('.grid')?.addEventListener('click', (e) => {
-      const card = e.target.closest('a[href*="category="]');
-      if (!card) return;
-      const url = new URL(card.href, window.location.origin);
-      const category = url.searchParams.get('category');
-      if (category) {
-        window.posthog?.capture('category_clicked', { category, source: 'president_page' });
-      }
-    });
+<script is:inline define:vars={{ adminSlug: admin.slug }}>
+    document.addEventListener("DOMContentLoaded", () => {
+        // category_clicked — preserved from the prior implementation
+        document.querySelectorAll("a.pp-cat-row[data-category]").forEach((row) => {
+            row.addEventListener("click", () => {
+                window.posthog?.capture("category_clicked", {
+                    category: row.getAttribute("data-category"),
+                    source: "president_page",
+                });
+            });
+        });
 
-    document.querySelector('a[href*="/search"].load-more-btn')?.addEventListener('click', () => {
-      window.posthog?.capture('search_all_pardons_clicked', { source: 'president_page' });
+        // search_all_pardons_clicked — preserved
+        document.querySelector("a[data-search-cta]")?.addEventListener("click", () => {
+            window.posthog?.capture("search_all_pardons_clicked", {
+                source: "president_page",
+            });
+        });
+
+        // administration_neighbor_clicked — new, for the chronological prev/next strip
+        document
+            .querySelectorAll("a.pp-foot-link[data-direction]")
+            .forEach((link) => {
+                link.addEventListener("click", () => {
+                    window.posthog?.capture("administration_neighbor_clicked", {
+                        from_slug: adminSlug,
+                        to_slug: link.getAttribute("data-to-slug"),
+                        direction: link.getAttribute("data-direction"),
+                    });
+                });
+            });
     });
-  });
 </script>
+
+<style is:global>
+    .president-page-bold {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 0 40px;
+    }
+
+    /* Breadcrumb */
+    .pp-crumb {
+        padding: 28px 0 0;
+        font-size: 12px;
+        color: var(--text-muted);
+        display: flex;
+        gap: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-weight: 500;
+    }
+    .pp-crumb a {
+        color: var(--text-muted);
+        text-decoration: none;
+    }
+    .pp-crumb a:hover {
+        color: var(--text-primary);
+    }
+    .pp-crumb-sep {
+        color: var(--border-soft);
+    }
+    .pp-crumb-here {
+        color: var(--text-body);
+        text-transform: none;
+        letter-spacing: 0;
+    }
+
+    /* Editorial masthead */
+    .pp-mast {
+        padding: 32px 0 56px;
+        border-bottom: var(--rule-emphasis);
+    }
+    .pp-mast-kicker {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
+        color: var(--accent);
+        margin-bottom: 24px;
+        font-weight: 500;
+    }
+    .pp-mast-name {
+        font-family: var(--serif);
+        font-size: 84px;
+        letter-spacing: -0.03em;
+        line-height: 0.95;
+        margin: 0;
+        font-weight: 400;
+        color: var(--text-primary);
+    }
+    .pp-mast-term {
+        display: block;
+        font-size: 32px;
+        color: var(--text-faint);
+        letter-spacing: -0.01em;
+        margin-top: 14px;
+        font-variant-numeric: tabular-nums;
+    }
+    .pp-mast-footnote {
+        font-size: 13px;
+        color: var(--text-faint);
+        font-style: italic;
+        margin: 24px 0 0 0;
+        line-height: 1.55;
+        max-width: 720px;
+    }
+
+    /* 4-stat number wall */
+    .pp-numwall {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        border-bottom: 1px solid var(--border-default);
+    }
+    .pp-nw {
+        padding: 36px 28px;
+        border-right: 1px solid var(--border-default);
+    }
+    .pp-nw:first-child {
+        padding-left: 0;
+    }
+    .pp-nw:last-child {
+        padding-right: 0;
+        border-right: none;
+    }
+    .pp-nw-lbl {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--text-faint);
+        font-weight: 500;
+        margin-bottom: 12px;
+    }
+    .pp-nw-big {
+        font-family: var(--serif);
+        font-size: 64px;
+        line-height: 0.95;
+        letter-spacing: -0.025em;
+        margin-bottom: 8px;
+        font-variant-numeric: tabular-nums;
+        color: var(--text-primary);
+    }
+    .pp-nw-accent {
+        color: var(--accent);
+    }
+    .pp-nw-sub {
+        font-size: 12px;
+        color: var(--text-secondary);
+        line-height: 1.5;
+    }
+
+    /* Composition + Timeline split */
+    .pp-split {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 64px;
+        padding: 64px 0;
+        border-bottom: 1px solid var(--border-default);
+    }
+    .pp-section-title {
+        font-family: var(--serif);
+        font-size: 32px;
+        letter-spacing: -0.015em;
+        line-height: 1.1;
+        margin: 0 0 8px 0;
+        font-weight: 400;
+    }
+    .pp-section-deck {
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin: 0 0 28px 0;
+        line-height: 1.55;
+    }
+
+    /* Category breakdown — proportional bar list */
+    .pp-cat-list {
+        display: flex;
+        flex-direction: column;
+    }
+    .pp-cat-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr 60px;
+        gap: 16px;
+        padding: 14px 0;
+        border-bottom: 1px solid var(--border-default);
+        align-items: center;
+        text-decoration: none;
+        color: inherit;
+        font-size: 14px;
+        transition: background 0.15s;
+    }
+    .pp-cat-row:last-child {
+        border-bottom: none;
+    }
+    .pp-cat-row:hover {
+        background: var(--bg-muted);
+    }
+    .pp-cat-nm {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .pp-cat-dot {
+        width: 10px;
+        height: 10px;
+        flex-shrink: 0;
+    }
+    .pp-cat-name {
+        color: var(--text-body);
+        text-transform: capitalize;
+    }
+    .pp-cat-bar {
+        height: 6px;
+        background: var(--bg-muted);
+        position: relative;
+        overflow: hidden;
+    }
+    .pp-cat-fill {
+        height: 100%;
+    }
+    .pp-cat-ct {
+        font-family: var(--serif);
+        font-size: 18px;
+        font-variant-numeric: tabular-nums;
+        text-align: right;
+        letter-spacing: -0.01em;
+    }
+
+    /* Timeline component bold restyle (overrides global Timeline classes
+       for elements rendered inside this page only) */
+    .president-page-bold .timeline-container {
+        padding-left: 16px;
+    }
+    .president-page-bold .timeline-line {
+        background: var(--border-default);
+    }
+    .president-page-bold .timeline-date {
+        font-family: var(--serif);
+        font-size: 18px;
+        letter-spacing: -0.01em;
+        color: var(--text-primary);
+        font-weight: 400;
+        font-variant-numeric: tabular-nums;
+    }
+    .president-page-bold .timeline-grants-badge {
+        background: transparent;
+        border: 1px solid var(--accent-border);
+        color: var(--accent);
+        border-radius: 2px;
+    }
+    .president-page-bold .timeline-highlight {
+        font-family: var(--sans);
+        font-size: 12px;
+        color: var(--text-faint);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-style: normal;
+    }
+    .president-page-bold .timeline-dot {
+        border-radius: 0;
+        width: 10px;
+        height: 10px;
+    }
+
+    /* Timeline CTA */
+    .pp-timeline-cta {
+        margin-top: 28px;
+    }
+    .pp-timeline-cta-link {
+        font-size: 13px;
+        color: var(--accent);
+        border-bottom: 1px solid var(--accent-border);
+        padding-bottom: 1px;
+        text-decoration: none;
+    }
+    .pp-timeline-cta-link:hover {
+        border-bottom-color: var(--accent);
+    }
+
+    /* Footer cross-link strip */
+    .pp-footer-nav {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        gap: 24px;
+        align-items: center;
+        padding: 32px 0 56px;
+    }
+    .pp-footer-cell {
+        min-width: 0;
+    }
+    .pp-footer-prev {
+        text-align: left;
+    }
+    .pp-footer-back {
+        text-align: center;
+    }
+    .pp-footer-next {
+        text-align: right;
+    }
+    .pp-foot-link {
+        display: inline-flex;
+        gap: 14px;
+        align-items: center;
+        text-decoration: none;
+        color: var(--text-primary);
+        max-width: 100%;
+    }
+    .pp-foot-arrow {
+        font-size: 18px;
+        color: var(--accent);
+        flex-shrink: 0;
+    }
+    .pp-foot-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+    }
+    .pp-footer-prev .pp-foot-stack {
+        align-items: flex-start;
+    }
+    .pp-footer-next .pp-foot-stack {
+        align-items: flex-end;
+    }
+    .pp-foot-label {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--text-faint);
+        font-weight: 500;
+    }
+    .pp-foot-name {
+        font-family: var(--serif);
+        font-size: 18px;
+        line-height: 1.2;
+        max-width: 220px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .pp-foot-year {
+        font-size: 12px;
+        color: var(--text-faint);
+        font-variant-numeric: tabular-nums;
+    }
+    .pp-back-link {
+        font-size: 13px;
+        color: var(--accent);
+        border-bottom: 1px solid var(--accent-border);
+        padding-bottom: 2px;
+        text-decoration: none;
+    }
+    .pp-back-link:hover {
+        border-bottom-color: var(--accent);
+    }
+    .pp-foot-empty {
+        color: var(--border-soft);
+        font-size: 18px;
+    }
+
+    /* Source attribution */
+    .pp-source-band {
+        max-width: 880px;
+        margin: 0 auto;
+        padding: 0 0 60px;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+        .president-page-bold {
+            padding: 0 20px;
+        }
+        .pp-mast-name {
+            font-size: 48px;
+        }
+        .pp-mast-term {
+            font-size: 22px;
+        }
+        .pp-numwall {
+            grid-template-columns: 1fr 1fr;
+        }
+        .pp-nw {
+            padding: 28px 16px;
+            border-right: none;
+        }
+        .pp-nw:nth-child(odd) {
+            padding-left: 0;
+        }
+        .pp-nw:nth-child(even) {
+            padding-right: 0;
+        }
+        .pp-nw:nth-child(1),
+        .pp-nw:nth-child(2) {
+            border-bottom: 1px solid var(--border-default);
+        }
+        .pp-nw:nth-child(odd) {
+            border-right: 1px solid var(--border-default);
+        }
+        .pp-nw-big {
+            font-size: 44px;
+        }
+
+        .pp-split {
+            grid-template-columns: 1fr;
+            gap: 48px;
+            padding: 48px 0;
+        }
+        .pp-section-title {
+            font-size: 26px;
+        }
+
+        .pp-footer-nav {
+            grid-template-columns: 1fr 1fr;
+            grid-template-areas:
+                "prev next"
+                "back back";
+            gap: 20px 16px;
+            padding: 24px 0 40px;
+        }
+        .pp-footer-prev {
+            grid-area: prev;
+        }
+        .pp-footer-next {
+            grid-area: next;
+        }
+        .pp-footer-back {
+            grid-area: back;
+        }
+        .pp-foot-name {
+            max-width: 140px;
+            font-size: 14px;
+        }
+    }
+</style>

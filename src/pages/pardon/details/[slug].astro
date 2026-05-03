@@ -1,69 +1,87 @@
 ---
 import Layout from "../../../layouts/Layout.astro";
-import StatCard from "../../../components/StatCard.astro";
+import MoneyFigure from "../../../components/MoneyFigure.astro";
 import "../../../styles/global.css";
 import { getCollection } from "astro:content";
 import { resolveUrl } from "../../../lib/parsers/types";
 import { generateBreadcrumbJsonLd } from "../../../lib/seo";
+import { getAdministrationIndex } from "../../../lib/president-names";
+import {
+    formatCompactMoney,
+    formatCurrencyPrecise,
+    formatGrantDateLong,
+    formatGrantDateShort,
+    formatSentenceCompact,
+    formatSentenceMonths,
+} from "../../../lib/format";
 
 export async function getStaticPaths() {
     const allPardons = await getCollection("pardonDetails");
 
-    return allPardons.map((grant) => ({
-        params: { slug: grant.data.slug },
-        props: { grant },
-    }));
+    // Group by administration so we can wire prev/next links within each admin
+    const byAdmin = new Map<string, typeof allPardons>();
+    for (const p of allPardons) {
+        const slug = p.data.administration_slug;
+        if (!byAdmin.has(slug)) byAdmin.set(slug, []);
+        byAdmin.get(slug)!.push(p);
+    }
+    // Date-desc within each admin; recipient_name as stable tiebreaker
+    for (const list of byAdmin.values()) {
+        list.sort((a, b) => {
+            const dc = b.data.grant_date.localeCompare(a.data.grant_date);
+            if (dc !== 0) return dc;
+            return a.data.recipient_name.localeCompare(b.data.recipient_name);
+        });
+    }
+
+    const adminIndex = getAdministrationIndex(allPardons);
+
+    return allPardons.map((grant) => {
+        const adminList = byAdmin.get(grant.data.administration_slug)!;
+        const i = adminList.findIndex((p) => p.id === grant.id);
+        const newer = i > 0 ? adminList[i - 1] : null;
+        const older = i < adminList.length - 1 ? adminList[i + 1] : null;
+        const adminDisplay =
+            adminIndex.get(grant.data.administration_slug)?.displayName ??
+            grant.data.president_name;
+        return {
+            params: { slug: grant.data.slug },
+            props: {
+                grant,
+                adminDisplay,
+                newer: newer
+                    ? {
+                          slug: newer.data.slug,
+                          recipient_name: newer.data.recipient_name,
+                          grant_date: newer.data.grant_date,
+                      }
+                    : null,
+                older: older
+                    ? {
+                          slug: older.data.slug,
+                          recipient_name: older.data.recipient_name,
+                          grant_date: older.data.grant_date,
+                      }
+                    : null,
+            },
+        };
+    });
 }
 
-const { grant } = Astro.props;
+const { grant, adminDisplay, newer, older } = Astro.props;
 const data = grant.data;
 const currentPath = Astro.url.pathname;
 
-function formatDate(dateStr: string): string {
-    const [y, m, d] = dateStr.split("-");
-    return new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString(
-        "en-US",
-        { year: "numeric", month: "long", day: "numeric" },
-    );
-}
-
-function formatDateShort(dateStr: string): string {
-    const [y, m, d] = dateStr.split("-");
-    return new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString(
-        "en-US",
-        { year: "numeric", month: "short", day: "numeric" },
-    );
-}
-
-// Editorial convention: em-dash for null/zero (absence), currency for positive amounts
-function formatCurrency(amount: number | null): string {
-    if (amount === null || amount === undefined) return "—";
-    if (amount === 0) return "—";
-    return new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: "USD",
-        maximumFractionDigits: 0,
-    }).format(amount);
-}
-
-function formatSentence(months: number | null): string {
-    if (months === null || months === undefined) return "—";
-    if (months < 12) return `${months} months`;
-    const years = Math.floor(months / 12);
-    const remainingMonths = months % 12;
-    if (remainingMonths === 0) return `${years} year${years > 1 ? "s" : ""}`;
-    return `${years} year${years > 1 ? "s" : ""}, ${remainingMonths} month${remainingMonths > 1 ? "s" : ""}`;
-}
-
-function capitalize(s: string): string {
-    if (!s) return "";
-    return s.charAt(0).toUpperCase() + s.slice(1);
-}
+const grantDateLong = formatGrantDateLong(data.grant_date);
+const grantDateShort = formatGrantDateShort(data.grant_date);
 
 const clemencyLabels: Record<string, string> = {
     pardon: "Pardon",
     commutation: "Commutation",
 };
+const clemencyLabel =
+    clemencyLabels[data.clemency_type] ??
+    data.clemency_type.charAt(0).toUpperCase() + data.clemency_type.slice(1);
 
 const categoryLabels: Record<string, string> = {
     "violent crime": "Violent Crime",
@@ -75,308 +93,896 @@ const categoryLabels: Record<string, string> = {
     "financial crime": "Financial Crime",
     other: "Other",
 };
+const categoryLabel =
+    categoryLabels[data.offense_category] ??
+    data.offense_category.replace(/\b\w/g, (c) => c.toUpperCase());
 
-const grantDate = formatDate(data.grant_date);
-const grantDateShort = formatDateShort(data.grant_date);
-const formattedSentence = formatSentence(data.sentence_in_months);
-const formattedRestitution = formatCurrency(data.restitution);
-const formattedFine = formatCurrency(data.fine);
-
+// Offenses — split the comma-joined `offense` field into a numbered list
 const offenses = data.offense
     .split(",")
     .map((o) => o.trim())
     .filter((o) => o.length > 0);
 
-const hasRestitution = data.restitution != null && data.restitution > 0;
-
-type HeroStat = {
+// Money strip — up to 3 blocks. Hide each block when its source field is null.
+// The metadata grid below keeps the row-level em-dash convention; this strip
+// uses block-level absence (silent) per the bold spec.
+interface StripBlock {
     label: string;
     value: string;
-    footnote: string;
-    variant: "default" | "restitution";
-};
-let heroStat: HeroStat | null = null;
+    sub?: string;
+    accent: boolean;
+    muted: boolean;
+}
+const stripBlocks: StripBlock[] = [];
+
+const hasRestitution = data.restitution != null && data.restitution > 0;
+const hasFine = data.fine != null && data.fine > 0;
+const hasNumericSentence =
+    data.sentence_in_months != null && data.sentence_in_months > 0;
+const hasLifeSentence =
+    !hasNumericSentence && data.original_sentence?.toLowerCase().includes("life");
 
 if (hasRestitution) {
-    heroStat = {
-        label: "Restitution abandoned",
-        value: formattedRestitution,
-        footnote: "Originally ordered by the court",
-        variant: "restitution",
-    };
-} else if (data.sentence_in_months && data.sentence_in_months > 0) {
-    heroStat = {
+    stripBlocks.push({
+        label:
+            data.clemency_type === "commutation"
+                ? "Restitution at commutation"
+                : "Restitution forgiven",
+        value: formatCompactMoney(data.restitution),
+        sub: "Originally ordered by the court.",
+        accent: true,
+        muted: false,
+    });
+}
+if (hasFine) {
+    stripBlocks.push({
+        label:
+            data.clemency_type === "commutation"
+                ? "Fine at commutation"
+                : "Fine forgiven",
+        value: formatCompactMoney(data.fine),
+        sub: "Owed to the U.S. Treasury.",
+        accent: true,
+        muted: false,
+    });
+}
+if (hasNumericSentence) {
+    stripBlocks.push({
         label:
             data.clemency_type === "commutation"
                 ? "Sentence commuted"
-                : "Prison sentence",
-        value: formattedSentence,
-        footnote: `${data.sentence_in_months} months`,
-        variant: "default",
-    };
-} else if (data.original_sentence?.toLowerCase().includes("life")) {
-    heroStat = {
+                : "Sentence",
+        value: formatSentenceCompact(data.sentence_in_months),
+        sub: data.original_sentence ?? undefined,
+        accent: false,
+        muted: false,
+    });
+} else if (hasLifeSentence) {
+    stripBlocks.push({
         label:
             data.clemency_type === "commutation"
                 ? "Life sentence commuted"
                 : "Life sentence",
-        value: "Life imprisonment",
-        footnote: "Original sentence",
-        variant: "default",
-    };
+        value: "Life",
+        sub: data.original_sentence ?? undefined,
+        accent: false,
+        muted: false,
+    });
 }
 
-type MetaEntry = { label: string; value: string; emphasis?: boolean };
-
-// Group 1: Case details
-const caseDetails: MetaEntry[] = [
-    {
-        label: "Clemency Type",
-        value: clemencyLabels[data.clemency_type] ?? capitalize(data.clemency_type),
-    },
-    { label: "Grant Date", value: grantDate },
-    {
-        label: "Category",
-        value: categoryLabels[data.offense_category] ?? capitalize(data.offense_category),
-    },
-];
-
-if (data.district) {
-    caseDetails.push({ label: "District", value: data.district });
-}
-
-// Group 2: Sentencing & financial impact
-const sentencingDetails: MetaEntry[] = [];
-
-if (data.sentence_in_months != null) {
-    sentencingDetails.push({ label: "Sentence", value: formattedSentence });
-}
-
-// Restitution and fine always render — their absence is meaningful
-sentencingDetails.push({
-    label: "Restitution",
-    value: formattedRestitution,
-    emphasis: hasRestitution,
-});
-sentencingDetails.push({ label: "Fine", value: formattedFine });
-
+// Source documents (warrant + DOJ listing — both optional)
 const sources = [
     {
         url: resolveUrl(data.warrant_url),
-        icon: "📄",
-        title: "Pardon warrant (PDF)",
-        subtitle: "DOJ Office of the Pardon Attorney",
+        title: "Pardon warrant",
+        subtitle: "PDF · DOJ Office of the Pardon Attorney",
     },
     {
         url: resolveUrl(data.source_url),
-        icon: "🏛",
-        title: "DOJ clemency listing page",
+        title: "DOJ clemency listing",
         subtitle: "justice.gov/pardon",
     },
 ].filter((s) => s.url);
 
+// Aside metadata kv-rows — em-dash for null/undefined, "$0" preserved for zero
+type KvRow = { key: string; value: string; unknown?: boolean };
+const caseDetails: KvRow[] = [
+    { key: "Clemency type", value: clemencyLabel },
+    { key: "Granted", value: grantDateShort },
+    { key: "President", value: adminDisplay },
+    { key: "Category", value: categoryLabel },
+];
+if (data.district) {
+    caseDetails.push({ key: "District", value: data.district });
+} else {
+    caseDetails.push({ key: "District", value: "—", unknown: true });
+}
+
+const sentencingRows: KvRow[] = [];
+if (data.sentence_in_months != null) {
+    sentencingRows.push({
+        key: "Sentence",
+        value: formatSentenceMonths(data.sentence_in_months),
+    });
+} else {
+    sentencingRows.push({ key: "Sentence", value: "—", unknown: true });
+}
+sentencingRows.push({
+    key: "Restitution",
+    value: formatCurrencyPrecise(data.restitution),
+    unknown: data.restitution == null,
+});
+sentencingRows.push({
+    key: "Fine",
+    value: formatCurrencyPrecise(data.fine),
+    unknown: data.fine == null,
+});
+
+// SEO + OG
 const breadcrumbJsonLd = generateBreadcrumbJsonLd([
     { name: "Home", url: "https://pardonned.com/" },
     { name: "Search", url: "https://pardonned.com/search" },
-    { name: data.recipient_name, url: `https://pardonned.com/pardon/details/${data.slug}` },
+    {
+        name: data.recipient_name,
+        url: `https://pardonned.com/pardon/details/${data.slug}`,
+    },
 ]);
 
 const ogDescriptionParts = [
-    `${clemencyLabels[data.clemency_type] ?? data.clemency_type} granted to ${data.recipient_name} on ${grantDate}.`,
+    `${clemencyLabel} granted to ${data.recipient_name} on ${grantDateLong}.`,
 ];
 if (hasRestitution) {
-    ogDescriptionParts.push(`${formattedRestitution} in restitution abandoned.`);
+    ogDescriptionParts.push(
+        `${formatCompactMoney(data.restitution)} in restitution abandoned.`,
+    );
 }
 const ogDescription = ogDescriptionParts.join(" ");
 const ogImagePath = `/og/${data.slug}.png`;
 ---
 
-<Layout title={data.recipient_name} description={ogDescription} ogImage={ogImagePath} currentPath={currentPath}>
-  <script type="application/ld+json" set:html={breadcrumbJsonLd}></script>
-    <div class="max-w-detail mx-auto px-5 md:px-10 py-6 md:py-10">
+<Layout
+    title={data.recipient_name}
+    description={ogDescription}
+    ogImage={ogImagePath}
+    currentPath={currentPath}
+>
+    <script type="application/ld+json" set:html={breadcrumbJsonLd}></script>
+
+    <main class="detail-bold">
         <!-- Breadcrumb -->
-        <div class="breadcrumb mb-6 md:mb-10">
-            <a
-                href="/search"
-                class="text-text-muted no-underline hover:text-text-primary transition-colors"
-                >Search</a
-            >
-            <span class="text-border-soft">/</span>
-            <span class="text-text-body">{data.recipient_name}</span>
+        <div class="db-crumb">
+            <a href="/search">Search</a>
+            <span class="db-crumb-sep">/</span>
+            <span class="db-crumb-here">{data.recipient_name}</span>
         </div>
 
-        <!-- Header: kicker + name + district -->
-        <div class="mb-10">
-            <div class="hero-tracking mb-4">
-                {clemencyLabels[data.clemency_type] ?? capitalize(data.clemency_type)} · {grantDateShort}
+        <!-- Editorial masthead -->
+        <header class="db-mast">
+            <div class="db-meta">
+                <span class="db-meta-pard">{clemencyLabel}</span>
+                <span class="db-meta-dot" aria-hidden="true">·</span>
+                <span class="db-meta-by">Granted by {adminDisplay}</span>
+                <span class="db-meta-dot" aria-hidden="true">·</span>
+                <span class="db-meta-by">{grantDateLong}</span>
             </div>
-            <h1
-                class="font-serif text-text-primary m-0 mb-3 text-[28px] md:text-detail-name"
-                style="letter-spacing: -0.02em;"
+            <h1 class="db-name">{data.recipient_name}.</h1>
+            {data.district && (
+                <p class="db-district">{data.district}</p>
+            )}
+        </header>
+
+        <!--
+            Money strip. Up to three <MoneyFigure> blocks (restitution, fine,
+            sentence). Each block is omitted when its source field is null.
+            Block-level absence is silent (per the bold spec); the row-level
+            metadata grid below uses em-dash semantics instead.
+        -->
+        {stripBlocks.length > 0 && (
+            <section
+                class="db-money-strip"
+                style={`grid-template-columns: repeat(${stripBlocks.length}, minmax(0, 1fr));`}
             >
-                {data.recipient_name}
-            </h1>
-            {
-                data.district && (
-                    <p class="text-body text-text-faint m-0">{data.district}</p>
-                )
-            }
-        </div>
+                {stripBlocks.map((block) => (
+                    <div class="db-mp">
+                        <div class="db-mp-lbl">{block.label}</div>
+                        <div
+                            class:list={[
+                                "db-mp-big",
+                                "font-serif",
+                                "tabular-nums",
+                                block.accent && "db-mp-accent",
+                                block.muted && "db-mp-muted",
+                            ]}
+                        >
+                            {block.value}
+                        </div>
+                        {block.sub && (
+                            <div class="db-mp-sub">{block.sub}</div>
+                        )}
+                    </div>
+                ))}
+            </section>
+        )}
 
-        <!-- Hero stat (conditional) -->
-        {
-            heroStat && (
-                <div class="mb-6 md:mb-10">
-                    <StatCard
-                        label={heroStat.label}
-                        value={heroStat.value}
-                        footnote={heroStat.footnote}
-                        variant={heroStat.variant}
-                    />
-                </div>
-            )
-        }
+        <!--
+            TODO (post AI-reclassification work): when the DB grows a
+            `warrant_text` column, render the pardon-warrant pull-quote here:
 
-        <!-- Offenses (lead content) -->
-        <div class="mb-6 md:mb-10">
-            <div class="overline">Offenses</div>
-            <ul class="list-none p-0 m-0 flex flex-col gap-3">
-                {
-                    offenses.map((offense) => (
-                        <li class="offense-item">
-                            <span
-                                class="text-text-primary"
-                                style="font-size: 16px; line-height: 1.5;"
-                            >
-                                {capitalize(offense)}
-                            </span>
-                        </li>
-                    ))
-                }
-            </ul>
-        </div>
+            <section class="db-pull-warrant">
+              <div class="db-pull-lbl">Pardon warrant text</div>
+              <p class="db-pull-text">{data.warrant_text}</p>
+              <div class="db-pull-src">Signed by {adminDisplay} · {grantDateLong}</div>
+            </section>
 
-        <!-- Original sentence (conditional, lead content) -->
-        {
-            data.original_sentence && (
-                <div class="mb-8 md:mb-12">
-                    <div class="overline">Original Sentence</div>
-                    <blockquote
-                        class="m-0 p-0 pl-5 text-text-body border-l-2 border-border"
-                        style="font-style: italic; font-size: 20px; line-height: 1.55;"
-                    >
-                        {data.original_sentence}
-                    </blockquote>
-                </div>
-            )
-        }
+            For now `warrant_text` does not exist on PardonDetail, so the
+            block is intentionally empty.
+        -->
 
-        <!-- Metadata groups -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-12" data-animate>
-            <div class="metadata-group">
-                <div class="metadata-group-title">Case Details</div>
-                <div class="flex flex-col gap-4">
-                    {
-                        caseDetails.map((entry) => (
-                            <div>
-                                <div class="tracker-label mb-1">{entry.label}</div>
-                                <div class="text-body text-text-primary">
-                                    {entry.value}
+        <div class="db-grid">
+            <div class="db-main">
+                <!-- Offenses -->
+                <section class="db-section">
+                    <div class="db-section-eyebrow">The conviction</div>
+                    <h2 class="db-section-title">
+                        {offenses.length === 1
+                            ? "One federal count."
+                            : `${offenses.length} federal counts.`}
+                    </h2>
+                    <div class="db-off-list">
+                        {offenses.map((offense, i) => (
+                            <div class="db-off-row">
+                                <div class="db-off-n">
+                                    {String(i + 1).padStart(2, "0")}
+                                </div>
+                                <div class="db-off-text">
+                                    {offense.charAt(0).toUpperCase() +
+                                        offense.slice(1)}
                                 </div>
                             </div>
-                        ))
-                    }
-                </div>
+                        ))}
+                    </div>
+                </section>
+
+                <!-- Original sentence pull-quote (preserved bold-mockup treatment) -->
+                {data.original_sentence && (
+                    <section class="db-section">
+                        <div class="db-section-eyebrow">From the warrant</div>
+                        <h2 class="db-section-title">
+                            The original sentence.
+                        </h2>
+                        <div class="db-pull">
+                            <div class="db-pull-lbl">
+                                As recorded by the court
+                            </div>
+                            <p class="db-pull-text">{data.original_sentence}</p>
+                            {data.district && (
+                                <div class="db-pull-src">
+                                    {data.district} · DOJ warrant
+                                </div>
+                            )}
+                        </div>
+                    </section>
+                )}
             </div>
-            <div class="metadata-group">
-                <div class="metadata-group-title">Sentencing & Impact</div>
-                <div class="flex flex-col gap-4">
-                    {
-                        sentencingDetails.map((entry) => (
-                            <div>
-                                <div class="tracker-label mb-1">{entry.label}</div>
+
+            <aside class="db-aside">
+                <div class="db-aside-block">
+                    <h4>Case details</h4>
+                    <div class="db-kv">
+                        {caseDetails.map((row) => (
+                            <div class="db-kv-row">
+                                <div class="db-kv-k">{row.key}</div>
                                 <div
                                     class:list={[
-                                        "text-body",
-                                        entry.emphasis
-                                            ? "text-accent font-medium"
-                                            : "text-text-primary",
+                                        "db-kv-v",
+                                        row.unknown && "db-kv-unknown",
                                     ]}
                                 >
-                                    {entry.value}
+                                    {row.value}
                                 </div>
                             </div>
-                        ))
-                    }
+                        ))}
+                    </div>
                 </div>
-            </div>
-        </div>
 
-        <!-- Divider -->
-        <div class="divider-gradient mb-10" />
+                <div class="db-aside-block">
+                    <h4>Sentencing &amp; impact</h4>
+                    <div class="db-kv">
+                        {sentencingRows.map((row) => (
+                            <div class="db-kv-row">
+                                <div class="db-kv-k">{row.key}</div>
+                                <div
+                                    class:list={[
+                                        "db-kv-v",
+                                        row.unknown && "db-kv-unknown",
+                                    ]}
+                                >
+                                    {row.value}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
 
-        <!-- Source documents -->
-        <div data-animate>
-            <div class="overline">Source Documents</div>
-            <div class="flex flex-col gap-3">
-                {
-                    sources.length > 0 ? (
-                        sources.map((src) => (
+                {sources.length > 0 && (
+                    <div class="db-aside-block">
+                        <h4>Source documents</h4>
+                        {sources.map((src) => (
                             <a
                                 href={src.url}
                                 target="_blank"
                                 rel="noopener"
-                                class="source-link no-underline"
+                                class="db-doc-link"
                             >
-                                <span class="text-xl opacity-50">{src.icon}</span>
-                                <div>
-                                    <div class="text-nav text-text-primary mb-0.5">
-                                        {src.title}
-                                    </div>
-                                    <div class="text-meta text-text-faint">
-                                        {src.subtitle}
-                                    </div>
+                                <div class="db-doc-title">
+                                    {src.title}
+                                    <span class="db-doc-arrow">↗</span>
                                 </div>
-                                <span class="text-faint ml-auto source-link-arrow">↗</span>
+                                <div class="db-doc-sub">{src.subtitle}</div>
                             </a>
-                        ))
-                    ) : (
-                        <p class="text-body text-text-muted m-0">
-                            No source documents available.
-                        </p>
-                    )
-                }
-            </div>
+                        ))}
+                    </div>
+                )}
+            </aside>
         </div>
 
-        <!-- Bottom navigation -->
-        <div class="mt-12 pt-8 border-t border-border-DEFAULT flex justify-between items-center">
-            <a href="/search" class="load-more-btn inline-block no-underline">
-                ← Back to search
-            </a>
-        </div>
-    </div>
+        <!-- Footer cross-links: prev/next within administration + back -->
+        <nav class="db-footer-nav" aria-label="Pardon navigation">
+            <div class="db-footer-cell db-footer-prev">
+                {older ? (
+                    <a
+                        href={`/pardon/details/${older.slug}`}
+                        class="db-foot-link"
+                        data-direction="older"
+                        data-to-slug={older.slug}
+                    >
+                        <span class="db-foot-arrow" aria-hidden="true">←</span>
+                        <span class="db-foot-stack">
+                            <span class="db-foot-label">Previous</span>
+                            <span class="db-foot-name">
+                                {older.recipient_name}
+                            </span>
+                            <span class="db-foot-date">
+                                {formatGrantDateShort(older.grant_date)}
+                            </span>
+                        </span>
+                    </a>
+                ) : (
+                    <span class="db-foot-empty">—</span>
+                )}
+            </div>
+            <div class="db-footer-cell db-footer-back">
+                <a
+                    href={`/president/${data.administration_slug}`}
+                    class="db-back-link"
+                >
+                    Back to {adminDisplay}
+                </a>
+            </div>
+            <div class="db-footer-cell db-footer-next">
+                {newer ? (
+                    <a
+                        href={`/pardon/details/${newer.slug}`}
+                        class="db-foot-link db-foot-link-right"
+                        data-direction="newer"
+                        data-to-slug={newer.slug}
+                    >
+                        <span class="db-foot-stack">
+                            <span class="db-foot-label">Next</span>
+                            <span class="db-foot-name">
+                                {newer.recipient_name}
+                            </span>
+                            <span class="db-foot-date">
+                                {formatGrantDateShort(newer.grant_date)}
+                            </span>
+                        </span>
+                        <span class="db-foot-arrow" aria-hidden="true">→</span>
+                    </a>
+                ) : (
+                    <span class="db-foot-empty">—</span>
+                )}
+            </div>
+        </nav>
+    </main>
 </Layout>
 
-<script src="/scripts/animate-on-scroll.js" is:inline></script>
-
-<script is:inline define:vars={{ recipientName: data.recipient_name, clemencyType: data.clemency_type, offenseCategory: data.offense_category }}>
-  document.addEventListener('DOMContentLoaded', () => {
-    // Track detail page view
-    window.posthog?.capture('pardon_detail_viewed', {
-      name: recipientName,
-      clemency_type: clemencyType,
-      offense_category: offenseCategory,
-    });
-
-    // Track source document clicks
-    document.querySelectorAll('a.source-link').forEach((link) => {
-      link.addEventListener('click', () => {
-        window.posthog?.capture('source_document_clicked', {
-          name: recipientName,
-          url: link.href,
+<script
+    is:inline
+    define:vars={{
+        recipientName: data.recipient_name,
+        clemencyType: data.clemency_type,
+        offenseCategory: data.offense_category,
+        grantSlug: data.slug,
+    }}
+>
+    document.addEventListener("DOMContentLoaded", () => {
+        // Track detail page view (PostHog continuity)
+        window.posthog?.capture("pardon_detail_viewed", {
+            name: recipientName,
+            clemency_type: clemencyType,
+            offense_category: offenseCategory,
+            slug: grantSlug,
         });
-      });
+
+        // Track source document clicks
+        document.querySelectorAll("a.db-doc-link").forEach((link) => {
+            link.addEventListener("click", () => {
+                window.posthog?.capture("source_document_clicked", {
+                    slug: grantSlug,
+                    name: recipientName,
+                });
+            });
+        });
+
+        // Track prev/next navigation
+        document
+            .querySelectorAll("a.db-foot-link[data-direction]")
+            .forEach((link) => {
+                link.addEventListener("click", () => {
+                    window.posthog?.capture("pardon_neighbor_clicked", {
+                        from_slug: grantSlug,
+                        to_slug: link.getAttribute("data-to-slug"),
+                        direction: link.getAttribute("data-direction"),
+                    });
+                });
+            });
     });
-  });
 </script>
+
+<style>
+    .detail-bold {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 0 40px;
+    }
+
+    /* Breadcrumb */
+    .db-crumb {
+        padding: 28px 0 0;
+        font-size: 12px;
+        color: var(--text-muted);
+        display: flex;
+        gap: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-weight: 500;
+    }
+    .db-crumb a {
+        color: var(--text-muted);
+        text-decoration: none;
+    }
+    .db-crumb a:hover {
+        color: var(--text-primary);
+    }
+    .db-crumb-sep {
+        color: var(--border-soft);
+    }
+    .db-crumb-here {
+        color: var(--text-body);
+        text-transform: none;
+        letter-spacing: 0;
+    }
+
+    /* Editorial masthead */
+    .db-mast {
+        padding: 36px 0 56px;
+        border-bottom: var(--rule-emphasis);
+    }
+    .db-meta {
+        display: flex;
+        gap: 14px;
+        align-items: baseline;
+        margin-bottom: 22px;
+        flex-wrap: wrap;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        font-weight: 500;
+    }
+    .db-meta-pard {
+        color: var(--accent);
+    }
+    .db-meta-by {
+        color: var(--text-faint);
+    }
+    .db-meta-dot {
+        color: var(--border-soft);
+    }
+    .db-name {
+        font-family: var(--serif);
+        font-size: 80px;
+        letter-spacing: -0.03em;
+        line-height: 0.95;
+        margin: 0 0 16px 0;
+        font-weight: 400;
+        color: var(--text-primary);
+    }
+    .db-district {
+        font-size: 18px;
+        color: var(--text-faint);
+        margin: 0;
+        line-height: 1.5;
+    }
+
+    /* Money strip */
+    .db-money-strip {
+        display: grid;
+        border-bottom: 1px solid var(--border-default);
+    }
+    .db-mp {
+        padding: 36px 28px 36px 28px;
+        border-right: 1px solid var(--border-default);
+    }
+    .db-mp:first-child {
+        padding-left: 0;
+    }
+    .db-mp:last-child {
+        border-right: none;
+        padding-right: 0;
+    }
+    .db-mp-lbl {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--text-faint);
+        font-weight: 500;
+        margin-bottom: 14px;
+    }
+    .db-mp-big {
+        font-size: 56px;
+        letter-spacing: -0.025em;
+        line-height: 0.95;
+        margin-bottom: 8px;
+        color: var(--text-primary);
+    }
+    .db-mp-accent {
+        color: var(--accent);
+    }
+    .db-mp-muted {
+        color: var(--text-ghost);
+        font-size: 36px;
+    }
+    .db-mp-sub {
+        font-size: 12px;
+        color: var(--text-secondary);
+        line-height: 1.5;
+    }
+
+    /* Detail grid (main + aside) */
+    .db-grid {
+        display: grid;
+        grid-template-columns: 1fr 320px;
+        gap: 56px;
+        padding: 56px 0 60px;
+        align-items: start;
+    }
+    .db-main {
+        min-width: 0;
+    }
+
+    /* Section blocks in main column */
+    .db-section {
+        margin-bottom: 56px;
+    }
+    .db-section:last-child {
+        margin-bottom: 0;
+    }
+    .db-section-eyebrow {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        color: var(--accent);
+        font-weight: 500;
+        margin-bottom: 14px;
+    }
+    .db-section-title {
+        font-family: var(--serif);
+        font-size: 32px;
+        letter-spacing: -0.015em;
+        line-height: 1.1;
+        margin: 0 0 24px 0;
+        font-weight: 400;
+    }
+
+    /* Offenses list */
+    .db-off-list {
+        border-top: 1px solid var(--border-default);
+    }
+    .db-off-row {
+        display: grid;
+        grid-template-columns: 50px 1fr;
+        gap: 20px;
+        padding: 22px 0;
+        border-bottom: 1px solid var(--border-default);
+        align-items: baseline;
+    }
+    .db-off-n {
+        font-family: var(--serif);
+        font-size: 28px;
+        color: var(--text-faint);
+        letter-spacing: -0.01em;
+        font-variant-numeric: tabular-nums;
+    }
+    .db-off-text {
+        font-size: 17px;
+        color: var(--text-primary);
+        line-height: 1.4;
+    }
+
+    /* Pull-quote */
+    .db-pull {
+        background: var(--accent-tint);
+        border-left: 3px solid var(--accent);
+        padding: 32px 36px;
+        margin: 0;
+    }
+    .db-pull-lbl {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        color: var(--accent);
+        margin-bottom: 16px;
+        font-weight: 500;
+    }
+    .db-pull-text {
+        font-family: var(--serif);
+        font-size: 22px;
+        line-height: 1.4;
+        color: var(--text-primary);
+        letter-spacing: -0.01em;
+        margin: 0;
+        font-style: italic;
+    }
+    .db-pull-src {
+        font-size: 12px;
+        color: var(--text-faint);
+        margin-top: 18px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+    }
+
+    /* Aside */
+    .db-aside {
+        min-width: 0;
+    }
+    .db-aside-block {
+        margin-bottom: 36px;
+        padding-bottom: 28px;
+        border-bottom: 1px solid var(--border-default);
+    }
+    .db-aside-block:last-child {
+        border-bottom: none;
+    }
+    .db-aside-block h4 {
+        font-family: var(--sans);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        color: var(--text-faint);
+        font-weight: 500;
+        margin: 0 0 18px 0;
+    }
+    .db-kv {
+        display: flex;
+        flex-direction: column;
+    }
+    .db-kv-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: baseline;
+        font-size: 14px;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--border-default);
+    }
+    .db-kv-row:last-child {
+        border-bottom: none;
+    }
+    .db-kv-k {
+        color: var(--text-faint);
+        font-size: 13px;
+    }
+    .db-kv-v {
+        color: var(--text-primary);
+        text-align: right;
+        font-weight: 500;
+        font-variant-numeric: tabular-nums;
+    }
+    .db-kv-unknown {
+        color: var(--text-ghost);
+        font-weight: 400;
+    }
+
+    /* Source document links */
+    .db-doc-link {
+        display: block;
+        padding: 16px 0;
+        border-bottom: 1px solid var(--border-default);
+        text-decoration: none;
+        color: var(--text-primary);
+        transition: padding 0.15s;
+    }
+    .db-doc-link:last-child {
+        border-bottom: none;
+    }
+    .db-doc-link:hover {
+        padding-left: 4px;
+    }
+    .db-doc-title {
+        font-size: 14px;
+        font-weight: 500;
+        display: flex;
+        gap: 8px;
+        align-items: baseline;
+    }
+    .db-doc-arrow {
+        color: var(--accent);
+        margin-left: auto;
+        font-size: 14px;
+    }
+    .db-doc-sub {
+        font-size: 12px;
+        color: var(--text-faint);
+        margin-top: 4px;
+    }
+
+    /* Footer cross-link strip */
+    .db-footer-nav {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        gap: 24px;
+        align-items: center;
+        border-top: 1px solid var(--border-default);
+        padding: 32px 0 60px;
+    }
+    .db-footer-cell {
+        min-width: 0;
+    }
+    .db-footer-prev {
+        text-align: left;
+    }
+    .db-footer-back {
+        text-align: center;
+    }
+    .db-footer-next {
+        text-align: right;
+    }
+    .db-foot-link {
+        display: inline-flex;
+        gap: 14px;
+        align-items: center;
+        text-decoration: none;
+        color: var(--text-primary);
+        max-width: 100%;
+    }
+    .db-foot-link-right {
+        flex-direction: row;
+    }
+    .db-foot-arrow {
+        font-size: 18px;
+        color: var(--accent);
+        flex-shrink: 0;
+    }
+    .db-foot-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+    }
+    .db-footer-prev .db-foot-stack {
+        align-items: flex-start;
+    }
+    .db-footer-next .db-foot-stack {
+        align-items: flex-end;
+    }
+    .db-foot-label {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--text-faint);
+        font-weight: 500;
+    }
+    .db-foot-name {
+        font-family: var(--serif);
+        font-size: 17px;
+        line-height: 1.2;
+        max-width: 220px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .db-foot-date {
+        font-size: 12px;
+        color: var(--text-faint);
+        font-variant-numeric: tabular-nums;
+    }
+    .db-back-link {
+        font-size: 13px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        font-weight: 500;
+        text-decoration: none;
+        border-bottom: 1px solid var(--border-default);
+        padding-bottom: 2px;
+    }
+    .db-back-link:hover {
+        color: var(--accent);
+        border-bottom-color: var(--accent-border);
+    }
+    .db-foot-empty {
+        color: var(--border-soft);
+        font-size: 18px;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+        .detail-bold {
+            padding: 0 20px;
+        }
+        .db-name {
+            font-size: 44px;
+        }
+        .db-mast {
+            padding: 24px 0 36px;
+        }
+
+        .db-money-strip {
+            /* Force single-column on mobile regardless of inline grid-template-columns */
+            grid-template-columns: 1fr !important;
+        }
+        .db-mp {
+            padding: 24px 0;
+            border-right: none;
+            border-bottom: 1px solid var(--border-default);
+        }
+        .db-mp:last-child {
+            border-bottom: none;
+        }
+        .db-mp-big {
+            font-size: 40px;
+        }
+        .db-mp-muted {
+            font-size: 28px;
+        }
+
+        .db-grid {
+            grid-template-columns: 1fr;
+            gap: 36px;
+            padding: 36px 0 40px;
+        }
+
+        .db-section-title {
+            font-size: 26px;
+        }
+        .db-pull {
+            padding: 24px;
+        }
+        .db-pull-text {
+            font-size: 18px;
+        }
+
+        .db-footer-nav {
+            grid-template-columns: 1fr 1fr;
+            grid-template-areas:
+                "prev next"
+                "back back";
+            gap: 20px 16px;
+            padding: 24px 0 40px;
+        }
+        .db-footer-prev {
+            grid-area: prev;
+        }
+        .db-footer-next {
+            grid-area: next;
+        }
+        .db-footer-back {
+            grid-area: back;
+            text-align: center;
+        }
+        .db-foot-name {
+            max-width: 140px;
+            font-size: 14px;
+        }
+    }
+</style>

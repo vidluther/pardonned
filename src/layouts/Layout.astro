@@ -48,6 +48,15 @@ const metaDescription = truncateText(description, 160);
 
         <SeoHead title={fullTitle} description={description} ogImage={ogImage} />
 
+        {currentPath.replace(/\/$/, "") === "/recent" && (
+            <link
+                rel="alternate"
+                type="application/atom+xml"
+                title="Pardonned — Recent Clemency Grants"
+                href={`${siteConfig.siteUrl}/recent.xml`}
+            />
+        )}
+
         <!-- Google Fonts - DM Sans + DM Serif Display -->
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

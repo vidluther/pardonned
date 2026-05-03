@@ -1,3 +1,60 @@
+/* ---------- Design tokens (bold redesign) ----------
+ * CSS variables exposed for component-level CSS that needs `var()` access.
+ * Tailwind utilities cover most styling; these enable inline styles and
+ * scoped <style> blocks (e.g. masthead rules, accent-tint backgrounds, the
+ * --cat-* category colors) to reference tokens by name.
+ */
+:root {
+  /* Neutrals */
+  --bg-page: #fafaf7;
+  --bg-card: #ffffff;
+  --bg-muted: #f6f5f0;
+  --bg-subtle: #f2f1ec;
+  --border-default: #e8e6e0;
+  --border-soft: #d0cec8;
+  --text-primary: #1a1918;
+  --text-body: #4a4840;
+  --text-secondary: #6a6860;
+  --text-muted: #7a7870;
+  --text-faint: #807e76;
+  --text-ghost: #908e86;
+
+  /* Accent and accent variants */
+  --accent: #c23b22;
+  --accent-bg: rgba(194, 59, 34, 0.08);
+  --accent-border: rgba(194, 59, 34, 0.12);
+  --accent-tint: rgba(194, 59, 34, 0.04);
+
+  /* Category colors — keyed to the live DB enum.
+   * AI-reclassification will add `january 6`, `political corruption`,
+   * `cryptocurrency`. Unknown keys fall back to --cat-fallback via the
+   * helper in src/lib/category-colors.ts. */
+  --cat-fraud: #8a6b1e;
+  --cat-drug-offense: #3a6a4a;
+  --cat-firearms: #c23b22;
+  --cat-face-act: #b8652a;
+  --cat-financial-crime: #2a6a7a;
+  --cat-violent-crime: #6a4b7a;
+  --cat-immigration: #7a6a3a;
+  --cat-other: #7a7870;
+  --cat-fallback: #7a7870;
+
+  /* Bold-scale serif sizes — homepage hero, number wall, masthead */
+  --text-display-xl: 84px; /* hero headline */
+  --text-display-lg: 64px; /* number-wall figures */
+  --text-display: 36px; /* pull-quote, masthead title */
+
+  /* Bold rules (masthead double-border pattern) */
+  --rule-emphasis: 2px solid var(--text-primary);
+  --rule-accent: 2px solid var(--accent);
+
+  /* Type families and layout primitives */
+  --serif: "DM Serif Display", Georgia, serif;
+  --sans: "DM Sans", system-ui, sans-serif;
+  --radius-card: 8px;
+  --radius-pill: 4px;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
