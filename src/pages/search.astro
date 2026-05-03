@@ -180,6 +180,16 @@ const sortedCategories = Object.entries(categoryCounts)
             </div>
 
             <div class="search-sidebar-section">
+              <p class="overline">Date (or earlier)</p>
+              <label for="date-input" class="sr-only">Show grants on this date or earlier</label>
+              <input
+                id="date-input"
+                type="date"
+                class="date-input-sidebar"
+              />
+            </div>
+
+            <div class="search-sidebar-section">
               <p class="overline">Grant Type</p>
               <fieldset id="type-segmented" class="type-segmented">
                 <legend class="sr-only">Filter by grant type</legend>
@@ -258,6 +268,7 @@ const sortedCategories = Object.entries(categoryCounts)
       const TOTAL = grants.length;
 
       const searchInput = document.getElementById('search-input');
+      const dateInput = document.getElementById('date-input');
       const typeSegmented = document.getElementById('type-segmented');
       const presidentFacets = document.getElementById('president-facets');
       const categoryFacets = document.getElementById('category-facets');
@@ -289,6 +300,7 @@ const sortedCategories = Object.entries(categoryCounts)
       const state = {
         search: '',
         type: '',
+        date: '',
         president: 'all',
         categories: new Set(),
         page: 1,
@@ -296,6 +308,13 @@ const sortedCategories = Object.entries(categoryCounts)
 
       function formatCategoryName(key) {
         return key.replace(/\b\w/g, (c) => c.toUpperCase());
+      }
+
+      function formatDateLong(iso) {
+        const [y, m, d] = iso.split('-');
+        return new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString('en-US', {
+          year: 'numeric', month: 'long', day: 'numeric',
+        });
       }
 
       function formatRestitution(value) {
@@ -320,6 +339,9 @@ const sortedCategories = Object.entries(categoryCounts)
           }
         }
         if (!skip?.type && state.type && grant.clemencyType !== state.type) {
+          return false;
+        }
+        if (!skip?.date && state.date && grant.grantDate > state.date) {
           return false;
         }
         if (!skip?.president && state.president !== 'all' && grant.administrationSlug !== state.president) {
@@ -421,6 +443,12 @@ const sortedCategories = Object.entries(categoryCounts)
           chips.push({
             label: state.type === 'pardon' ? 'Pardon' : 'Commutation',
             action: 'clear-type',
+          });
+        }
+        if (state.date) {
+          chips.push({
+            label: 'On or before ' + formatDateLong(state.date),
+            action: 'clear-date',
           });
         }
         if (state.president !== 'all') {
@@ -649,6 +677,7 @@ const sortedCategories = Object.entries(categoryCounts)
         const params = new URLSearchParams();
         if (state.search) params.set('q', state.search);
         if (state.type) params.set('type', state.type);
+        if (state.date) params.set('date', state.date);
         if (state.president !== 'all') params.set('president', state.president);
         if (state.categories.size > 0) params.set('categories', Array.from(state.categories).join(','));
         if (state.page > 1) params.set('page', String(state.page));
@@ -671,6 +700,10 @@ const sortedCategories = Object.entries(categoryCounts)
 
         const typeRadio = findInputByValue(typeSegmented, 'type', state.type);
         if (typeRadio && !typeRadio.checked) typeRadio.checked = true;
+
+        if (dateInput && dateInput.value !== state.date) {
+          dateInput.value = state.date;
+        }
 
         const desktopPres = findInputByValue(presidentFacets, 'president', state.president);
         if (desktopPres && !desktopPres.checked) desktopPres.checked = true;
@@ -704,17 +737,20 @@ const sortedCategories = Object.entries(categoryCounts)
         const priorFilterCount =
           (state.search ? 1 : 0) +
           (state.type ? 1 : 0) +
+          (state.date ? 1 : 0) +
           (state.president !== 'all' ? 1 : 0) +
           state.categories.size;
 
         state.search = '';
         state.type = '';
+        state.date = '';
         state.president = 'all';
         state.categories.clear();
         state.page = 1;
 
         if (searchInput) searchInput.value = '';
         if (mobileSearchInput) mobileSearchInput.value = '';
+        if (dateInput) dateInput.value = '';
 
         applyState();
         window.posthog?.capture('search_filters_cleared', {
@@ -738,6 +774,7 @@ const sortedCategories = Object.entries(categoryCounts)
               has_results: resultsCount > 0,
               active_filters: {
                 type: state.type || null,
+                date: state.date || null,
                 president: state.president !== 'all' ? state.president : null,
                 categories_count: state.categories.size,
               },
@@ -760,6 +797,17 @@ const sortedCategories = Object.entries(categoryCounts)
           }
         }
       });
+
+      if (dateInput) {
+        dateInput.addEventListener('change', (e) => {
+          state.date = e.target.value;
+          state.page = 1;
+          applyState();
+          if (state.date) {
+            window.posthog?.capture('date_filter_applied', { date: state.date });
+          }
+        });
+      }
 
       presidentFacets.addEventListener('change', (e) => {
         const t = e.target;
@@ -811,6 +859,9 @@ const sortedCategories = Object.entries(categoryCounts)
           if (mobileSearchInput) mobileSearchInput.value = '';
         } else if (action === 'clear-type') {
           state.type = '';
+        } else if (action === 'clear-date') {
+          state.date = '';
+          if (dateInput) dateInput.value = '';
         } else if (action === 'clear-president') {
           state.president = 'all';
         } else if (action && action.startsWith('clear-category:')) {
@@ -844,6 +895,7 @@ const sortedCategories = Object.entries(categoryCounts)
           has_active_filters:
             Boolean(state.search) ||
             Boolean(state.type) ||
+            Boolean(state.date) ||
             state.president !== 'all' ||
             state.categories.size > 0,
         });
@@ -901,6 +953,12 @@ const sortedCategories = Object.entries(categoryCounts)
         state.type = typeParam;
         const radio = findInputByValue(typeSegmented, 'type', typeParam);
         if (radio) radio.checked = true;
+      }
+
+      const dateParam = urlParams.get('date');
+      if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
+        state.date = dateParam;
+        if (dateInput) dateInput.value = dateParam;
       }
 
       const presParam = urlParams.get('president');
