@@ -1,4 +1,6 @@
 ---
+import { getCategoryColor } from "../lib/category-colors";
+
 interface Props {
   category: string;
   label?: string;
@@ -6,18 +8,7 @@ interface Props {
 
 const { category, label } = Astro.props;
 
-const categoryColors: Record<string, string> = {
-  fraud: "#8A6B1E",
-  "drug offense": "#3A6A4A",
-  firearms: "#C23B22",
-  "FACE act": "#B8652A",
-  "financial crime": "#2A6A7A",
-  "violent crime": "#6A4B7A",
-  immigration: "#7A6A3A",
-  other: "#7A7870",
-};
-
-const color = categoryColors[category] ?? "#7A7870";
+const color = getCategoryColor(category);
 
 function formatCategoryName(key: string): string {
   return key.replace(/\b\w/g, (c) => c.toUpperCase());

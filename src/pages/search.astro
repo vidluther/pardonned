@@ -4,6 +4,7 @@ import '../styles/global.css';
 
 import { getCollection } from "astro:content";
 import { getAdministrationIndex } from "../lib/president-names";
+import { getCategoryColor } from "../lib/category-colors";
 
 const currentPath = Astro.url.pathname;
 
@@ -12,17 +13,6 @@ const administrationIndex = getAdministrationIndex(allGrants);
 const sortedAdmins = Array.from(administrationIndex.values()).sort((a, b) =>
     b.termStartDate.localeCompare(a.termStartDate),
 );
-
-const categoryColors: Record<string, string> = {
-    fraud: "#8A6B1E",
-    "drug offense": "#3A6A4A",
-    firearms: "#C23B22",
-    "FACE act": "#B8652A",
-    "financial crime": "#2A6A7A",
-    "violent crime": "#6A4B7A",
-    immigration: "#7A6A3A",
-    other: "#7A7870",
-};
 
 function formatCategoryName(key: string): string {
     return key.replace(/\b\w/g, (c) => c.toUpperCase());
@@ -76,6 +66,10 @@ for (const grant of searchResults) {
 const sortedCategories = Object.entries(categoryCounts)
     .sort(([, a], [, b]) => b - a)
     .map(([key]) => key);
+
+const categoryColorMap: Record<string, string> = Object.fromEntries(
+    sortedCategories.map((key) => [key, getCategoryColor(key)]),
+);
 ---
 
 <Layout
@@ -264,7 +258,7 @@ const sortedCategories = Object.entries(categoryCounts)
       if (!grantsDataEl || !colorsDataEl) return;
 
       const grants = JSON.parse(grantsDataEl.textContent);
-      const categoryColors = JSON.parse(colorsDataEl.textContent);
+      const categoryColorMap = JSON.parse(colorsDataEl.textContent);
       const TOTAL = grants.length;
 
       const searchInput = document.getElementById('search-input');
@@ -500,7 +494,7 @@ const sortedCategories = Object.entries(categoryCounts)
 
           pageSlice.forEach((grant, i) => {
             const catLabel = formatCategoryName(grant.category);
-            const catColor = categoryColors[grant.category] || '#7A7870';
+            const catColor = categoryColorMap[grant.category] || '#7A7870';
             const typeLabel = grant.clemencyType === 'pardon' ? 'Pardon' : 'Commutation';
 
             const card = document.createElement('a');
@@ -997,5 +991,5 @@ const sortedCategories = Object.entries(categoryCounts)
   </script>
 
   <script id="grants-data" type="application/json" set:html={JSON.stringify(searchResults)} />
-  <script id="category-colors" type="application/json" set:html={JSON.stringify(categoryColors)} />
+  <script id="category-colors" type="application/json" set:html={JSON.stringify(categoryColorMap)} />
 </Layout>

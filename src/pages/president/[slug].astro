@@ -10,17 +10,7 @@ import "../../styles/global.css";
 import { getCollection } from "astro:content";
 import { computeStats, filterByAdministration } from "../../lib/pardon-stats";
 import { getAdministrationIndex } from "../../lib/president-names";
-
-const categoryColors: Record<string, string> = {
-    fraud: "#8A6B1E",
-    "drug offense": "#3A6A4A",
-    firearms: "#C23B22",
-    "FACE act": "#B8652A",
-    "financial crime": "#2A6A7A",
-    "violent crime": "#6A4B7A",
-    immigration: "#7A6A3A",
-    other: "#7A7870",
-};
+import { getCategoryColor } from "../../lib/category-colors";
 
 export async function getStaticPaths() {
     const allGrants = await getCollection("pardonDetails");
@@ -46,7 +36,7 @@ const categoryCounts = Object.entries(stats.byCategory).map(([key, count]) => ({
     key,
     name: key.replace(/\b\w/g, (c) => c.toUpperCase()),
     count,
-    color: categoryColors[key] ?? "#7A7880",
+    color: getCategoryColor(key),
 }));
 
 const groupedByDate = entries.reduce(

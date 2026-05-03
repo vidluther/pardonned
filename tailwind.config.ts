@@ -17,6 +17,7 @@ export default {
           DEFAULT: "#C23B22",
           bg: "rgba(194,59,34,0.08)",
           border: "rgba(194,59,34,0.12)",
+          tint: "rgba(194,59,34,0.04)",
         },
         border: {
           DEFAULT: "#E8E6E0",
@@ -41,6 +42,10 @@ export default {
         },
       },
       fontSize: {
+        // Bold-redesign display scale (homepage hero, number-wall figures, masthead pull-quotes)
+        "display-xl": ["84px", { lineHeight: "0.98", letterSpacing: "-0.025em" }],
+        "display-lg": ["64px", { lineHeight: "0.95", letterSpacing: "-0.025em" }],
+        display: ["36px", { lineHeight: "1.2", letterSpacing: "-0.015em" }],
         hero: ["52px", { lineHeight: "1.1" }],
         "page-title": ["36px", { lineHeight: "1.2" }],
         section: ["28px", { lineHeight: "1.3" }],
