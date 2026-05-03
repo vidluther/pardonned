@@ -1,0 +1,79 @@
+---
+/**
+ * Bold-redesign money figure. Display-serif amount in --accent (or
+ * --text-ghost when muted) with an optional caption-grey label.
+ *
+ * Used by:
+ * - homepage number wall (sizeClass="text-display-lg")
+ * - homepage by-administration strip (sizeClass="text-section")
+ * - homepage restitution leaderboard (sizeClass="text-display")
+ * - detail-page money strip (#39)
+ * - all-presidents table (#43)
+ *
+ * The component takes a pre-formatted `value` string so the call site
+ * controls compact-vs-precise formatting (use `formatCompactMoney`
+ * from `src/lib/format.ts` for display-scale, or `Intl.NumberFormat`
+ * for row-level precision).
+ */
+interface Props {
+  /** Pre-formatted display string, e.g. "$1.47B", "—", "$0". */
+  value: string;
+  /** Optional caption beneath the value. */
+  label?: string;
+  /** Tailwind text-size class. Defaults to text-display-lg (64px). */
+  sizeClass?: string;
+  /** When true, render in --accent color. Default true. */
+  accent?: boolean;
+  /** When true, render in --text-ghost (overrides accent). For zero/null. */
+  muted?: boolean;
+  /** Right-align the value (used in tabular contexts). */
+  align?: "left" | "right";
+  /** Extra utility classes for the wrapper. */
+  class?: string;
+}
+
+const {
+  value,
+  label,
+  sizeClass = "text-display-lg",
+  accent = true,
+  muted = false,
+  align = "left",
+  class: className = "",
+} = Astro.props;
+
+const colorClass = muted
+  ? "text-text-ghost"
+  : accent
+    ? "text-accent"
+    : "text-text-primary";
+const alignClass = align === "right" ? "text-right" : "text-left";
+---
+
+<div class:list={["money-figure", alignClass, className]}>
+  <div
+    class:list={[
+      sizeClass,
+      "font-serif tabular-nums leading-none tracking-tight",
+      colorClass,
+    ]}
+  >
+    {value}
+  </div>
+  {
+    label && (
+      <div class="money-figure-label text-text-faint">
+        {label}
+      </div>
+    )
+  }
+</div>
+
+<style>
+  .money-figure-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-top: 6px;
+  }
+</style>

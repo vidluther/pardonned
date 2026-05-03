@@ -1,74 +1,139 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import StatGrid from "../components/StatGrid.astro";
-import SourceBanner from "../components/SourceBanner.astro";
-import NameChip from "../components/NameChip.astro";
+import SectionHeader from "../components/SectionHeader.astro";
+import MoneyFigure from "../components/MoneyFigure.astro";
 import "../styles/global.css";
 
-const currentPath = Astro.url.pathname;
-
 import { getCollection } from "astro:content";
-import { computeStats } from "../lib/pardon-stats";
+import {
+    computeStats,
+    filterByAdministration,
+    findHeadlineAction,
+} from "../lib/pardon-stats";
 import { getAdministrationIndex } from "../lib/president-names";
+import {
+    formatCompactMoney,
+    formatGrantDateLong,
+    formatGrantDateShort,
+} from "../lib/format";
+import { getCategoryColor } from "../lib/category-colors";
+
+const currentPath = Astro.url.pathname;
+const MODERN_ERA_START = "1993-01-01";
 
 const allGrants = await getCollection("pardonDetails");
 const stats = computeStats(allGrants);
-const index = getAdministrationIndex(allGrants);
-const sortedAdmins = Array.from(index.values()).sort((a, b) =>
-    b.termStartDate.localeCompare(a.termStartDate),
+const adminIndex = getAdministrationIndex(allGrants);
+
+// Modern-era admins only (Clinton-onward), ranked by total_grants desc
+const modernAdmins = Array.from(adminIndex.values()).filter(
+    (a) => a.termStartDate >= MODERN_ERA_START,
+);
+const presidentNames = new Set(modernAdmins.map((a) => a.presidentName));
+const presidentCount = presidentNames.size;
+const modernEraStartYear = modernAdmins
+    .map((a) => a.termStartDate.slice(0, 4))
+    .sort()[0];
+
+// Per-admin enriched data for the comparison strip
+const adminRows = modernAdmins
+    .map((admin) => {
+        const adminGrants = filterByAdministration(allGrants, admin.slug);
+        const adminStats = computeStats(adminGrants);
+        const headline = findHeadlineAction(adminGrants);
+        const termEndDate = adminGrants[0]?.data.term_end_date ?? null;
+        return {
+            slug: admin.slug,
+            displayName: admin.displayName,
+            presidentName: admin.presidentName,
+            termNumber: admin.termNumber,
+            termStartDate: admin.termStartDate,
+            termEndDate,
+            grants: admin.count,
+            pardons: adminStats.totalPardons,
+            commutations: adminStats.totalCommutations,
+            restitution: adminStats.totalRestitutionAbandoned,
+            headline,
+        };
+    })
+    .sort((a, b) => b.grants - a.grants);
+
+const maxAdminGrants = Math.max(1, ...adminRows.map((a) => a.grants));
+
+// Modern-era universe used for newswire + leaderboard
+const modernEraGrants = allGrants.filter(
+    (e) => e.data.term_start_date >= MODERN_ERA_START,
 );
 
-const DATE_LIMIT = 5;
-const PER_DATE_CHIP_LIMIT = 5;
+// Newswire — 5 most recent grants
+const newswire = modernEraGrants
+    .slice()
+    .sort((a, b) => b.data.grant_date.localeCompare(a.data.grant_date))
+    .slice(0, 5);
 
-const grantsByDate = new Map<string, Array<(typeof allGrants)[number]["data"]>>();
-for (const { data } of allGrants) {
-    const bucket = grantsByDate.get(data.grant_date) ?? [];
-    bucket.push(data);
-    grantsByDate.set(data.grant_date, bucket);
+const lastUpdatedDate = newswire[0]?.data.grant_date ?? null;
+const lastUpdatedFormatted = lastUpdatedDate
+    ? formatGrantDateLong(lastUpdatedDate)
+    : null;
+
+// Restitution leaderboard — modern-era, top 10 by restitution desc
+const restitutionLeaderboard = modernEraGrants
+    .filter((e) => (e.data.restitution ?? 0) > 0)
+    .sort(
+        (a, b) => (b.data.restitution ?? 0) - (a.data.restitution ?? 0),
+    )
+    .slice(0, 10);
+
+// Category breakdown — driven by data, sorted by count desc
+const categoryEntries = Object.entries(stats.byCategory).sort(
+    ([, a], [, b]) => b - a,
+);
+const categoryTotal = categoryEntries.reduce(
+    (sum, [, count]) => sum + count,
+    0,
+);
+
+// Build-time relative stamp ("TODAY", "3D AGO", "2W AGO", ...) for the newswire
+const buildDate = new Date();
+function relativeStamp(isoDate: string): string {
+    const [y, m, d] = isoDate.split("-");
+    const grant = new Date(Number(y), Number(m) - 1, Number(d));
+    const days = Math.max(
+        0,
+        Math.floor(
+            (buildDate.getTime() - grant.getTime()) / 86_400_000,
+        ),
+    );
+    if (days === 0) return "TODAY";
+    if (days === 1) return "YESTERDAY";
+    if (days < 7) return `${days}D AGO`;
+    if (days < 30) return `${Math.floor(days / 7)}W AGO`;
+    if (days < 365) return `${Math.floor(days / 30)}MO AGO`;
+    return `${Math.floor(days / 365)}Y AGO`;
 }
 
-const recentEntries = Array.from(grantsByDate.entries())
-    .sort(([a], [b]) => b.localeCompare(a))
-    .slice(0, DATE_LIMIT)
-    .map(([date, dateGrants]) => {
-        const pardons = dateGrants.filter((g) => g.clemency_type === "pardon").length;
-        const commutations = dateGrants.length - pardons;
+function clemencyNoun(
+    type: "pardon" | "commutation",
+    count: number,
+): string {
+    if (type === "pardon") return count === 1 ? "pardon" : "pardons";
+    return count === 1 ? "commutation" : "commutations";
+}
 
-        const parts: string[] = [];
-        if (pardons > 0)
-            parts.push(`${pardons} ${pardons === 1 ? "pardon" : "pardons"}`);
-        if (commutations > 0)
-            parts.push(
-                `${commutations} ${commutations === 1 ? "commutation" : "commutations"}`,
-            );
+// Number-wall "Latest" cell composite: "Apr 23 / 2026"
+let latestMonthDay = "—";
+let latestYear = "";
+if (lastUpdatedDate) {
+    const [y, m, d] = lastUpdatedDate.split("-");
+    latestMonthDay = new Date(
+        Number(y),
+        Number(m) - 1,
+        Number(d),
+    ).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    latestYear = y;
+}
 
-        const shown = dateGrants.slice(0, PER_DATE_CHIP_LIMIT).map((g) => ({
-            name: g.recipient_name,
-            href: `/pardon/details/${g.slug}`,
-            type: g.clemency_type as "pardon" | "commutation",
-        }));
-        const overflow = dateGrants.length - shown.length;
-
-        const [y, m, d] = date.split("-");
-        const formattedDate = new Date(
-            Number(y),
-            Number(m) - 1,
-            Number(d),
-        ).toLocaleDateString("en-US", {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-        });
-
-        return {
-            date: formattedDate,
-            isoDate: date,
-            grants: parts.join(", "),
-            overflow,
-            shown,
-        };
-    });
+const heroEyebrow = `Presidential clemency · ${modernEraStartYear} → present`;
 ---
 
 <Layout
@@ -77,185 +142,1042 @@ const recentEntries = Array.from(grantsByDate.entries())
     ogImage="/og/home.png"
     currentPath={currentPath}
 >
-    <!-- Hero Section -->
-    <section
-        class="py-10 md:py-20 px-5 md:px-10 max-w-home mx-auto text-center"
-    >
-        <h1 class="hero-headline mb-6 max-w-3xl mx-auto">
-            Tracking Presidential Pardons
-        </h1>
-        <h2 class="hero-subtitle mb-8">Since William Jefferson Clinton</h2>
-        <StatGrid stats={stats} animated={true} />
-    </section>
+    <main class="bold-home">
+        <!-- HERO -->
+        <section class="hero-bold">
+            <div class="eyebrow">{heroEyebrow}</div>
+            <h1 class="hero-headline-bold">
+                <span class="quiet">{stats.totalGrants.toLocaleString()}</span> grants.
+                <br />
+                <span class="red">
+                    {formatCompactMoney(stats.totalRestitutionAbandoned)}
+                </span> in restitution forgiven.
+                <br />
+                {presidentCount} presidents.
+            </h1>
+            <p class="hero-deck">
+                A complete public record of federal pardons and commutations,
+                sourced directly from the Department of Justice. Compare
+                administrations side-by-side, follow the dollars owed to
+                victims, and read every original warrant.
+            </p>
 
-    <!-- Gradient Divider -->
-    <div class="max-w-home mx-auto px-5 md:px-10">
-        <div class="divider-gradient"></div>
-    </div>
-
-    <!-- Administrations Section -->
-    <section
-        class="py-10 md:py-section px-5 md:px-10 max-w-home mx-auto"
-        data-animate
-    >
-        <h2 class="text-section font-serif text-text-primary mb-2">
-            By Administration
-        </h2>
-        <p class="text-nav text-text-faint mb-10">
-            Select an administration to explore its clemency record
-        </p>
-        <div
-            class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-grid"
-        >
-            {
-                sortedAdmins.map((admin) => (
-                    <a
-                        href={`/president/${admin.slug}`}
-                        class="category-card hover:bg-muted transition-colors"
-                        style="border-left-color: var(--color-accent);"
-                    >
-                        <span
-                            class="category-count"
-                            style="color: var(--color-accent);"
-                        >
-                            {admin.count.toLocaleString()}
-                        </span>
-                        <span class="text-nav text-text-body">
-                            {admin.displayName}
-                        </span>
-                    </a>
-                ))
-            }
-        </div>
-    </section>
-
-    <!-- Flat Divider -->
-    <div class="max-w-home mx-auto px-5 md:px-10">
-        <div class="divider-flat"></div>
-    </div>
-
-    <!-- Recent Pardons Section -->
-    <section
-        class="py-10 md:py-section px-5 md:px-10 max-w-home mx-auto"
-        data-animate
-    >
-        <h2 class="text-section font-serif text-text-primary mb-2">
-            Recent Pardons &amp; Commutations
-        </h2>
-        <p class="text-nav text-text-faint mb-10">
-            The most recent executive clemency actions
-        </p>
-        <div class="space-y-8">
-            {
-                recentEntries.map((entry) => (
-                    <div>
-                        <div
-                            class="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4 mb-1.5"
-                        >
-                            <a
-                                class="timeline-date timeline-date-link no-underline"
-                                href={`/search?date=${entry.isoDate}`}
-                                data-iso-date={entry.isoDate}
-                            >
-                                {entry.date}
-                            </a>
-                            <span class="timeline-grants-badge inline-block w-fit">
-                                {entry.grants}
-                            </span>
-                        </div>
-                        <div class="flex flex-wrap items-center gap-1.5">
-                            {entry.shown.map(({ name, href, type }) => (
-                                <NameChip
-                                    name={name}
-                                    href={href}
-                                    type={type}
-                                />
-                            ))}
-                            {entry.overflow > 0 && (
-                                <a
-                                    class="recent-overflow-note no-underline"
-                                    href={`/search?date=${entry.isoDate}`}
-                                    data-iso-date={entry.isoDate}
-                                >
-                                    +{entry.overflow} more — view this date and earlier →
-                                </a>
-                            )}
-                        </div>
+            <div class="numwall">
+                <div class="nw">
+                    <div class="nw-lbl">Total grants</div>
+                    <div class="nw-big">
+                        {stats.totalGrants.toLocaleString()}
                     </div>
-                ))
-            }
-        </div>
-    </section>
+                    <div class="nw-sub">
+                        Pardons and commutations issued since January 20, {modernEraStartYear}.
+                    </div>
+                </div>
+                <div class="nw">
+                    <div class="nw-lbl">Restitution</div>
+                    <div class="nw-big nw-accent">
+                        {formatCompactMoney(stats.totalRestitutionAbandoned)}
+                    </div>
+                    <div class="nw-sub">
+                        Owed to victims of crime, written off by clemency.
+                    </div>
+                </div>
+                <div class="nw">
+                    <div class="nw-lbl">Administrations</div>
+                    <div class="nw-big">{adminRows.length}</div>
+                    <div class="nw-sub">
+                        Across {presidentCount} presidents in the modern era.
+                    </div>
+                </div>
+                <div class="nw">
+                    <div class="nw-lbl">Latest</div>
+                    <div class="nw-latest">
+                        <span class="nw-latest-md">{latestMonthDay}</span>
+                        <span class="nw-latest-yr">{latestYear}</span>
+                    </div>
+                    <div class="nw-sub">
+                        {lastUpdatedFormatted ? `Last grant on ${lastUpdatedFormatted}.` : "—"}
+                    </div>
+                </div>
+            </div>
+        </section>
 
-    <!-- Flat Divider -->
-    <div class="max-w-home mx-auto px-5 md:px-10">
-        <div class="divider-flat"></div>
-    </div>
+        <!-- NEWSWIRE TICKER -->
+        <section class="page-section">
+            <div class="wire">
+                <div class="wire-head">
+                    <div class="wire-head-left">
+                        <span class="wire-stamp">
+                            <span class="wire-stamp-dot"></span>Recent
+                        </span>
+                        <h3 class="wire-title">Recent grants</h3>
+                    </div>
+                    <div class="wire-head-right">
+                        {lastUpdatedFormatted && (
+                            <span>
+                                Updated <span class="wire-updated">
+                                    {lastUpdatedFormatted}
+                                </span>
+                            </span>
+                        )}
+                        <a href="/recent" class="wire-view-all">
+                            View all recent →
+                        </a>
+                    </div>
+                </div>
+                <div class="wire-list">
+                    {newswire.map((entry) => {
+                        const d = entry.data;
+                        const adminDisplay = adminIndex.get(d.administration_slug)?.displayName ?? d.president_name;
+                        const lastName = d.president_name.split(" ").slice(-1)[0];
+                        const restitution = d.restitution ?? 0;
+                        const typeLabel = d.clemency_type === "pardon" ? "Pardon" : "Commutation";
+                        return (
+                            <a
+                                class="wire-item"
+                                href={`/pardon/details/${d.slug}`}
+                                data-grant-date={d.grant_date}
+                                data-grant-slug={d.slug}
+                            >
+                                <div class="wire-stamp-time">
+                                    <span class="wire-when">
+                                        {relativeStamp(d.grant_date)}
+                                    </span>
+                                    {formatGrantDateShort(d.grant_date)}
+                                </div>
+                                <div class="wire-body">
+                                    <div class="wire-who">
+                                        {d.recipient_name}
+                                        <span class="wire-type">{typeLabel}</span>
+                                    </div>
+                                    <div class="wire-what">
+                                        {d.offense}
+                                        {d.district && ` · ${d.district}`}
+                                    </div>
+                                </div>
+                                <div class="wire-pres">
+                                    {lastName}
+                                    <span class="wire-pres-term">
+                                        {adminDisplay}
+                                    </span>
+                                </div>
+                                <div class:list={["wire-money", restitution === 0 && "wire-money-zero"]}>
+                                    {restitution > 0 ? formatCompactMoney(restitution) : "no restitution"}
+                                </div>
+                                <div class="wire-arr" aria-hidden="true">→</div>
+                            </a>
+                        );
+                    })}
+                </div>
+            </div>
+        </section>
 
-    <!-- Search CTA -->
-    <section
-        class="py-10 md:py-section px-5 md:px-10 max-w-home mx-auto text-center"
-        data-animate
-    >
-        <h2 class="text-section font-serif text-text-primary mb-4">
-            Explore the Data
-        </h2>
-        <p class="text-nav text-text-faint mb-8">
-            Search, filter, and explore all {stats.totalGrants.toLocaleString()} clemency
-            grants
-        </p>
-        <a href="/search" class="load-more-btn inline-block no-underline">
-            Search all pardons →
-        </a>
-    </section>
+        <!-- BY-ADMINISTRATION COMPARISON STRIP -->
+        <section class="page-section page-section-pad">
+            <SectionHeader
+                title="By administration."
+                deck="Ranked by total grants. The bar shows scale; the figure on the right shows restitution forgiven — money owed to victims that recipients no longer have to pay back."
+            />
+            <div class="cb-list">
+                {adminRows.map((admin, i) => {
+                    const pct = (admin.grants / maxAdminGrants) * 100;
+                    const annotation = admin.headline
+                        ? `Includes ${admin.headline.count.toLocaleString()} ${admin.headline.category} ${clemencyNoun(admin.headline.clemencyType, admin.headline.count)} on ${formatGrantDateShort(admin.headline.date)}.`
+                        : null;
+                    const yearRange = admin.termEndDate
+                        ? `${admin.termStartDate.slice(0, 4)}–${admin.termEndDate.slice(0, 4)}`
+                        : `${admin.termStartDate.slice(0, 4)}–`;
+                    return (
+                        <a
+                            class="cb-row"
+                            href={`/president/${admin.slug}`}
+                            data-admin-slug={admin.slug}
+                        >
+                            <div class="cb-rank">{i + 1}</div>
+                            <div class="cb-pres">
+                                <div class="cb-name">{admin.displayName}</div>
+                                <div class="cb-yr">{yearRange}</div>
+                            </div>
+                            <div class="cb-bar-wrap">
+                                <div class="cb-barlbl">
+                                    <span>Grants</span>
+                                    <span class="cb-count">
+                                        {admin.grants.toLocaleString()}
+                                    </span>
+                                </div>
+                                <div class="cb-bar">
+                                    <div
+                                        class="cb-bar-fill"
+                                        style={`width:${pct}%;`}
+                                    />
+                                </div>
+                                {annotation && (
+                                    <div class="cb-annotation">
+                                        {annotation}
+                                    </div>
+                                )}
+                            </div>
+                            <div class="cb-money-cell">
+                                <MoneyFigure
+                                    value={formatCompactMoney(admin.restitution)}
+                                    label="Restitution"
+                                    sizeClass="text-section"
+                                    align="right"
+                                    muted={admin.restitution === 0}
+                                />
+                            </div>
+                            <div class="cb-arrow" aria-hidden="true">→</div>
+                        </a>
+                    );
+                })}
+            </div>
+        </section>
 
-    <!-- Source Banner -->
-    <section class="max-w-source mx-auto px-5 md:px-8 mb-10">
-        <SourceBanner />
-    </section>
+        <!-- CALLOUT -->
+        <section class="page-section">
+            <div class="callout">
+                <div class="callout-label">Combined impact</div>
+                <p class="callout-text">
+                    Across {presidentCount} presidents, federal clemency has
+                    erased <span class="callout-red">
+                        {formatCompactMoney(stats.totalRestitutionAbandoned)}
+                    </span> in court-ordered restitution — money owed to <span class="callout-red">
+                        victims of crime
+                    </span> that they will not recover.
+                </p>
+            </div>
+        </section>
+
+        <!-- RESTITUTION LEADERBOARD -->
+        <section class="page-section page-section-pad">
+            <SectionHeader
+                title="Largest restitution forgiven."
+                deck="The single grants representing the most money owed to victims that no longer has to be paid back. Court-ordered restitution figures from the original DOJ warrant."
+            />
+            <div class="lb-bold">
+                <div class="lb-row lb-head">
+                    <div class="lb-rank-cell">#</div>
+                    <div>Recipient · Offense</div>
+                    <div>President</div>
+                    <div class="lb-money-head">Restitution</div>
+                </div>
+                {restitutionLeaderboard.map((entry, i) => {
+                    const d = entry.data;
+                    const adminDisplay = adminIndex.get(d.administration_slug)?.displayName ?? d.president_name;
+                    return (
+                        <a
+                            class="lb-row"
+                            href={`/pardon/details/${d.slug}`}
+                            data-grant-slug={d.slug}
+                        >
+                            <div class="lb-rank">{i + 1}</div>
+                            <div>
+                                <div class="lb-name">{d.recipient_name}</div>
+                                <div class="lb-offense">
+                                    {d.offense}
+                                    {d.district && ` · ${d.district}`}
+                                </div>
+                            </div>
+                            <div class="lb-pres">
+                                {adminDisplay}
+                                <span class="lb-date">
+                                    {formatGrantDateShort(d.grant_date)}
+                                </span>
+                            </div>
+                            <div class="lb-money">
+                                {formatCompactMoney(d.restitution)}
+                            </div>
+                        </a>
+                    );
+                })}
+            </div>
+        </section>
+
+        <!-- CATEGORY BREAKDOWN -->
+        <section class="page-section page-section-pad">
+            <SectionHeader
+                title="By offense category."
+                deck="Categories are derived from the original DOJ warrant text. Counts reflect every grant in the dataset."
+            />
+            <div class="cat-list">
+                {categoryEntries.map(([category, count]) => {
+                    const pct = (count / categoryTotal) * 100;
+                    const color = getCategoryColor(category);
+                    const label = category.replace(/\b\w/g, (c) =>
+                        c.toUpperCase(),
+                    );
+                    return (
+                        <a
+                            class="cat-row"
+                            href={`/search?categories=${encodeURIComponent(category)}`}
+                            data-category={category}
+                        >
+                            <div class="cat-num" style={`color:${color};`}>
+                                {count.toLocaleString()}
+                            </div>
+                            <div class="cat-label">{label}</div>
+                            <div class="cat-bar-cell">
+                                <div class="cat-pct-bar">
+                                    <div
+                                        class="cat-pct-fill"
+                                        style={`width:${pct}%; background:${color};`}
+                                    />
+                                </div>
+                                <div class="cat-pct">{pct.toFixed(1)}%</div>
+                            </div>
+                        </a>
+                    );
+                })}
+            </div>
+        </section>
+
+        <!-- SOURCE BAND -->
+        <section class="page-section page-section-pad">
+            <div class="source-band">
+                <p>
+                    All data is drawn from the
+                    <strong>DOJ Office of the Pardon Attorney</strong>. Every
+                    grant page links to the original warrant PDF. Pardonned is
+                    not affiliated with the U.S. government.
+                </p>
+                <a href="/search" class="source-band-cta">
+                    Search all {stats.totalGrants.toLocaleString()} grants →
+                </a>
+            </div>
+        </section>
+    </main>
 </Layout>
-
-<script src="/scripts/animate-on-scroll.js" is:inline></script>
 
 <script is:inline>
     document.addEventListener("DOMContentLoaded", () => {
-        // Track administration card clicks
-        document.querySelectorAll('a[href^="/president/"]').forEach((card) => {
-            card.addEventListener("click", () => {
-                const slug = card
-                    .getAttribute("href")
-                    ?.replace("/president/", "");
-                window.posthog?.capture("administration_clicked", { slug });
+        // administration_clicked — comparison strip row
+        document.querySelectorAll("a.cb-row[data-admin-slug]").forEach((row) => {
+            row.addEventListener("click", () => {
+                window.posthog?.capture("administration_clicked", {
+                    slug: row.getAttribute("data-admin-slug"),
+                    source: "comparison_strip",
+                });
             });
         });
 
-        // Track "Search all pardons" CTA click
+        // recent_date_clicked — newswire item (port of the legacy event;
+        // payload includes the grant_date plus the slug)
         document
-            .querySelector('a[href="/search"].load-more-btn')
-            ?.addEventListener("click", () => {
-                window.posthog?.capture("search_all_pardons_clicked");
-            });
-
-        // Track Recent section date label clicks
-        document
-            .querySelectorAll("a.timeline-date-link[data-iso-date]")
-            .forEach((link) => {
-                link.addEventListener("click", () => {
+            .querySelectorAll("a.wire-item[data-grant-date]")
+            .forEach((item) => {
+                item.addEventListener("click", () => {
                     window.posthog?.capture("recent_date_clicked", {
-                        date: link.getAttribute("data-iso-date"),
+                        date: item.getAttribute("data-grant-date"),
+                        slug: item.getAttribute("data-grant-slug"),
+                        source: "newswire",
                     });
                 });
             });
 
-        // Track Recent section overflow link clicks
+        // view_all_recent_clicked — wire-head "View all recent →"
         document
-            .querySelectorAll("a.recent-overflow-note[data-iso-date]")
-            .forEach((link) => {
-                link.addEventListener("click", () => {
-                    window.posthog?.capture("recent_overflow_clicked", {
-                        date: link.getAttribute("data-iso-date"),
+            .querySelector('a.wire-view-all[href="/recent"]')
+            ?.addEventListener("click", () => {
+                window.posthog?.capture("view_all_recent_clicked");
+            });
+
+        // restitution_leaderboard_clicked — leaderboard row
+        document
+            .querySelectorAll("a.lb-row[data-grant-slug]")
+            .forEach((row) => {
+                row.addEventListener("click", () => {
+                    window.posthog?.capture(
+                        "restitution_leaderboard_clicked",
+                        {
+                            slug: row.getAttribute("data-grant-slug"),
+                        },
+                    );
+                });
+            });
+
+        // category_clicked — category breakdown row
+        document
+            .querySelectorAll("a.cat-row[data-category]")
+            .forEach((row) => {
+                row.addEventListener("click", () => {
+                    window.posthog?.capture("category_clicked", {
+                        category: row.getAttribute("data-category"),
+                        source: "homepage",
                     });
+                });
+            });
+
+        // search_all_pardons_clicked — source-band CTA (legacy continuity)
+        document
+            .querySelector("a.source-band-cta[href='/search']")
+            ?.addEventListener("click", () => {
+                window.posthog?.capture("search_all_pardons_clicked", {
+                    source: "homepage_source_band",
                 });
             });
     });
 </script>
+
+<style>
+    .bold-home {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 0 40px;
+    }
+
+    .page-section {
+        padding: 0;
+    }
+    .page-section-pad {
+        padding: 0 0 80px;
+    }
+
+    /* HERO */
+    .hero-bold {
+        padding: 56px 0 0;
+    }
+    .eyebrow {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
+        color: var(--accent);
+        font-weight: 500;
+        margin-bottom: 28px;
+    }
+    .hero-headline-bold {
+        font-family: var(--serif);
+        font-size: var(--text-display-xl);
+        line-height: 0.98;
+        letter-spacing: -0.025em;
+        margin: 0 0 32px 0;
+        max-width: 980px;
+        font-weight: 400;
+        color: var(--text-primary);
+    }
+    .hero-headline-bold .quiet {
+        color: var(--text-faint);
+    }
+    .hero-headline-bold .red {
+        color: var(--accent);
+    }
+    .hero-deck {
+        font-size: 18px;
+        color: var(--text-body);
+        max-width: 620px;
+        line-height: 1.65;
+        margin: 0 0 56px 0;
+    }
+
+    /* NUMBER WALL */
+    .numwall {
+        display: grid;
+        grid-template-columns: 1.4fr 1fr 1fr 1fr;
+        border-top: var(--rule-emphasis);
+        padding-top: 28px;
+        margin-bottom: 80px;
+        gap: 0;
+    }
+    .nw {
+        padding: 0 24px;
+        border-right: 1px solid var(--border-default);
+    }
+    .nw:first-child {
+        padding-left: 0;
+    }
+    .nw:last-child {
+        border-right: none;
+    }
+    .nw-lbl {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--text-faint);
+        font-weight: 500;
+        margin-bottom: 10px;
+    }
+    .nw-big {
+        font-family: var(--serif);
+        font-size: var(--text-display-lg);
+        line-height: 0.95;
+        letter-spacing: -0.025em;
+        margin-bottom: 8px;
+        font-variant-numeric: tabular-nums;
+        color: var(--text-primary);
+    }
+    .nw-accent {
+        color: var(--accent);
+    }
+    .nw-sub {
+        font-size: 12px;
+        color: var(--text-secondary);
+        line-height: 1.5;
+    }
+    .nw-latest {
+        font-family: var(--serif);
+        line-height: 1.05;
+        margin-bottom: 8px;
+    }
+    .nw-latest-md {
+        font-size: 32px;
+        letter-spacing: -0.02em;
+        display: block;
+        font-variant-numeric: tabular-nums;
+    }
+    .nw-latest-yr {
+        font-size: 18px;
+        color: var(--text-faint);
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* NEWSWIRE */
+    .wire {
+        border-top: var(--rule-emphasis);
+        border-bottom: 1px solid var(--border-default);
+        margin: 0 0 80px;
+        background: var(--bg-card);
+    }
+    .wire-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 0;
+        border-bottom: 1px solid var(--border-default);
+        gap: 24px;
+        flex-wrap: wrap;
+    }
+    .wire-head-left {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+    .wire-stamp {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+        color: var(--accent);
+        padding: 4px 10px;
+        background: var(--accent-tint);
+        border-radius: 2px;
+    }
+    .wire-stamp-dot {
+        width: 6px;
+        height: 6px;
+        background: var(--accent);
+        border-radius: 50%;
+    }
+    .wire-title {
+        font-family: var(--serif);
+        font-size: 24px;
+        letter-spacing: -0.01em;
+        margin: 0;
+        font-weight: 400;
+    }
+    .wire-head-right {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--text-faint);
+        font-weight: 500;
+    }
+    .wire-updated {
+        color: var(--text-body);
+        text-transform: none;
+        letter-spacing: 0;
+    }
+    .wire-view-all {
+        color: var(--accent);
+        border-bottom: 1px solid var(--accent-border);
+        padding-bottom: 1px;
+    }
+    .wire-view-all:hover {
+        border-bottom-color: var(--accent);
+    }
+
+    .wire-list {
+        display: flex;
+        flex-direction: column;
+    }
+    .wire-item {
+        display: grid;
+        grid-template-columns: 110px 1fr 200px 110px 24px;
+        gap: 24px;
+        padding: 16px 0;
+        border-bottom: 1px solid var(--border-default);
+        align-items: center;
+        text-decoration: none;
+        color: var(--text-primary);
+        transition: background 0.15s;
+    }
+    .wire-item:last-child {
+        border-bottom: none;
+    }
+    .wire-item:hover {
+        background: var(--bg-page);
+    }
+    .wire-stamp-time {
+        font-size: 11px;
+        color: var(--text-faint);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        font-variant-numeric: tabular-nums;
+        line-height: 1.4;
+    }
+    .wire-when {
+        color: var(--accent);
+        display: block;
+        font-weight: 600;
+    }
+    .wire-who {
+        font-family: var(--serif);
+        font-size: 19px;
+        letter-spacing: -0.005em;
+        line-height: 1.2;
+    }
+    .wire-type {
+        font-size: 11px;
+        color: var(--text-faint);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-left: 8px;
+        font-family: var(--sans);
+    }
+    .wire-what {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-top: 4px;
+        line-height: 1.5;
+    }
+    .wire-pres {
+        font-size: 12px;
+        color: var(--text-body);
+    }
+    .wire-pres-term {
+        font-size: 10px;
+        color: var(--text-faint);
+        display: block;
+        margin-top: 2px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+    }
+    .wire-money {
+        text-align: right;
+        font-family: var(--serif);
+        font-size: 17px;
+        color: var(--accent);
+        font-variant-numeric: tabular-nums;
+        letter-spacing: -0.005em;
+    }
+    .wire-money-zero {
+        color: var(--text-ghost);
+        font-family: var(--sans);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+    }
+    .wire-arr {
+        color: var(--text-faint);
+        text-align: right;
+    }
+
+    /* BY-ADMINISTRATION COMPARISON */
+    .cb-list {
+        border-top: 1px solid var(--border-default);
+    }
+    .cb-row {
+        display: grid;
+        grid-template-columns: 60px 280px 1fr 180px 24px;
+        gap: 28px;
+        padding: 22px 0;
+        border-bottom: 1px solid var(--border-default);
+        align-items: center;
+        text-decoration: none;
+        color: var(--text-primary);
+        transition: background 0.15s;
+    }
+    .cb-row:hover {
+        background: var(--bg-muted);
+    }
+    .cb-rank {
+        font-family: var(--serif);
+        font-size: 36px;
+        color: var(--text-faint);
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: -0.02em;
+    }
+    .cb-name {
+        font-family: var(--serif);
+        font-size: 24px;
+        letter-spacing: -0.01em;
+        line-height: 1.15;
+    }
+    .cb-yr {
+        font-size: 12px;
+        color: var(--text-faint);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin-top: 6px;
+        font-variant-numeric: tabular-nums;
+    }
+    .cb-bar-wrap {
+        padding-right: 12px;
+    }
+    .cb-barlbl {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        font-size: 12px;
+        color: var(--text-faint);
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+    .cb-count {
+        font-family: var(--serif);
+        font-size: 22px;
+        color: var(--text-primary);
+        text-transform: none;
+        letter-spacing: -0.01em;
+        font-variant-numeric: tabular-nums;
+    }
+    .cb-bar {
+        height: 10px;
+        background: var(--bg-muted);
+        position: relative;
+    }
+    .cb-bar-fill {
+        height: 100%;
+        background: var(--text-primary);
+    }
+    .cb-annotation {
+        margin-top: 10px;
+        font-size: 12px;
+        color: var(--text-faint);
+        font-style: italic;
+        line-height: 1.5;
+    }
+    .cb-money-cell {
+        display: flex;
+        justify-content: flex-end;
+    }
+    .cb-arrow {
+        color: var(--text-faint);
+        text-align: right;
+        font-size: 18px;
+    }
+
+    /* CALLOUT */
+    .callout {
+        background: var(--accent-tint);
+        border-top: var(--rule-accent);
+        padding: 56px 56px 48px;
+        margin: 0 0 80px;
+    }
+    .callout-label {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
+        color: var(--accent);
+        font-weight: 500;
+        margin-bottom: 24px;
+    }
+    .callout-text {
+        font-family: var(--serif);
+        font-size: var(--text-display);
+        line-height: 1.2;
+        letter-spacing: -0.015em;
+        color: var(--text-primary);
+        max-width: 880px;
+        margin: 0;
+    }
+    .callout-red {
+        color: var(--accent);
+    }
+
+    /* LEADERBOARD */
+    .lb-bold {
+        border-top: var(--rule-emphasis);
+    }
+    .lb-row {
+        display: grid;
+        grid-template-columns: 60px 1fr 180px 200px;
+        gap: 24px;
+        padding: 22px 0;
+        border-bottom: 1px solid var(--border-default);
+        align-items: baseline;
+        text-decoration: none;
+        color: var(--text-primary);
+        transition: background 0.15s;
+    }
+    .lb-row:hover:not(.lb-head) {
+        background: var(--bg-muted);
+    }
+    .lb-head {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--text-faint);
+        font-weight: 500;
+        padding: 10px 0 14px;
+    }
+    .lb-head:hover {
+        background: transparent;
+    }
+    .lb-rank-cell {
+        text-align: right;
+    }
+    .lb-rank {
+        font-family: var(--serif);
+        font-size: 18px;
+        color: var(--text-faint);
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+    .lb-name {
+        font-size: 16px;
+        font-weight: 500;
+        letter-spacing: -0.005em;
+    }
+    .lb-offense {
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin-top: 4px;
+        line-height: 1.5;
+    }
+    .lb-pres {
+        font-size: 13px;
+        color: var(--text-muted);
+    }
+    .lb-date {
+        color: var(--text-faint);
+        display: block;
+        font-size: 12px;
+        margin-top: 2px;
+        font-variant-numeric: tabular-nums;
+    }
+    .lb-money {
+        font-family: var(--serif);
+        font-size: 32px;
+        color: var(--accent);
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: -0.015em;
+        line-height: 1;
+    }
+    .lb-money-head {
+        text-align: right;
+    }
+
+    /* CATEGORY LIST */
+    .cat-list {
+        border-top: 1px solid var(--border-default);
+    }
+    .cat-row {
+        display: grid;
+        grid-template-columns: 100px 1fr 240px;
+        gap: 20px;
+        padding: 18px 0;
+        border-bottom: 1px solid var(--border-default);
+        align-items: center;
+        text-decoration: none;
+        color: var(--text-primary);
+        transition: background 0.15s;
+    }
+    .cat-row:hover {
+        background: var(--bg-muted);
+    }
+    .cat-num {
+        font-family: var(--serif);
+        font-size: 28px;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: -0.01em;
+    }
+    .cat-label {
+        font-size: 16px;
+        font-weight: 500;
+        text-transform: capitalize;
+    }
+    .cat-bar-cell {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .cat-pct-bar {
+        flex: 1;
+        height: 4px;
+        background: var(--bg-muted);
+        position: relative;
+    }
+    .cat-pct-fill {
+        height: 100%;
+    }
+    .cat-pct {
+        font-size: 11px;
+        color: var(--text-faint);
+        font-variant-numeric: tabular-nums;
+        min-width: 40px;
+        text-align: right;
+    }
+
+    /* SOURCE BAND */
+    .source-band {
+        border-top: 1px solid var(--border-default);
+        padding: 32px 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 32px;
+        flex-wrap: wrap;
+    }
+    .source-band p {
+        font-size: 13px;
+        color: var(--text-secondary);
+        max-width: 580px;
+        margin: 0;
+        line-height: 1.6;
+    }
+    .source-band strong {
+        color: var(--text-primary);
+        font-weight: 500;
+    }
+    .source-band-cta {
+        font-size: 13px;
+        color: var(--accent);
+        border-bottom: 1px solid var(--accent-border);
+        padding-bottom: 1px;
+    }
+    .source-band-cta:hover {
+        border-bottom-color: var(--accent);
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 900px) {
+        .bold-home {
+            padding: 0 20px;
+        }
+        .hero-headline-bold {
+            font-size: 48px;
+        }
+        .hero-deck {
+            font-size: 16px;
+            margin-bottom: 40px;
+        }
+        .numwall {
+            grid-template-columns: 1fr 1fr;
+            row-gap: 28px;
+            margin-bottom: 60px;
+        }
+        .nw {
+            padding: 0 16px;
+            border-right: none;
+        }
+        .nw:nth-child(odd) {
+            padding-left: 0;
+        }
+        .nw:nth-child(even) {
+            padding-right: 0;
+        }
+        .nw-big {
+            font-size: 44px;
+        }
+
+        .wire-item {
+            grid-template-columns: 1fr;
+            gap: 6px;
+            padding: 18px 0;
+        }
+        .wire-arr,
+        .wire-pres {
+            display: none;
+        }
+        .wire-money {
+            text-align: left;
+        }
+
+        .cb-row {
+            grid-template-columns: 40px 1fr;
+            grid-template-areas:
+                "rank pres"
+                ".    bar"
+                ".    money"
+                ".    annotation";
+            row-gap: 12px;
+            gap: 16px;
+            padding: 22px 0;
+        }
+        .cb-rank {
+            grid-area: rank;
+            font-size: 24px;
+        }
+        .cb-pres {
+            grid-area: pres;
+        }
+        .cb-bar-wrap {
+            grid-area: bar;
+        }
+        .cb-money-cell {
+            grid-area: money;
+            justify-content: flex-start;
+        }
+        .cb-arrow {
+            display: none;
+        }
+        .cb-annotation {
+            grid-area: annotation;
+        }
+
+        .callout {
+            padding: 36px 24px 32px;
+            margin-bottom: 60px;
+        }
+        .callout-text {
+            font-size: 24px;
+        }
+
+        .lb-row {
+            grid-template-columns: 32px 1fr 110px;
+            row-gap: 4px;
+            padding: 18px 0;
+        }
+        .lb-row.lb-head {
+            display: none;
+        }
+        .lb-pres {
+            grid-column: 2 / 3;
+            grid-row: 2;
+        }
+        .lb-money {
+            grid-column: 3 / 4;
+            grid-row: 1 / 3;
+            font-size: 22px;
+            align-self: center;
+        }
+        .lb-money-head {
+            display: none;
+        }
+
+        .cat-row {
+            grid-template-columns: 80px 1fr;
+            grid-template-areas:
+                "num label"
+                "num bar";
+            row-gap: 6px;
+        }
+        .cat-num {
+            grid-area: num;
+            font-size: 24px;
+        }
+        .cat-label {
+            grid-area: label;
+        }
+        .cat-bar-cell {
+            grid-area: bar;
+        }
+    }
+</style>

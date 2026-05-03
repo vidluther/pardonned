@@ -141,3 +141,69 @@ export function filterByAdministration(
 ): CollectionEntry[] {
   return entries.filter((e) => e.data.administration_slug === slug);
 }
+
+/** Headline-action surfacing — used by the bold homepage's by-administration strip. */
+export interface HeadlineAction {
+  count: number;
+  date: string;
+  category: string;
+  clemencyType: "pardon" | "commutation";
+}
+
+/**
+ * Threshold above which a single-day single-category cluster is loud
+ * enough to be worth surfacing as an annotation. Tunable.
+ */
+export const HEADLINE_ACTION_THRESHOLD = 50;
+
+/**
+ * Find the largest single-day single-category cluster of grants in
+ * `entries`. Returns null if no cluster reaches HEADLINE_ACTION_THRESHOLD.
+ *
+ * The bold homepage's by-administration strip uses this to render
+ * annotations like "1,617 drug commutations on Jan 19, 2017." under
+ * each row. Data-driven: as new categories appear (e.g. `january 6`
+ * after the AI reclassification effort lands), this surfaces them
+ * automatically without code changes.
+ */
+export function findHeadlineAction(entries: CollectionEntry[]): HeadlineAction | null {
+  interface Bucket {
+    count: number;
+    date: string;
+    category: string;
+    pardons: number;
+    commutations: number;
+  }
+  const buckets = new Map<string, Bucket>();
+  for (const entry of entries) {
+    const d = entry.data;
+    const key = `${d.grant_date}|${d.offense_category}`;
+    let bucket = buckets.get(key);
+    if (!bucket) {
+      bucket = {
+        count: 0,
+        date: d.grant_date,
+        category: d.offense_category,
+        pardons: 0,
+        commutations: 0,
+      };
+      buckets.set(key, bucket);
+    }
+    bucket.count++;
+    if (d.clemency_type === "pardon") bucket.pardons++;
+    else bucket.commutations++;
+  }
+
+  let max: Bucket | null = null;
+  for (const bucket of buckets.values()) {
+    if (!max || bucket.count > max.count) max = bucket;
+  }
+  if (!max || max.count < HEADLINE_ACTION_THRESHOLD) return null;
+
+  return {
+    count: max.count,
+    date: max.date,
+    category: max.category,
+    clemencyType: max.commutations > max.pardons ? "commutation" : "pardon",
+  };
+}

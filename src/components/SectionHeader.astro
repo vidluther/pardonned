@@ -1,0 +1,61 @@
+---
+/**
+ * Bold-redesign section masthead. Used to introduce major sections on
+ * the homepage, search, president, all-presidents, and recent pages.
+ *
+ * Pattern: 2px top border (--rule-emphasis), 1.2fr / 1fr two-column grid
+ * with title on the left and deck on the right, baseline-aligned.
+ * Collapses to a single column on mobile.
+ */
+interface Props {
+  title: string;
+  deck?: string;
+  /** Extra utility classes for the wrapper. */
+  class?: string;
+}
+
+const { title, deck, class: className = "" } = Astro.props;
+---
+
+<div class:list={["section-header", className]}>
+  <h2 class="section-title font-serif text-text-primary">{title}</h2>
+  {deck && <p class="section-deck text-text-secondary">{deck}</p>}
+</div>
+
+<style>
+  .section-header {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 56px;
+    align-items: baseline;
+    border-top: var(--rule-emphasis);
+    padding: 28px 0;
+  }
+
+  .section-title {
+    font-size: 42px;
+    line-height: 1.05;
+    letter-spacing: -0.015em;
+    max-width: 720px;
+    margin: 0;
+  }
+
+  .section-deck {
+    font-size: 14px;
+    max-width: 540px;
+    line-height: 1.65;
+    margin: 0;
+  }
+
+  @media (max-width: 768px) {
+    .section-header {
+      grid-template-columns: 1fr;
+      gap: 12px;
+      padding: 20px 0;
+    }
+
+    .section-title {
+      font-size: 30px;
+    }
+  }
+</style>
