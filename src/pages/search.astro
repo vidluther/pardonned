@@ -1,5 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import SectionHeader from '../components/SectionHeader.astro';
 import '../styles/global.css';
 
 import { getCollection } from "astro:content";
@@ -56,6 +57,9 @@ const searchResults = sortedGrants.map((entry) => {
         restitution: d.restitution ?? 0,
         fine: d.fine ?? 0,
         administrationSlug: d.administration_slug,
+        // Per-row admin display name & last-name shorthand for the table cell
+        adminDisplay: administrationIndex.get(d.administration_slug)?.displayName ?? d.president_name,
+        presidentLastName: d.president_name.split(" ").slice(-1)[0],
     };
 });
 
@@ -78,177 +82,100 @@ const categoryColorMap: Record<string, string> = Object.fromEntries(
   ogImage="/og/search.png"
   currentPath={currentPath}
 >
-  <div class="max-w-search mx-auto px-5 md:px-10 py-10 md:py-section">
-    <p class="overline">Clemency Database</p>
-    <h1 class="text-page-title font-serif text-text-primary mb-2">Search Grants</h1>
-    <p class="text-nav text-text-faint mb-6">
-      Filter and search through all clemency grants.
-    </p>
+  <div class="search-page-bold max-w-search mx-auto px-5 md:px-10 py-10 md:py-section">
+    <SectionHeader
+      title={`Search ${searchResults.length.toLocaleString()} grants.`}
+      deck="Every federal pardon and commutation since 1993, sourced from the DOJ Office of the Pardon Attorney. Filter by administration, type, category, or date."
+    />
 
-    <div class="search-sticky-bar">
-      <div class="search-input-wrapper">
-        <svg aria-hidden="true" class="search-input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="11" cy="11" r="8" />
-          <line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
-        <label for="mobile-search-input" class="sr-only">Search grants by name or offense</label>
-        <input
-          id="mobile-search-input"
-          type="text"
-          placeholder="Name or offense…"
-          class="search-input-sticky"
-          autocomplete="off"
-        />
-      </div>
-      <div class="search-sticky-meta">
-        <span id="mobile-count" class="search-sticky-count">{searchResults.length.toLocaleString()}</span>
-        <span id="mobile-count-total" class="search-sticky-count-total">of {searchResults.length.toLocaleString()}</span>
-        <span class="search-sticky-count-label">grants</span>
-        <button type="button" id="mobile-clear-all" class="search-sticky-clear" hidden>Clear all</button>
-      </div>
-    </div>
-
-    <nav class="president-chip-rail" aria-label="Filter by administration">
-      <div class="president-chip-rail-inner" id="president-chip-rail">
-        <label class="president-chip" data-president-chip="all">
-          <input type="radio" name="president-mobile" value="all" checked class="sr-only" />
-          <span class="president-chip-label">All <span class="president-chip-count" data-chip-count-for="all">{searchResults.length.toLocaleString()}</span></span>
-        </label>
-        {sortedAdmins.map((admin) => (
-          <label class="president-chip" data-president-chip={admin.slug}>
-            <input type="radio" name="president-mobile" value={admin.slug} class="sr-only" />
-            <span class="president-chip-label">{admin.displayName} <span class="president-chip-count" data-chip-count-for={admin.slug}>{admin.count.toLocaleString()}</span></span>
-          </label>
+    <!-- Top-level filter bar (4 dropdowns): search input + Type + Category + President.
+         The Sort select is gated on a separate issue (#46); until then, results
+         are sorted newest-first. -->
+    <div class="sb-filter-bar">
+      <label for="search-input" class="sr-only">Search by name or offense</label>
+      <input
+        id="search-input"
+        type="text"
+        class="sb-search-input"
+        placeholder="Search by name, offense, district…"
+        autocomplete="off"
+      />
+      <label for="type-select" class="sr-only">Filter by grant type</label>
+      <select id="type-select" class="sb-select">
+        <option value="">All grant types</option>
+        <option value="pardon">Pardons only</option>
+        <option value="commutation">Commutations only</option>
+      </select>
+      <label for="category-select" class="sr-only">Filter by offense category</label>
+      <select id="category-select" class="sb-select">
+        <option value="">All categories</option>
+        {sortedCategories.map((key) => (
+          <option value={key}>
+            {formatCategoryName(key)} ({categoryCounts[key].toLocaleString()})
+          </option>
         ))}
-      </div>
-    </nav>
-
-    <div class="search-layout">
-      <aside class="search-sidebar">
-        <details class="search-sidebar-disclosure" id="sidebar-disclosure">
-          <summary class="search-sidebar-summary">
-            <span>Filters <span id="sidebar-active-count" class="text-text-faint"></span></span>
-            <span class="search-sidebar-summary-caret" aria-hidden="true"></span>
-          </summary>
-
-          <div class="search-sidebar-body">
-            <div class="search-sidebar-section" data-mobile-hidden>
-              <p class="overline">President</p>
-              <fieldset id="president-facets">
-                <legend class="sr-only">Filter by administration</legend>
-                <label class="facet-row" data-president="all">
-                  <span class="facet-row-label">
-                    <input type="radio" name="president" value="all" checked />
-                    <span>All</span>
-                  </span>
-                  <span class="facet-row-count" data-count-for="all">{searchResults.length.toLocaleString()}</span>
-                </label>
-                {sortedAdmins.map((admin) => (
-                  <label class="facet-row" data-president={admin.slug}>
-                    <span class="facet-row-label">
-                      <input type="radio" name="president" value={admin.slug} />
-                      <span>{admin.displayName}</span>
-                    </span>
-                    <span class="facet-row-count" data-count-for={admin.slug}>{admin.count.toLocaleString()}</span>
-                  </label>
-                ))}
-              </fieldset>
-            </div>
-
-            <div class="search-sidebar-section" data-mobile-hidden>
-              <p class="overline">Search</p>
-              <div class="search-input-wrapper">
-                <svg aria-hidden="true" class="search-input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="11" cy="11" r="8" />
-                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                </svg>
-                <label for="search-input" class="sr-only">Search grants by name or offense</label>
-                <input
-                  id="search-input"
-                  type="text"
-                  placeholder="Name or offense…"
-                  class="search-input-sidebar"
-                  autocomplete="off"
-                />
-              </div>
-            </div>
-
-            <div class="search-sidebar-section">
-              <p class="overline">Date (or earlier)</p>
-              <label for="date-input" class="sr-only">Show grants on this date or earlier</label>
-              <input
-                id="date-input"
-                type="date"
-                class="date-input-sidebar"
-              />
-            </div>
-
-            <div class="search-sidebar-section">
-              <p class="overline">Grant Type</p>
-              <fieldset id="type-segmented" class="type-segmented">
-                <legend class="sr-only">Filter by grant type</legend>
-                <label>
-                  <input type="radio" name="type" value="" class="sr-only" checked />
-                  <span class="type-segmented-option">All</span>
-                </label>
-                <label>
-                  <input type="radio" name="type" value="pardon" class="sr-only" />
-                  <span class="type-segmented-option">Pardon</span>
-                </label>
-                <label>
-                  <input type="radio" name="type" value="commutation" class="sr-only" />
-                  <span class="type-segmented-option">Commutation</span>
-                </label>
-              </fieldset>
-            </div>
-
-            <div class="search-sidebar-section">
-              <p class="overline">Category</p>
-              <fieldset id="category-facets">
-                <legend class="sr-only">Filter by offense category</legend>
-                {sortedCategories.map((key) => (
-                  <label class="facet-row" data-category={key}>
-                    <span class="facet-row-label">
-                      <input type="checkbox" name="category" value={key} />
-                      <span>{formatCategoryName(key)}</span>
-                    </span>
-                    <span class="facet-row-count" data-count-for-category={key}>{categoryCounts[key].toLocaleString()}</span>
-                  </label>
-                ))}
-              </fieldset>
-            </div>
-          </div>
-        </details>
-      </aside>
-
-      <section class="search-main min-w-0">
-        <div id="filter-summary" class="filter-summary">
-          <span>
-            <span id="filter-summary-count" class="filter-summary-count">{searchResults.length.toLocaleString()}</span>
-            <span class="filter-summary-total">of {searchResults.length.toLocaleString()} grants</span>
-          </span>
-          <span class="filter-summary-sep" aria-hidden="true"></span>
-          <div id="filter-summary-chips" class="flex flex-wrap items-center gap-2"></div>
-          <button type="button" id="filter-summary-clear" class="filter-summary-clear" hidden>Clear all</button>
-        </div>
-
-        <div id="a11y-results-announce" class="sr-only" aria-live="polite" role="status"></div>
-
-        <div id="results-list" class="results-swap"></div>
-
-        <nav
-          id="pagination-controls"
-          class="pagination"
-          aria-label="Search results pagination"
-          hidden
-        ></nav>
-
-        <div id="empty-state" class="hidden text-center py-16">
-          <p class="text-text-faint text-lg mb-2">No results found</p>
-          <p class="text-text-faint text-sm">Try adjusting your filters or search terms.</p>
-        </div>
-      </section>
+      </select>
+      <label for="president-select" class="sr-only">Filter by administration</label>
+      <select id="president-select" class="sb-select">
+        <option value="all">All presidents</option>
+        {sortedAdmins.map((admin) => (
+          <option value={admin.slug}>
+            {admin.displayName} ({admin.count.toLocaleString()})
+          </option>
+        ))}
+      </select>
     </div>
+
+    <!-- Dynamic current-view headline. Reads the filter state and produces a
+         narrative summary like "Fraud pardons by Donald J. Trump (Second Term)
+         matching \"manafort\"". Updated by applyState() in the inline JS. -->
+    <div class="sb-current-view">
+      <h2 id="current-view-headline" class="sb-current-view-headline">
+        All grants
+      </h2>
+      <p class="sb-current-view-meta">
+        <span id="filter-summary-count" class="sb-current-view-count">{searchResults.length.toLocaleString()}</span>
+        of {searchResults.length.toLocaleString()} grants
+        <span class="sb-current-view-sep" aria-hidden="true">·</span>
+        Sorted by date — newest first
+      </p>
+    </div>
+
+    <!-- Active filter pills row -->
+    <div id="filter-summary" class="sb-active-filters" role="status" aria-live="polite">
+      <span class="sb-active-prefix">Filters</span>
+      <div id="filter-summary-chips" class="sb-active-chips"></div>
+      <button type="button" id="filter-summary-clear" class="sb-clear-all" hidden>Clear all</button>
+    </div>
+
+    <div id="a11y-results-announce" class="sr-only" aria-live="polite" role="status"></div>
+
+    <!-- Results table -->
+    <table class="sb-table" id="results-table">
+      <thead>
+        <tr>
+          <th class="sb-col-recipient">Recipient · Offense</th>
+          <th class="sb-col-type">Type</th>
+          <th class="sb-col-cat">Category</th>
+          <th class="sb-col-pres">President</th>
+          <th class="sb-col-date">Date</th>
+          <th class="sb-col-money num">Restitution</th>
+        </tr>
+      </thead>
+      <tbody id="results-body"></tbody>
+    </table>
+
+    <div id="empty-state" class="sb-empty-state hidden">
+      <p>No results found.</p>
+      <p class="sb-empty-state-deck">Try adjusting your filters or search terms.</p>
+    </div>
+
+    <nav
+      id="pagination-controls"
+      class="pagination"
+      aria-label="Search results pagination"
+      hidden
+    ></nav>
   </div>
 
   <script is:inline>
@@ -262,41 +189,33 @@ const categoryColorMap: Record<string, string> = Object.fromEntries(
       const TOTAL = grants.length;
 
       const searchInput = document.getElementById('search-input');
-      const dateInput = document.getElementById('date-input');
-      const typeSegmented = document.getElementById('type-segmented');
-      const presidentFacets = document.getElementById('president-facets');
-      const categoryFacets = document.getElementById('category-facets');
-      const resultsList = document.getElementById('results-list');
+      const typeSelect = document.getElementById('type-select');
+      const categorySelect = document.getElementById('category-select');
+      const presidentSelect = document.getElementById('president-select');
+      const currentViewHeadline = document.getElementById('current-view-headline');
+      const resultsBody = document.getElementById('results-body');
       const emptyState = document.getElementById('empty-state');
       const filterSummary = document.getElementById('filter-summary');
       const filterSummaryCount = document.getElementById('filter-summary-count');
       const filterSummaryChips = document.getElementById('filter-summary-chips');
       const filterSummaryClear = document.getElementById('filter-summary-clear');
-      const sidebarActiveCount = document.getElementById('sidebar-active-count');
       const a11yAnnounce = document.getElementById('a11y-results-announce');
-      const sidebarDisclosure = document.getElementById('sidebar-disclosure');
-      const mobileSearchInput = document.getElementById('mobile-search-input');
-      const mobileCount = document.getElementById('mobile-count');
-      const mobileCountTotal = document.getElementById('mobile-count-total');
-      const mobileClearAll = document.getElementById('mobile-clear-all');
-      const presidentChipRail = document.getElementById('president-chip-rail');
       const paginationControls = document.getElementById('pagination-controls');
 
       const presidentLabels = { all: 'All' };
-      presidentFacets.querySelectorAll('label[data-president]').forEach((label) => {
-        const slug = label.dataset.president;
-        const textSpan = label.querySelector('.facet-row-label > span:last-child');
-        if (textSpan) presidentLabels[slug] = textSpan.textContent;
+      Array.from(presidentSelect.options).forEach((opt) => {
+        // Strip the "(N)" count suffix to get the bare display name
+        const cleanLabel = opt.textContent.replace(/\s*\(\d[\d,]*\)\s*$/, '').trim();
+        presidentLabels[opt.value] = cleanLabel;
       });
 
-      const PAGE_SIZE = 10;
+      const PAGE_SIZE = 25;
 
       const state = {
         search: '',
         type: '',
-        date: '',
         president: 'all',
-        categories: new Set(),
+        category: '', // single-select per the bold mockup
         page: 1,
       };
 
@@ -312,9 +231,10 @@ const categoryColorMap: Record<string, string> = Object.fromEntries(
       }
 
       function formatRestitution(value) {
-        if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
-        if (value >= 1000) return `$${Math.round(value / 1000)}K`;
-        return `$${value.toLocaleString()}`;
+        if (value >= 1_000_000_000) return '$' + (value / 1_000_000_000).toFixed(2).replace(/\.?0+$/, '') + 'B';
+        if (value >= 1_000_000) return '$' + (value / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
+        if (value >= 1_000) return '$' + Math.round(value / 1_000) + 'K';
+        return '$' + value.toLocaleString();
       }
 
       function findInputByValue(root, name, value) {
@@ -328,22 +248,17 @@ const categoryColorMap: Record<string, string> = Object.fromEntries(
       function grantMatches(grant, skip) {
         if (!skip?.search && state.search) {
           const s = state.search.toLowerCase();
-          if (!grant.name.toLowerCase().includes(s) && !grant.offense.toLowerCase().includes(s)) {
+          if (
+            !grant.name.toLowerCase().includes(s) &&
+            !grant.offense.toLowerCase().includes(s) &&
+            !(grant.district || '').toLowerCase().includes(s)
+          ) {
             return false;
           }
         }
-        if (!skip?.type && state.type && grant.clemencyType !== state.type) {
-          return false;
-        }
-        if (!skip?.date && state.date && grant.grantDate > state.date) {
-          return false;
-        }
-        if (!skip?.president && state.president !== 'all' && grant.administrationSlug !== state.president) {
-          return false;
-        }
-        if (!skip?.categories && state.categories.size > 0 && !state.categories.has(grant.category)) {
-          return false;
-        }
+        if (!skip?.type && state.type && grant.clemencyType !== state.type) return false;
+        if (!skip?.president && state.president !== 'all' && grant.administrationSlug !== state.president) return false;
+        if (!skip?.category && state.category && grant.category !== state.category) return false;
         return true;
       }
 
@@ -351,256 +266,154 @@ const categoryColorMap: Record<string, string> = Object.fromEntries(
         return grants.filter((g) => grantMatches(g));
       }
 
-      function computeFilteredCounts() {
-        const byPresident = { all: 0 };
-        const byCategory = {};
+      function buildHeadline() {
+        // Noun depends on the type filter
+        const noun =
+          state.type === 'pardon'
+            ? 'pardons'
+            : state.type === 'commutation'
+              ? 'commutations'
+              : 'grants';
 
-        for (const g of grants) {
-          if (grantMatches(g, { president: true })) {
-            byPresident.all += 1;
-            byPresident[g.administrationSlug] = (byPresident[g.administrationSlug] ?? 0) + 1;
-          }
-          if (grantMatches(g, { categories: true })) {
-            byCategory[g.category] = (byCategory[g.category] ?? 0) + 1;
-          }
+        // Build the descriptive phrase. Examples:
+        //   "All grants" (no filters)
+        //   "All pardons" (type=pardon)
+        //   "Fraud grants" (category=fraud)
+        //   "Fraud pardons by Donald J. Trump (Second Term)" (type+category+president)
+        //   "Grants by Joseph R. Biden matching \"hunter\"" (search+president)
+        let phrase;
+        if (state.category) {
+          phrase = formatCategoryName(state.category) + ' ' + noun;
+        } else if (state.president === 'all' && !state.search) {
+          phrase = 'All ' + noun;
+        } else {
+          phrase = noun;
         }
-        return { byPresident, byCategory };
+        if (state.president !== 'all') {
+          phrase += ' by ' + (presidentLabels[state.president] || state.president);
+        }
+        if (state.search) {
+          phrase += ' matching “' + state.search + '”';
+        }
+        // Capitalize first letter
+        return phrase.charAt(0).toUpperCase() + phrase.slice(1);
       }
 
-      function renderSidebarCounts(counts) {
-        presidentFacets.querySelectorAll('label[data-president]').forEach((label) => {
-          const slug = label.dataset.president;
-          const count = counts.byPresident[slug] ?? 0;
-          const countEl = label.querySelector('.facet-row-count');
-          if (countEl) countEl.textContent = count.toLocaleString();
-          const isCurrent = state.president === slug;
-          if (count === 0 && !isCurrent) {
-            label.classList.add('facet-row-disabled');
-          } else {
-            label.classList.remove('facet-row-disabled');
-          }
-        });
-
-        if (presidentChipRail) {
-          presidentChipRail.querySelectorAll('label[data-president-chip]').forEach((label) => {
-            const slug = label.dataset.presidentChip;
-            const count = counts.byPresident[slug] ?? 0;
-            const countEl = label.querySelector('[data-chip-count-for]');
-            if (countEl) countEl.textContent = count.toLocaleString();
-            const isCurrent = state.president === slug;
-            if (count === 0 && !isCurrent) {
-              label.classList.add('president-chip-disabled');
-            } else {
-              label.classList.remove('president-chip-disabled');
-            }
-          });
-        }
-
-        categoryFacets.querySelectorAll('label[data-category]').forEach((label) => {
-          const key = label.dataset.category;
-          const count = counts.byCategory[key] ?? 0;
-          const countEl = label.querySelector('.facet-row-count');
-          if (countEl) countEl.textContent = count.toLocaleString();
-          const isChecked = state.categories.has(key);
-          if (count === 0 && !isChecked) {
-            label.classList.add('facet-row-disabled');
-          } else {
-            label.classList.remove('facet-row-disabled');
-          }
-        });
-      }
-
-      function makeChip(label, action) {
+      function makePill(label, action) {
         const el = document.createElement('span');
-        el.className = 'filter-chip';
+        el.className = 'sb-pill';
         el.textContent = label + ' ';
-
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = 'filter-chip-remove';
+        btn.className = 'sb-pill-x';
         btn.setAttribute('aria-label', `Remove ${label} filter`);
         btn.dataset.action = action;
-        btn.textContent = '\u00D7';
+        btn.textContent = '×';
         el.appendChild(btn);
         return el;
       }
 
       function renderFilterSummary(filtered) {
         filterSummaryCount.textContent = filtered.length.toLocaleString();
-        if (mobileCount) mobileCount.textContent = filtered.length.toLocaleString();
 
-        const chips = [];
-        if (state.search) {
-          chips.push({ label: `"${state.search}"`, action: 'clear-search' });
-        }
-        if (state.type) {
-          chips.push({
-            label: state.type === 'pardon' ? 'Pardon' : 'Commutation',
-            action: 'clear-type',
-          });
-        }
-        if (state.date) {
-          chips.push({
-            label: 'On or before ' + formatDateLong(state.date),
-            action: 'clear-date',
-          });
-        }
+        const pills = [];
+        if (state.search) pills.push({ label: `"${state.search}"`, action: 'clear-search' });
+        if (state.type) pills.push({ label: state.type === 'pardon' ? 'Pardons' : 'Commutations', action: 'clear-type' });
         if (state.president !== 'all') {
-          chips.push({
-            label: presidentLabels[state.president] ?? state.president,
-            action: 'clear-president',
-          });
+          pills.push({ label: presidentLabels[state.president] ?? state.president, action: 'clear-president' });
         }
-        for (const cat of state.categories) {
-          chips.push({
-            label: formatCategoryName(cat),
-            action: 'clear-category:' + cat,
-          });
+        if (state.category) {
+          pills.push({ label: formatCategoryName(state.category), action: 'clear-category' });
         }
 
         filterSummaryChips.textContent = '';
-        for (const chip of chips) {
-          filterSummaryChips.appendChild(makeChip(chip.label, chip.action));
-        }
+        for (const p of pills) filterSummaryChips.appendChild(makePill(p.label, p.action));
 
-        filterSummaryClear.hidden = chips.length === 0;
-        const sep = filterSummary.querySelector('.filter-summary-sep');
-        if (sep) sep.hidden = chips.length === 0;
-        sidebarActiveCount.textContent = chips.length > 0 ? `(${chips.length} active)` : '';
-        if (mobileClearAll) mobileClearAll.hidden = chips.length === 0;
+        filterSummaryClear.hidden = pills.length === 0;
+        filterSummary.classList.toggle('is-empty', pills.length === 0);
 
-        const chipText = chips.map((c) => c.label).join(', ');
+        const chipText = pills.map((p) => p.label).join(', ');
         a11yAnnounce.textContent =
           `${filtered.length.toLocaleString()} of ${TOTAL.toLocaleString()} results` +
           (chipText ? `, filtered by ${chipText}` : '');
       }
 
       function renderResults(filtered) {
-        resultsList.classList.add('is-swapping');
-
         const start = (state.page - 1) * PAGE_SIZE;
-        const pageSlice = filtered.slice(start, start + PAGE_SIZE);
+        const slice = filtered.slice(start, start + PAGE_SIZE);
 
-        requestAnimationFrame(() => {
-          if (filtered.length === 0) {
-            resultsList.textContent = '';
-            emptyState.classList.remove('hidden');
-            resultsList.classList.remove('is-swapping');
-            return;
+        resultsBody.textContent = '';
+        if (filtered.length === 0) {
+          emptyState.classList.remove('hidden');
+          document.getElementById('results-table').classList.add('hidden');
+          return;
+        }
+        emptyState.classList.add('hidden');
+        document.getElementById('results-table').classList.remove('hidden');
+
+        for (const g of slice) {
+          const tr = document.createElement('tr');
+          tr.className = 'sb-row';
+          tr.dataset.slug = g.slug;
+
+          // Recipient · Offense
+          const tdName = document.createElement('td');
+          tdName.className = 'sb-cell-recipient';
+          const nameEl = document.createElement('div');
+          nameEl.className = 'sb-name';
+          nameEl.textContent = g.name;
+          const offenseEl = document.createElement('div');
+          offenseEl.className = 'sb-offense';
+          offenseEl.textContent = g.offense + (g.district ? ' · ' + g.district : '');
+          tdName.appendChild(nameEl);
+          tdName.appendChild(offenseEl);
+
+          // Type
+          const tdType = document.createElement('td');
+          const typeBadge = document.createElement('span');
+          typeBadge.className = 'sb-type-tag sb-type-tag-' + g.clemencyType;
+          typeBadge.textContent = g.clemencyType === 'pardon' ? 'Pardon' : 'Commutation';
+          tdType.appendChild(typeBadge);
+
+          // Category
+          const tdCat = document.createElement('td');
+          tdCat.className = 'sb-cell-cat';
+          const dot = document.createElement('span');
+          dot.className = 'sb-row-dot';
+          dot.style.backgroundColor = categoryColorMap[g.category] || '#7A7870';
+          tdCat.appendChild(dot);
+          const catText = document.createElement('span');
+          catText.textContent = formatCategoryName(g.category);
+          tdCat.appendChild(catText);
+
+          // President
+          const tdPres = document.createElement('td');
+          tdPres.className = 'sb-cell-pres';
+          tdPres.textContent = g.adminDisplay;
+
+          // Date
+          const tdDate = document.createElement('td');
+          tdDate.className = 'sb-cell-date';
+          tdDate.textContent = g.date;
+
+          // Restitution
+          const tdMoney = document.createElement('td');
+          tdMoney.className = 'sb-cell-money num';
+          if (g.restitution > 0) {
+            tdMoney.textContent = formatRestitution(g.restitution);
+          } else {
+            tdMoney.textContent = '—';
+            tdMoney.classList.add('sb-money-zero');
           }
 
-          emptyState.classList.add('hidden');
-          resultsList.textContent = '';
-
-          pageSlice.forEach((grant, i) => {
-            const catLabel = formatCategoryName(grant.category);
-            const catColor = categoryColorMap[grant.category] || '#7A7870';
-            const typeLabel = grant.clemencyType === 'pardon' ? 'Pardon' : 'Commutation';
-
-            const card = document.createElement('a');
-            card.href = '/pardon/details/' + grant.slug;
-            card.className = 'search-card block no-underline mb-3' + (i < 10 ? ' animate-fade-in' : '');
-            card.style.borderLeftColor = catColor;
-            if (i < 10) card.style.animationDelay = (i * 35) + 'ms';
-
-            const outer = document.createElement('div');
-            outer.className = 'flex items-start gap-3';
-
-            const content = document.createElement('div');
-            content.className = 'flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 flex-1 min-w-0';
-
-            const left = document.createElement('div');
-            left.className = 'flex-1 min-w-0';
-
-            const nameEl = document.createElement('div');
-            nameEl.className = 'font-serif text-text-primary mb-1';
-            nameEl.style.fontSize = '17px';
-            nameEl.style.lineHeight = '1.25';
-            nameEl.textContent = grant.name;
-            left.appendChild(nameEl);
-
-            const metaLine = document.createElement('div');
-            metaLine.className = 'flex items-center gap-2 mb-2';
-            metaLine.style.fontSize = '11px';
-            metaLine.style.textTransform = 'uppercase';
-            metaLine.style.letterSpacing = '0.06em';
-
-            const typeEl = document.createElement('span');
-            typeEl.textContent = typeLabel;
-            typeEl.style.color = grant.clemencyType === 'pardon' ? '#c23b22' : '#2a6a7a';
-            typeEl.style.fontWeight = '500';
-            metaLine.appendChild(typeEl);
-
-            const sepEl = document.createElement('span');
-            sepEl.textContent = '\u00B7';
-            sepEl.style.color = '#b8b6ae';
-            metaLine.appendChild(sepEl);
-
-            const catEl = document.createElement('span');
-            catEl.textContent = catLabel;
-            catEl.style.color = catColor;
-            metaLine.appendChild(catEl);
-
-            left.appendChild(metaLine);
-
-            const offense = document.createElement('p');
-            offense.className = 'text-card-offense text-text-secondary line-clamp-2';
-            offense.textContent = grant.offense;
-            left.appendChild(offense);
-
-            if (grant.district || grant.sentence) {
-              const meta = document.createElement('div');
-              meta.className = 'flex flex-wrap gap-3 text-meta text-text-faint mt-1';
-              if (grant.district) {
-                const d = document.createElement('span');
-                d.textContent = grant.district;
-                meta.appendChild(d);
-              }
-              if (grant.sentence) {
-                const s = document.createElement('span');
-                s.textContent = grant.sentence;
-                meta.appendChild(s);
-              }
-              left.appendChild(meta);
-            }
-
-            content.appendChild(left);
-
-            const right = document.createElement('div');
-            right.className = 'flex sm:flex-col sm:text-right gap-3 sm:gap-0 sm:ml-4 flex-shrink-0 items-center sm:items-end';
-
-            const dateDiv = document.createElement('div');
-            dateDiv.className = 'text-meta text-text-faint sm:mb-1';
-            dateDiv.style.fontVariantNumeric = 'tabular-nums';
-            dateDiv.textContent = grant.date;
-            right.appendChild(dateDiv);
-
-            if (grant.restitution) {
-              const restVal = document.createElement('div');
-              restVal.className = 'text-body font-medium text-accent';
-              restVal.textContent = formatRestitution(grant.restitution);
-              right.appendChild(restVal);
-
-              const restLabel = document.createElement('div');
-              restLabel.className = 'text-badge text-text-faint';
-              restLabel.textContent = 'restitution';
-              right.appendChild(restLabel);
-            }
-
-            content.appendChild(right);
-            outer.appendChild(content);
-
-            const chevron = document.createElement('span');
-            chevron.className = 'search-card-chevron hidden sm:block';
-            chevron.textContent = '\u203A';
-            outer.appendChild(chevron);
-
-            card.appendChild(outer);
-            resultsList.appendChild(card);
-          });
-
-          resultsList.classList.remove('is-swapping');
-        });
+          tr.appendChild(tdName);
+          tr.appendChild(tdType);
+          tr.appendChild(tdCat);
+          tr.appendChild(tdPres);
+          tr.appendChild(tdDate);
+          tr.appendChild(tdMoney);
+          resultsBody.appendChild(tr);
+        }
       }
 
       function buildPageList(current, total) {
@@ -636,7 +449,7 @@ const categoryColorMap: Record<string, string> = Object.fromEntries(
         prev.type = 'button';
         prev.className = 'pagination-button';
         prev.dataset.pageAction = 'prev';
-        prev.textContent = '\u2039 Prev';
+        prev.textContent = '‹ Prev';
         prev.disabled = state.page <= 1;
         paginationControls.appendChild(prev);
 
@@ -645,7 +458,7 @@ const categoryColorMap: Record<string, string> = Object.fromEntries(
           if (p === 'ellipsis') {
             const span = document.createElement('span');
             span.className = 'pagination-ellipsis';
-            span.textContent = '\u2026';
+            span.textContent = '…';
             paginationControls.appendChild(span);
             continue;
           }
@@ -662,55 +475,32 @@ const categoryColorMap: Record<string, string> = Object.fromEntries(
         next.type = 'button';
         next.className = 'pagination-button';
         next.dataset.pageAction = 'next';
-        next.textContent = 'Next \u203A';
+        next.textContent = 'Next ›';
         next.disabled = state.page >= totalPages;
         paginationControls.appendChild(next);
-      }
-
-      function syncUrl() {
-        const params = new URLSearchParams();
-        if (state.search) params.set('q', state.search);
-        if (state.type) params.set('type', state.type);
-        if (state.date) params.set('date', state.date);
-        if (state.president !== 'all') params.set('president', state.president);
-        if (state.categories.size > 0) params.set('categories', Array.from(state.categories).join(','));
-        if (state.page > 1) params.set('page', String(state.page));
-
-        const qs = params.toString();
-        const next = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
-        const current = window.location.pathname + window.location.search;
-        if (next !== current) {
-          history.replaceState(null, '', next);
-        }
       }
 
       function syncControlsFromState() {
         if (searchInput && document.activeElement !== searchInput && searchInput.value !== state.search) {
           searchInput.value = state.search;
         }
-        if (mobileSearchInput && document.activeElement !== mobileSearchInput && mobileSearchInput.value !== state.search) {
-          mobileSearchInput.value = state.search;
-        }
+        if (typeSelect.value !== state.type) typeSelect.value = state.type;
+        if (categorySelect.value !== state.category) categorySelect.value = state.category;
+        if (presidentSelect.value !== state.president) presidentSelect.value = state.president;
+      }
 
-        const typeRadio = findInputByValue(typeSegmented, 'type', state.type);
-        if (typeRadio && !typeRadio.checked) typeRadio.checked = true;
+      function syncUrl() {
+        const params = new URLSearchParams();
+        if (state.search) params.set('q', state.search);
+        if (state.type) params.set('type', state.type);
+        if (state.president !== 'all') params.set('president', state.president);
+        if (state.category) params.set('category', state.category);
+        if (state.page > 1) params.set('page', String(state.page));
 
-        if (dateInput && dateInput.value !== state.date) {
-          dateInput.value = state.date;
-        }
-
-        const desktopPres = findInputByValue(presidentFacets, 'president', state.president);
-        if (desktopPres && !desktopPres.checked) desktopPres.checked = true;
-
-        if (presidentChipRail) {
-          const mobilePres = findInputByValue(presidentChipRail, 'president-mobile', state.president);
-          if (mobilePres && !mobilePres.checked) mobilePres.checked = true;
-        }
-
-        categoryFacets.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
-          const shouldBeChecked = state.categories.has(cb.value);
-          if (cb.checked !== shouldBeChecked) cb.checked = shouldBeChecked;
-        });
+        const qs = params.toString();
+        const next = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
+        const current = window.location.pathname + window.location.search;
+        if (next !== current) history.replaceState(null, '', next);
       }
 
       function applyState() {
@@ -721,9 +511,8 @@ const categoryColorMap: Record<string, string> = Object.fromEntries(
         if (state.page < 1) state.page = 1;
         renderResults(filtered);
         renderPagination(filtered.length);
-        const counts = computeFilteredCounts();
-        renderSidebarCounts(counts);
         renderFilterSummary(filtered);
+        currentViewHeadline.textContent = buildHeadline();
         syncUrl();
       }
 
@@ -731,20 +520,19 @@ const categoryColorMap: Record<string, string> = Object.fromEntries(
         const priorFilterCount =
           (state.search ? 1 : 0) +
           (state.type ? 1 : 0) +
-          (state.date ? 1 : 0) +
           (state.president !== 'all' ? 1 : 0) +
-          state.categories.size;
+          (state.category ? 1 : 0);
 
         state.search = '';
         state.type = '';
-        state.date = '';
         state.president = 'all';
-        state.categories.clear();
+        state.category = '';
         state.page = 1;
 
         if (searchInput) searchInput.value = '';
-        if (mobileSearchInput) mobileSearchInput.value = '';
-        if (dateInput) dateInput.value = '';
+        if (typeSelect) typeSelect.value = '';
+        if (categorySelect) categorySelect.value = '';
+        if (presidentSelect) presidentSelect.value = 'all';
 
         applyState();
         window.posthog?.capture('search_filters_cleared', {
@@ -754,8 +542,8 @@ const categoryColorMap: Record<string, string> = Object.fromEntries(
       }
 
       let searchDebounce;
-      function handleSearchInput(event) {
-        state.search = event.target.value.trim();
+      searchInput.addEventListener('input', (e) => {
+        state.search = e.target.value.trim();
         state.page = 1;
         applyState();
         clearTimeout(searchDebounce);
@@ -768,78 +556,47 @@ const categoryColorMap: Record<string, string> = Object.fromEntries(
               has_results: resultsCount > 0,
               active_filters: {
                 type: state.type || null,
-                date: state.date || null,
                 president: state.president !== 'all' ? state.president : null,
-                categories_count: state.categories.size,
+                category: state.category || null,
               },
-              source: event.target.id === 'mobile-search-input' ? 'mobile' : 'desktop',
+              source: 'desktop',
             });
           }
         }, 600);
-      }
-      searchInput.addEventListener('input', handleSearchInput);
-      if (mobileSearchInput) mobileSearchInput.addEventListener('input', handleSearchInput);
+      });
 
-      typeSegmented.addEventListener('change', (e) => {
-        const t = e.target;
-        if (t && t.name === 'type') {
-          state.type = t.value;
-          state.page = 1;
-          applyState();
-          if (state.type) {
-            window.posthog?.capture('type_filter_applied', { type: state.type });
-          }
+      typeSelect.addEventListener('change', (e) => {
+        state.type = e.target.value;
+        state.page = 1;
+        applyState();
+        if (state.type) {
+          window.posthog?.capture('type_filter_applied', { type: state.type });
         }
       });
 
-      if (dateInput) {
-        dateInput.addEventListener('change', (e) => {
-          state.date = e.target.value;
-          state.page = 1;
-          applyState();
-          if (state.date) {
-            window.posthog?.capture('date_filter_applied', { date: state.date });
-          }
-        });
-      }
-
-      presidentFacets.addEventListener('change', (e) => {
-        const t = e.target;
-        if (t && t.name === 'president') {
-          state.president = t.value;
-          state.page = 1;
-          applyState();
-          if (state.president !== 'all') {
-            window.posthog?.capture('president_filter_applied', { president: state.president, source: 'sidebar' });
-          }
+      categorySelect.addEventListener('change', (e) => {
+        const prev = state.category;
+        state.category = e.target.value;
+        state.page = 1;
+        applyState();
+        // Match the legacy event name + payload shape used by the prior facet UI
+        if (prev) {
+          window.posthog?.capture('category_filter_applied', { category: prev, checked: false });
+        }
+        if (state.category) {
+          window.posthog?.capture('category_filter_applied', { category: state.category, checked: true });
         }
       });
 
-      if (presidentChipRail) {
-        presidentChipRail.addEventListener('change', (e) => {
-          const t = e.target;
-          if (t && t.name === 'president-mobile') {
-            state.president = t.value;
-            state.page = 1;
-            applyState();
-            if (state.president !== 'all') {
-              window.posthog?.capture('president_filter_applied', { president: state.president, source: 'chip_rail' });
-            }
-          }
-        });
-      }
-
-      categoryFacets.addEventListener('change', (e) => {
-        const t = e.target;
-        if (t && t.name === 'category') {
-          if (t.checked) {
-            state.categories.add(t.value);
-          } else {
-            state.categories.delete(t.value);
-          }
-          state.page = 1;
-          applyState();
-          window.posthog?.capture('category_filter_applied', { category: t.value, checked: t.checked });
+      presidentSelect.addEventListener('change', (e) => {
+        state.president = e.target.value || 'all';
+        state.page = 1;
+        applyState();
+        if (state.president !== 'all') {
+          window.posthog?.capture('president_filter_applied', {
+            president: state.president,
+            source: 'pres_dropdown',
+          });
         }
       });
 
@@ -850,49 +607,46 @@ const categoryColorMap: Record<string, string> = Object.fromEntries(
         if (action === 'clear-search') {
           state.search = '';
           if (searchInput) searchInput.value = '';
-          if (mobileSearchInput) mobileSearchInput.value = '';
         } else if (action === 'clear-type') {
           state.type = '';
-        } else if (action === 'clear-date') {
-          state.date = '';
-          if (dateInput) dateInput.value = '';
+          if (typeSelect) typeSelect.value = '';
         } else if (action === 'clear-president') {
           state.president = 'all';
-        } else if (action && action.startsWith('clear-category:')) {
-          const key = action.slice('clear-category:'.length);
-          state.categories.delete(key);
+          if (presidentSelect) presidentSelect.value = 'all';
+        } else if (action === 'clear-category') {
+          state.category = '';
+          if (categorySelect) categorySelect.value = '';
         }
         state.page = 1;
         applyState();
         window.posthog?.capture('search_filters_cleared', {
-          source: 'chip_remove',
+          source: 'pill_remove',
           filter_type: action,
         });
       });
 
       filterSummaryClear.addEventListener('click', () => clearAllFilters('clear_all_button'));
-      if (mobileClearAll) {
-        mobileClearAll.addEventListener('click', () => clearAllFilters('mobile_clear_all_button'));
-      }
 
-      resultsList.addEventListener('click', (e) => {
-        const card = e.target.closest('a.search-card');
-        if (!card) return;
-        const slug = card.href.split('/pardon/details/')[1];
-        const cards = Array.from(resultsList.children);
+      // Whole-row click → navigate to detail page (and capture analytics)
+      resultsBody.addEventListener('click', (e) => {
+        const tr = e.target.closest('tr.sb-row');
+        if (!tr) return;
+        const slug = tr.dataset.slug;
+        if (!slug) return;
+        const rows = Array.from(resultsBody.children);
         window.posthog?.capture('search_result_clicked', {
           slug,
           query: state.search || null,
-          position: cards.indexOf(card),
-          total_results: cards.length,
+          position: rows.indexOf(tr),
+          total_results: rows.length,
           page: state.page,
           has_active_filters:
             Boolean(state.search) ||
             Boolean(state.type) ||
-            Boolean(state.date) ||
             state.president !== 'all' ||
-            state.categories.size > 0,
+            Boolean(state.category),
         });
+        window.location.href = '/pardon/details/' + slug;
       });
 
       if (paginationControls) {
@@ -915,7 +669,7 @@ const categoryColorMap: Record<string, string> = Object.fromEntries(
 
           if (state.page !== prevPage) {
             applyState();
-            const target = document.getElementById('filter-summary') || resultsList;
+            const target = document.getElementById('results-table');
             if (target && typeof target.scrollIntoView === 'function') {
               target.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
@@ -928,12 +682,8 @@ const categoryColorMap: Record<string, string> = Object.fromEntries(
         });
       }
 
-      const desktopMq = window.matchMedia('(min-width: 1024px)');
-      if (sidebarDisclosure) sidebarDisclosure.open = desktopMq.matches;
-      desktopMq.addEventListener('change', (e) => {
-        if (e.matches && sidebarDisclosure) sidebarDisclosure.open = true;
-      });
-
+      // Initial state from URL — supports both new (dateMode/dateFrom/dateTo)
+      // and legacy (date) params for back-compat with bookmarks/links.
       const urlParams = new URLSearchParams(window.location.search);
 
       const qParam = urlParams.get('q');
@@ -945,46 +695,40 @@ const categoryColorMap: Record<string, string> = Object.fromEntries(
       const typeParam = urlParams.get('type');
       if (typeParam === 'pardon' || typeParam === 'commutation') {
         state.type = typeParam;
-        const radio = findInputByValue(typeSegmented, 'type', typeParam);
-        if (radio) radio.checked = true;
+        if (typeSelect) typeSelect.value = typeParam;
       }
 
-      const dateParam = urlParams.get('date');
-      if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
-        state.date = dateParam;
-        if (dateInput) dateInput.value = dateParam;
-      }
+      // Date params (?date, ?dateMode, ?dateFrom, ?dateTo) from prior versions
+      // are intentionally ignored — date filtering is no longer in the UI.
+      // Bookmarks with these params still load the page; they just don't apply.
 
       const presParam = urlParams.get('president');
       if (presParam) {
-        const pradio = findInputByValue(presidentFacets, 'president', presParam);
-        if (pradio) {
+        const exists = Array.from(presidentSelect.options).some((o) => o.value === presParam);
+        if (exists) {
           state.president = presParam;
-          pradio.checked = true;
+          presidentSelect.value = presParam;
         }
       }
 
-      const catsParam = urlParams.get('categories');
-      const legacyCatParam = urlParams.get('category');
-      const catsToApply = catsParam
-        ? catsParam.split(',')
-        : legacyCatParam
-          ? [legacyCatParam]
-          : [];
-      catsToApply.forEach((c) => {
-        const key = c.trim();
-        if (!key) return;
-        const cb = findInputByValue(categoryFacets, 'category', key);
-        if (cb) {
-          state.categories.add(key);
-          cb.checked = true;
+      // Single-select category. Accept both ?category=cat and the legacy
+      // ?categories=cat1,cat2 (taking the first entry) so old bookmarks work.
+      const catParam = urlParams.get('category');
+      const legacyCatsParam = urlParams.get('categories');
+      const initialCategory = catParam
+        ? catParam.trim()
+        : (legacyCatsParam ? legacyCatsParam.split(',')[0]?.trim() : '');
+      if (initialCategory) {
+        // Confirm the value exists in the select before applying
+        const exists = Array.from(categorySelect.options).some((o) => o.value === initialCategory);
+        if (exists) {
+          state.category = initialCategory;
+          categorySelect.value = initialCategory;
         }
-      });
+      }
 
       const pageParam = parseInt(urlParams.get('page') || '', 10);
-      if (!Number.isNaN(pageParam) && pageParam > 1) {
-        state.page = pageParam;
-      }
+      if (!Number.isNaN(pageParam) && pageParam > 1) state.page = pageParam;
 
       applyState();
     });
@@ -993,3 +737,362 @@ const categoryColorMap: Record<string, string> = Object.fromEntries(
   <script id="grants-data" type="application/json" set:html={JSON.stringify(searchResults)} />
   <script id="category-colors" type="application/json" set:html={JSON.stringify(categoryColorMap)} />
 </Layout>
+
+<style is:global>
+  .search-page-bold > .section-header {
+    border-top: none;
+    padding-top: 0;
+    padding-bottom: 32px;
+  }
+
+  /* ===== Filter bar (top) — search input + 3 selects (type, category, president) ===== */
+  .sb-filter-bar {
+    display: grid;
+    grid-template-columns: 1fr auto auto auto;
+    gap: 0;
+    border-top: var(--rule-emphasis);
+    border-bottom: 1px solid var(--border-default);
+  }
+  .sb-search-input {
+    background: transparent;
+    border: none;
+    border-right: 1px solid var(--border-default);
+    padding: 18px 20px;
+    font-size: 16px;
+    font-family: inherit;
+    color: var(--text-primary);
+    outline: none;
+    width: 100%;
+    min-width: 0;
+  }
+  .sb-search-input::placeholder {
+    color: var(--text-faint);
+  }
+  .sb-select {
+    background: transparent;
+    border: none;
+    border-right: 1px solid var(--border-default);
+    padding: 18px 36px 18px 20px;
+    font-size: 14px;
+    color: var(--text-primary);
+    font-family: inherit;
+    outline: none;
+    cursor: pointer;
+    min-width: 180px;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image:
+      linear-gradient(45deg, transparent 50%, var(--text-faint) 50%),
+      linear-gradient(135deg, var(--text-faint) 50%, transparent 50%);
+    background-position: calc(100% - 18px) 22px, calc(100% - 13px) 22px;
+    background-size: 5px 5px;
+    background-repeat: no-repeat;
+  }
+  .sb-select:last-of-type {
+    border-right: none;
+  }
+  .sb-select:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+  }
+
+  /* ===== Current-view headline (replaces the wide president rail) ===== */
+  .sb-current-view {
+    padding: 36px 0 24px;
+  }
+  .sb-current-view-headline {
+    font-family: var(--serif);
+    font-size: 44px;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+    margin: 0 0 12px 0;
+    color: var(--text-primary);
+    font-weight: 400;
+    text-wrap: balance;
+  }
+  .sb-current-view-meta {
+    font-size: 12px;
+    color: var(--text-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 500;
+    margin: 0;
+  }
+  .sb-current-view-count {
+    font-family: var(--serif);
+    font-size: 18px;
+    letter-spacing: -0.01em;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+    text-transform: none;
+  }
+  .sb-current-view-sep {
+    margin: 0 8px;
+    color: var(--border-soft);
+  }
+
+  /* ===== Active filter pills row ===== */
+  .sb-active-filters {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border-default);
+    font-size: 12px;
+    color: var(--text-muted);
+    flex-wrap: wrap;
+    min-height: 48px;
+  }
+  .sb-active-filters.is-empty .sb-active-prefix {
+    color: var(--text-faint);
+  }
+  .sb-active-prefix {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-faint);
+    font-weight: 500;
+  }
+  .sb-active-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .sb-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--accent-tint);
+    color: var(--accent);
+    padding: 5px 6px 5px 12px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .sb-pill-x {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: white;
+    cursor: pointer;
+    font-size: 11px;
+    border: none;
+    font-family: inherit;
+    padding: 0;
+    line-height: 1;
+  }
+  .sb-clear-all {
+    color: var(--text-faint);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    background: none;
+    border: none;
+    font-family: inherit;
+    font-weight: 500;
+    padding: 0;
+    margin-left: auto;
+  }
+  .sb-clear-all:hover {
+    color: var(--accent);
+  }
+
+  /* ===== Results table ===== */
+  table.sb-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    border-top: 1px solid var(--border-default);
+  }
+  table.sb-table.hidden {
+    display: none;
+  }
+  table.sb-table thead th {
+    text-align: left;
+    font-weight: 500;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-faint);
+    padding: 14px 12px;
+    border-bottom: 1px solid var(--border-default);
+    background: var(--bg-page);
+  }
+  table.sb-table thead th.num,
+  table.sb-table tbody td.num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  table.sb-table tbody tr {
+    border-bottom: 1px solid var(--border-default);
+    transition: background 0.1s;
+    cursor: pointer;
+  }
+  table.sb-table tbody tr:hover {
+    background: var(--bg-muted);
+  }
+  table.sb-table tbody td {
+    padding: 16px 12px;
+    vertical-align: top;
+  }
+  .sb-name {
+    font-family: var(--serif);
+    font-size: 18px;
+    font-weight: 400;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+  }
+  .sb-offense {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+    line-height: 1.5;
+    max-width: 480px;
+  }
+  .sb-cell-pres {
+    font-size: 13px;
+    color: var(--text-body);
+  }
+  .sb-cell-date {
+    font-size: 13px;
+    color: var(--text-body);
+    font-variant-numeric: tabular-nums;
+  }
+  .sb-cell-money {
+    font-family: var(--serif);
+    font-size: 18px;
+    color: var(--accent);
+    letter-spacing: -0.005em;
+    line-height: 1.1;
+  }
+  .sb-cell-money.sb-money-zero {
+    color: var(--text-ghost);
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 400;
+  }
+  .sb-row-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    vertical-align: middle;
+    margin-right: 6px;
+    position: relative;
+    top: -1px;
+  }
+  .sb-cell-cat {
+    font-size: 12px;
+    color: var(--text-secondary);
+    text-transform: capitalize;
+  }
+  .sb-type-tag {
+    display: inline-block;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 2px 7px;
+    border-radius: 2px;
+    font-weight: 500;
+  }
+  .sb-type-tag-pardon {
+    background: var(--accent-bg);
+    color: var(--accent);
+  }
+  .sb-type-tag-commutation {
+    background: rgba(42, 106, 122, 0.1);
+    color: #2a6a7a;
+  }
+
+  /* Empty state */
+  .sb-empty-state {
+    padding: 80px 0;
+    text-align: center;
+    color: var(--text-muted);
+  }
+  .sb-empty-state.hidden {
+    display: none;
+  }
+  .sb-empty-state p {
+    font-family: var(--serif);
+    font-size: 24px;
+    margin: 0 0 8px 0;
+  }
+  .sb-empty-state-deck {
+    font-family: var(--sans) !important;
+    font-size: 13px !important;
+    color: var(--text-faint);
+  }
+
+  /* Pagination — bold restyle */
+  .search-page-bold .pagination {
+    border-top: var(--rule-emphasis);
+    margin-top: 32px;
+    padding-top: 20px;
+    justify-content: center;
+  }
+  .search-page-bold .pagination-button,
+  .search-page-bold .pagination-page {
+    background: transparent;
+    border: 1px solid var(--border-default);
+    border-radius: 2px;
+  }
+  .search-page-bold .pagination-page.is-active {
+    background: var(--text-primary);
+    border-color: var(--text-primary);
+  }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .sb-filter-bar {
+      grid-template-columns: 1fr;
+    }
+    .sb-search-input {
+      border-right: none;
+      border-bottom: 1px solid var(--border-default);
+    }
+    .sb-select {
+      border-right: none;
+      border-bottom: 1px solid var(--border-default);
+      width: 100%;
+    }
+    .sb-select:last-of-type {
+      border-bottom: none;
+    }
+
+    .sb-current-view {
+      padding: 24px 0 16px;
+    }
+    .sb-current-view-headline {
+      font-size: 28px;
+    }
+
+    table.sb-table thead {
+      display: none;
+    }
+    table.sb-table,
+    table.sb-table tbody,
+    table.sb-table tr,
+    table.sb-table td {
+      display: block;
+      width: 100%;
+    }
+    table.sb-table tbody tr {
+      padding: 18px 0;
+      border-bottom: 1px solid var(--border-default);
+    }
+    table.sb-table tbody td {
+      padding: 4px 0;
+      border: none;
+    }
+    .sb-cell-money {
+      font-size: 22px;
+    }
+  }
+</style>
