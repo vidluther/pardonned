@@ -195,7 +195,12 @@ const heroEyebrow = `Presidential clemency · ${modernEraStartYear} → present`
                         <span class="nw-latest-yr">{latestYear}</span>
                     </div>
                     <div class="nw-sub">
-                        {lastUpdatedFormatted ? `Last grant on ${lastUpdatedFormatted}.` : "—"}
+                        {newswire[0] ? (
+                            <a href="/recent" class="nw-latest-link">
+                                {newswire[0].data.recipient_name}
+                                <span class="nw-latest-link-arrow" aria-hidden="true"> →</span>
+                            </a>
+                        ) : "—"}
                     </div>
                 </div>
             </div>
@@ -484,6 +489,15 @@ const heroEyebrow = `Presidential clemency · ${modernEraStartYear} → present`
                 });
             });
 
+        // latest_grant_clicked — number-wall "Latest" cell sub-line link
+        document
+            .querySelector('a.nw-latest-link[href="/recent"]')
+            ?.addEventListener("click", () => {
+                window.posthog?.capture("latest_grant_clicked", {
+                    source: "homepage_number_wall",
+                });
+            });
+
         // restitution_leaderboard_clicked — leaderboard row
         document
             .querySelectorAll("a.lb-row[data-grant-slug]")
@@ -633,6 +647,21 @@ const heroEyebrow = `Presidential clemency · ${modernEraStartYear} → present`
         font-size: 18px;
         color: var(--text-faint);
         font-variant-numeric: tabular-nums;
+    }
+    .nw-latest-link {
+        color: var(--text-secondary);
+        text-decoration: none;
+        border-bottom: 1px solid var(--border-default);
+        transition:
+            color 0.15s,
+            border-color 0.15s;
+    }
+    .nw-latest-link:hover {
+        color: var(--accent);
+        border-bottom-color: var(--accent-border);
+    }
+    .nw-latest-link-arrow {
+        color: var(--text-faint);
     }
 
     /* NEWSWIRE */
