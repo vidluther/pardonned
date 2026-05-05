@@ -196,7 +196,7 @@ const heroEyebrow = `Presidential clemency · ${modernEraStartYear} → present`
                     </div>
                     <div class="nw-sub">
                         {newswire[0] ? (
-                            <a href="/recent" class="nw-latest-link">
+                            <a href="/recent/" class="nw-latest-link">
                                 {newswire[0].data.recipient_name}
                                 <span class="nw-latest-link-arrow" aria-hidden="true"> →</span>
                             </a>
@@ -224,7 +224,7 @@ const heroEyebrow = `Presidential clemency · ${modernEraStartYear} → present`
                                 </span>
                             </span>
                         )}
-                        <a href="/recent" class="wire-view-all">
+                        <a href="/recent/" class="wire-view-all">
                             View all recent →
                         </a>
                     </div>
@@ -239,7 +239,7 @@ const heroEyebrow = `Presidential clemency · ${modernEraStartYear} → present`
                         return (
                             <a
                                 class="wire-item"
-                                href={`/pardon/details/${d.slug}`}
+                                href={`/pardon/details/${d.slug}/`}
                                 data-grant-date={d.grant_date}
                                 data-grant-slug={d.slug}
                             >
@@ -294,7 +294,7 @@ const heroEyebrow = `Presidential clemency · ${modernEraStartYear} → present`
                     return (
                         <a
                             class="cb-row"
-                            href={`/president/${admin.slug}`}
+                            href={`/president/${admin.slug}/`}
                             data-admin-slug={admin.slug}
                         >
                             <div class="cb-rank">{i + 1}</div>
@@ -371,7 +371,7 @@ const heroEyebrow = `Presidential clemency · ${modernEraStartYear} → present`
                     return (
                         <a
                             class="lb-row"
-                            href={`/pardon/details/${d.slug}`}
+                            href={`/pardon/details/${d.slug}/`}
                             data-grant-slug={d.slug}
                             data-position={i + 1}
                             data-restitution={d.restitution ?? 0}
@@ -415,7 +415,7 @@ const heroEyebrow = `Presidential clemency · ${modernEraStartYear} → present`
                     return (
                         <a
                             class="cat-row"
-                            href={`/search?categories=${encodeURIComponent(category)}`}
+                            href={`/search/?categories=${encodeURIComponent(category)}`}
                             data-category={category}
                         >
                             <div class="cat-num" style={`color:${color};`}>
@@ -446,7 +446,7 @@ const heroEyebrow = `Presidential clemency · ${modernEraStartYear} → present`
                     grant page links to the original warrant PDF. Pardonned is
                     not affiliated with the U.S. government.
                 </p>
-                <a href="/search" class="source-band-cta">
+                <a href="/search/" class="source-band-cta">
                     Search all {stats.totalGrants.toLocaleString()} pardons →
                 </a>
             </div>
@@ -482,7 +482,7 @@ const heroEyebrow = `Presidential clemency · ${modernEraStartYear} → present`
 
         // view_all_recent_clicked — wire-head "View all recent →"
         document
-            .querySelector('a.wire-view-all[href="/recent"]')
+            .querySelector('a.wire-view-all[href="/recent/"]')
             ?.addEventListener("click", () => {
                 window.posthog?.capture("view_all_recent_clicked", {
                     source: "homepage_newswire",
@@ -491,7 +491,7 @@ const heroEyebrow = `Presidential clemency · ${modernEraStartYear} → present`
 
         // latest_grant_clicked — number-wall "Latest" cell sub-line link
         document
-            .querySelector('a.nw-latest-link[href="/recent"]')
+            .querySelector('a.nw-latest-link[href="/recent/"]')
             ?.addEventListener("click", () => {
                 window.posthog?.capture("latest_grant_clicked", {
                     source: "homepage_number_wall",

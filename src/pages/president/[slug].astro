@@ -138,7 +138,7 @@ const timelineEntries = sortedDates.map((date, i) => {
         <div class="pp-crumb">
             <a href="/">Home</a>
             <span class="pp-crumb-sep">/</span>
-            <a href="/all-presidents">Presidents</a>
+            <a href="/all-presidents/">Presidents</a>
             <span class="pp-crumb-sep">/</span>
             <span class="pp-crumb-here">{presidentName}</span>
         </div>
@@ -206,7 +206,7 @@ const timelineEntries = sortedDates.map((date, i) => {
                         return (
                             <a
                                 class="pp-cat-row"
-                                href={`/search?president=${admin.slug}&category=${encodeURIComponent(row.key)}`}
+                                href={`/search/?president=${admin.slug}&category=${encodeURIComponent(row.key)}`}
                                 data-category={row.key}
                             >
                                 <div class="pp-cat-nm">
@@ -231,7 +231,7 @@ const timelineEntries = sortedDates.map((date, i) => {
 
                 <div class="pp-timeline-cta">
                     <a
-                        href={`/search?president=${admin.slug}`}
+                        href={`/search/?president=${admin.slug}`}
                         class="pp-timeline-cta-link"
                         data-search-cta
                     >
@@ -246,7 +246,7 @@ const timelineEntries = sortedDates.map((date, i) => {
             <div class="pp-footer-cell pp-footer-prev">
                 {older ? (
                     <a
-                        href={`/president/${older.slug}`}
+                        href={`/president/${older.slug}/`}
                         class="pp-foot-link"
                         data-direction="older"
                         data-to-slug={older.slug}
@@ -263,14 +263,14 @@ const timelineEntries = sortedDates.map((date, i) => {
                 )}
             </div>
             <div class="pp-footer-cell pp-footer-back">
-                <a href="/all-presidents" class="pp-back-link">
+                <a href="/all-presidents/" class="pp-back-link">
                     View all administrations →
                 </a>
             </div>
             <div class="pp-footer-cell pp-footer-next">
                 {newer ? (
                     <a
-                        href={`/president/${newer.slug}`}
+                        href={`/president/${newer.slug}/`}
                         class="pp-foot-link pp-foot-link-right"
                         data-direction="newer"
                         data-to-slug={newer.slug}
