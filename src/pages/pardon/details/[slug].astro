@@ -251,7 +251,7 @@ const ogImagePath = `/og/${data.slug}.png`;
     <main class="detail-bold">
         <!-- Breadcrumb -->
         <div class="db-crumb">
-            <a href="/search">Search</a>
+            <a href="/search/">Search</a>
             <span class="db-crumb-sep">/</span>
             <span class="db-crumb-here">{data.recipient_name}</span>
         </div>
@@ -431,7 +431,7 @@ const ogImagePath = `/og/${data.slug}.png`;
             <div class="db-footer-cell db-footer-prev">
                 {older ? (
                     <a
-                        href={`/pardon/details/${older.slug}`}
+                        href={`/pardon/details/${older.slug}/`}
                         class="db-foot-link"
                         data-direction="older"
                         data-to-slug={older.slug}
@@ -453,7 +453,7 @@ const ogImagePath = `/og/${data.slug}.png`;
             </div>
             <div class="db-footer-cell db-footer-back">
                 <a
-                    href={`/president/${data.administration_slug}`}
+                    href={`/president/${data.administration_slug}/`}
                     class="db-back-link"
                 >
                     Back to {adminDisplay}
@@ -462,7 +462,7 @@ const ogImagePath = `/og/${data.slug}.png`;
             <div class="db-footer-cell db-footer-next">
                 {newer ? (
                     <a
-                        href={`/pardon/details/${newer.slug}`}
+                        href={`/pardon/details/${newer.slug}/`}
                         class="db-foot-link db-foot-link-right"
                         data-direction="newer"
                         data-to-slug={newer.slug}

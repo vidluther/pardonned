@@ -4,20 +4,20 @@
 # These graceful 301s catch guessable wrong URLs that aren't real routes
 # but are plausible enough that visitors (or external links) might try them.
 # Real routes:
-#   /search                    — search page
-#   /pardon/details/<slug>     — single grant detail
-#   /all-presidents            — cross-administration table
-#   /recent                    — recent grants feed (HTML)
+#   /search/                   — search page
+#   /pardon/details/<slug>/    — single grant detail
+#   /all-presidents/           — cross-administration table
+#   /recent/                   — recent grants feed (HTML)
 #   /recent.xml                — Atom feed
 
 # Plural-form guesses for the search page
-/pardons         /search                       301
+/pardons         /search/                      301
 
 # Handoff-doc-implied detail URL → real detail URL
-/pardons/:slug   /pardon/details/:slug         301
+/pardons/:slug   /pardon/details/:slug/        301
 
 # "Presidents" plural → all-presidents page
-/presidents      /all-presidents               301
+/presidents      /all-presidents/              301
 
 # Common feed-discovery paths → Atom feed
 /feed            /recent.xml                   301

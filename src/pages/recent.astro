@@ -124,7 +124,7 @@ function dayLabel(isoDate: string): string {
                 Every federal pardon and commutation issued during the
                 current administration, newest first. Each entry links to
                 the original DOJ warrant. For
-                <a href="/search" class="rb-deck-link">previous administrations</a>
+                <a href="/search/" class="rb-deck-link">previous administrations</a>
                 or filtered queries, use search. Subscribe via
                 <a href="/recent.xml" class="rb-deck-link">Atom feed</a>.
             </p>
@@ -207,7 +207,7 @@ function dayLabel(isoDate: string): string {
                                 return (
                                     <a
                                         class="rb-entry"
-                                        href={`/pardon/details/${d.slug}`}
+                                        href={`/pardon/details/${d.slug}/`}
                                         data-grant-slug={d.slug}
                                         data-grant-date={d.grant_date}
                                     >
@@ -257,7 +257,7 @@ function dayLabel(isoDate: string): string {
                                         </div>
                                         <div class="rb-pres">
                                             <a
-                                                href={`/president/${d.administration_slug}`}
+                                                href={`/president/${d.administration_slug}/`}
                                                 class="rb-pres-link"
                                                 onclick="event.stopPropagation();"
                                                 data-admin-slug={d.administration_slug}
@@ -310,7 +310,7 @@ function dayLabel(isoDate: string): string {
                     records, including all 3,205 grants since 1993, use
                     search with administration and date filters.
                 </p>
-                <a href="/search" class="rb-feed-end-cta">
+                <a href="/search/" class="rb-feed-end-cta">
                     Open full search →
                 </a>
             </div>
