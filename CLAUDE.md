@@ -2,6 +2,35 @@
 
 A static Astro SSG site cataloguing US presidential pardons, deployed to Cloudflare Pages. The scraper pulls clemency data from DOJ warrant notices, writes to a local SQLite file via Drizzle, and the Astro build reads it through a content collection loader.
 
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues at `vidluther/pardonned`, accessed via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Canonical state vocabulary: `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`, plus the `new` provenance label and `bug` / `enhancement` categories. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `CONTEXT.md` and `docs/adr/` at the repo root (both currently empty — populated lazily by `grill-with-docs`). See `docs/agents/domain.md`.
+
+## Code Style
+
+- **Language:** TypeScript (Astro 6, Drizzle ORM).
+- **Package manager:** pnpm (Node ≥22.12.0 per `package.json` engines).
+- **Linter:** `pnpm lint` → oxlint (config: `.oxlintrc.json`).
+- **Formatter:** `pnpm format` → oxfmt (config: `.oxfmtrc.json`).
+- **Tests:** `pnpm test` → vitest 4. Tests in `src/lib/__tests__/*.test.ts`. Prefer inline fixtures over DB access (see `## Testing` section below).
+
+## Version Control
+
+- **Tooling:** GitButler (`but` CLI). Bare git also works.
+- **Commit messages:** conventional-commits style — `feat:`, `fix:`, `refactor:`, `chore:`, `docs:`, `test:`. Lower-case, imperative mood.
+- **Branching:** trunk on `main`. Feature work happens in `.worktrees/<branch-name>/` (see `## Gotchas` note), merged via GitHub PR.
+- **CI:** `.github/workflows/build-and-deploy.yml` runs scrape + build on push to `main`. There is no separate test/lint CI — verify locally before pushing.
+
 ## Commands
 
 ```bash
