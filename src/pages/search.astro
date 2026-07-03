@@ -134,9 +134,11 @@ const categoryColorMap: Record<string, string> = Object.fromEntries(
         All grants
       </h2>
       <p class="sb-current-view-meta">
-        <span id="filter-summary-count" class="sb-current-view-count">{searchResults.length.toLocaleString()}</span>
-        of {searchResults.length.toLocaleString()} grants
-        <span class="sb-current-view-sep" aria-hidden="true">·</span>
+        {/* Explicit {" "} separators: v7's JSX whitespace rules strip the
+            line-break spaces between these inline nodes. */}
+        <span id="filter-summary-count" class="sb-current-view-count">{searchResults.length.toLocaleString()}</span>{" "}
+        of {searchResults.length.toLocaleString()} grants{" "}
+        <span class="sb-current-view-sep" aria-hidden="true">·</span>{" "}
         Sorted by date — newest first
       </p>
     </div>
@@ -651,7 +653,7 @@ const categoryColorMap: Record<string, string> = Object.fromEntries(
             state.president !== 'all' ||
             Boolean(state.category),
         });
-        window.location.href = '/pardon/details/' + slug;
+        window.location.href = '/pardon/details/' + slug + '/';
       });
 
       if (paginationControls) {

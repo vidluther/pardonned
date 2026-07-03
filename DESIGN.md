@@ -18,8 +18,9 @@ interactive data exploration.
 
 - **Framework**: AstroJS
 - **Language**: TypeScript (strict)
-- **Styling**: Tailwind CSS — use the config below to define the palette and type scale.
-  Avoid arbitrary values (`text-[#C23B22]`) when a Tailwind token exists.
+- **Styling**: Tailwind CSS v4 (CSS-first) via the `@tailwindcss/vite` plugin. The palette
+  and type scale are defined as `@theme` variables in `src/styles/global.css` — there is no
+  `tailwind.config.ts`. Avoid arbitrary values (`text-[#C23B22]`) when a Tailwind token exists.
 - **Fonts**: Google Fonts — `DM Serif Display` (headlines) + `DM Sans` (everything else).
   Load via standard CSS `@import` or `<link>` tags.
 - **Database**: SQLite via `@libsql/client` with Drizzle ORM
@@ -106,12 +107,12 @@ Fonts are loaded via Google Fonts CSS import in the layout:
 @import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=DM+Serif+Display&display=swap");
 ```
 
-Configure in `tailwind.config.ts`:
+Configure in the `@theme` block of `src/styles/global.css`:
 
-```typescript
-fontFamily: {
-  sans: ["DM Sans", "system-ui", "sans-serif"],
-  serif: ["DM Serif Display", "Georgia", "serif"],
+```css
+@theme {
+  --font-sans: DM Sans, system-ui, sans-serif;
+  --font-serif: DM Serif Display, Georgia, serif;
 }
 ```
 
@@ -445,56 +446,48 @@ Both are wrapped in a container matching the section `max-width` with `40px` hor
 
 ---
 
-## 7. Tailwind config sketch
+## 7. Tailwind theme setup
 
-```typescript
-// tailwind.config.ts
-import type { Config } from "tailwindcss";
+The project uses Tailwind CSS v4's CSS-first configuration. **The live theme is the
+`@theme` block at the top of `src/styles/global.css`** — that file is the source of
+truth for every token in this document (colors, type scale, spacing, radii, container
+widths). There is no `tailwind.config.ts`; v4 discovers `.astro` sources automatically.
 
-export default {
-  content: ["./src/**/*.{astro,html,js,jsx,md,mdx,svelte,ts,tsx,vue}"],
-  theme: {
-    extend: {
-      fontFamily: {
-        sans: ["var(--font-sans)", "system-ui", "sans-serif"],
-        serif: ["var(--font-serif)", "Georgia", "serif"],
-      },
-      colors: {
-        page: "#FAFAF7",
-        card: "#FFFFFF",
-        muted: "#F6F5F0",
-        subtle: "#F2F1EC",
-        accent: {
-          DEFAULT: "#C23B22",
-          bg: "rgba(194,59,34,0.08)",
-          border: "rgba(194,59,34,0.12)",
-        },
-        border: {
-          DEFAULT: "#E8E6E0",
-          soft: "#D0CEC8",
-        },
-        text: {
-          primary: "#1A1918",
-          body: "#4A4840",
-          secondary: "#6A6860",
-          muted: "#7A7870",
-          faint: "#9A9890",
-          ghost: "#B0AEA8",
-        },
-        category: {
-          j6: "#C23B22",
-          face: "#B8652A",
-          fraud: "#8A6B1E",
-          crypto: "#2A6A7A",
-          political: "#6A4B7A",
-          drug: "#3A6A4A",
-          other: "#7A7870",
-        },
-      },
-    },
-  },
-} satisfies Config;
+The Vite plugin is wired in `astro.config.mjs`:
+
+```js
+import tailwindcss from "@tailwindcss/vite";
+
+export default defineConfig({
+  vite: { plugins: [tailwindcss()] },
+});
 ```
+
+Theme tokens are namespaced CSS variables. A representative excerpt — see
+`src/styles/global.css` for the complete set:
+
+```css
+@theme {
+  --font-sans: DM Sans, system-ui, sans-serif;
+  --font-serif: DM Serif Display, Georgia, serif;
+
+  --color-page: #fafaf7; /* bg-page */
+  --color-accent: #c23b22; /* text-accent, bg-accent, … */
+  --color-text-primary: #1a1918; /* text-text-primary */
+  --color-category-j6: #c23b22; /* text-category-j6, bg-category-j6 */
+
+  --text-hero: 52px; /* text-hero utility */
+  --text-hero--line-height: 1.1;
+
+  --container-home: 960px; /* max-w-home */
+  --spacing-section: 60px; /* p-section, gap-section, … */
+  --radius-card: 8px; /* rounded-card */
+}
+```
+
+Custom component classes (`.stat-card`, `.name-chip`, `.timeline-*`, …) are defined
+as `@utility` rules in the same file, so they compose with variants like `hover:`
+and `md:`.
 
 ---
 
