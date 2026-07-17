@@ -12,6 +12,7 @@ interface Props {
     title?: string;
     description?: string;
     ogImage?: string;
+    ogType?: string;
     showHeader?: boolean;
     showFooter?: boolean;
     currentPath?: string;
@@ -23,6 +24,7 @@ const {
     title = siteConfig.name,
     description = siteConfig.description,
     ogImage,
+    ogType,
     showHeader = true,
     showFooter = true,
     currentPath = "/",
@@ -51,7 +53,7 @@ const metaDescription = truncateText(description, 160);
         <link rel="icon" href="/favicon.ico" />
         <meta name="generator" content={Astro.generator} />
 
-        <SeoHead title={fullTitle} description={description} ogImage={ogImage} />
+        <SeoHead title={fullTitle} description={description} ogImage={ogImage} ogType={ogType} />
 
         {currentPath.replace(/\/$/, "") === "/recent" && (
             <link

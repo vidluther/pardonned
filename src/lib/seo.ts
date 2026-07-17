@@ -20,6 +20,15 @@ export function truncateText(text: string, maxLength: number): string {
   return result + "…";
 }
 
+/**
+ * Serialize a value to JSON-LD safe for an inline `<script>` rendered via
+ * `set:html`. Escaping `<` prevents scraped free text containing `</script>`
+ * (or `<!--`) from terminating the script element and breaking out into HTML.
+ */
+export function serializeJsonLd(value: unknown): string {
+  return JSON.stringify(value).replace(/</g, "\\u003c");
+}
+
 export interface SeoOptions {
   title: string;
   description: string;
@@ -94,7 +103,9 @@ export function generateSiteJsonLd(): string {
     url: siteUrl,
     potentialAction: {
       "@type": "SearchAction",
-      target: `${siteUrl}/search?q={search_term_string}`,
+      // Trailing slash: the site sets trailingSlash "always", so /search/ is
+      // the canonical URL — /search?q= would redirect.
+      target: `${siteUrl}/search/?q={search_term_string}`,
       "query-input": "required name=search_term_string",
     },
   };
@@ -107,11 +118,11 @@ export function generateSiteJsonLd(): string {
     url: siteUrl,
   };
 
-  return JSON.stringify([websiteSchema, organizationSchema]);
+  return serializeJsonLd([websiteSchema, organizationSchema]);
 }
 
 export function generateBreadcrumbJsonLd(items: { name: string; url: string }[]): string {
-  return JSON.stringify({
+  return serializeJsonLd({
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: items.map((item, i) => ({

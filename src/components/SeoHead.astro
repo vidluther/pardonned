@@ -6,11 +6,12 @@ interface Props {
     title: string;
     description: string;
     ogImage?: string;
+    ogType?: string;
 }
 
-const { title, description, ogImage } = Astro.props;
+const { title, description, ogImage, ogType } = Astro.props;
 
-const seoMeta = generateMetaTags({ title, description, ogImage }, Astro.url);
+const seoMeta = generateMetaTags({ title, description, ogImage, ogType }, Astro.url);
 
 // Truncate for social platform limits
 const ogTitle = truncateText(seoMeta["og:title"], 70);
