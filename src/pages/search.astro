@@ -88,9 +88,7 @@ const categoryColorMap: Record<string, string> = Object.fromEntries(
       deck="Every federal pardon and commutation since 1993, sourced from the DOJ Office of the Pardon Attorney. Filter by administration, type, category, or date."
     />
 
-    <!-- Top-level filter bar (4 dropdowns): search input + Type + Category + President.
-         The Sort select is gated on a separate issue (#46); until then, results
-         are sorted newest-first. -->
+    <!-- Top-level filter bar: search input + Type + Category + President + Sort. -->
     <div class="sb-filter-bar">
       <label for="search-input" class="sr-only">Search by name or offense</label>
       <input
@@ -124,6 +122,12 @@ const categoryColorMap: Record<string, string> = Object.fromEntries(
           </option>
         ))}
       </select>
+      <label for="sort-select" class="sr-only">Sort results</label>
+      <select id="sort-select" class="sb-select">
+        <option value="date-desc">Sort: most recent</option>
+        <option value="restitution-desc">Largest restitution</option>
+        <option value="date-asc">Oldest first</option>
+      </select>
     </div>
 
     <!-- Dynamic current-view headline. Reads the filter state and produces a
@@ -139,7 +143,7 @@ const categoryColorMap: Record<string, string> = Object.fromEntries(
         <span id="filter-summary-count" class="sb-current-view-count">{searchResults.length.toLocaleString()}</span>{" "}
         of {searchResults.length.toLocaleString()} grants{" "}
         <span class="sb-current-view-sep" aria-hidden="true">·</span>{" "}
-        Sorted by date — newest first
+        <span id="sort-label">Sorted by date — newest first</span>
       </p>
     </div>
 
@@ -194,6 +198,8 @@ const categoryColorMap: Record<string, string> = Object.fromEntries(
       const typeSelect = document.getElementById('type-select');
       const categorySelect = document.getElementById('category-select');
       const presidentSelect = document.getElementById('president-select');
+      const sortSelect = document.getElementById('sort-select');
+      const sortLabel = document.getElementById('sort-label');
       const currentViewHeadline = document.getElementById('current-view-headline');
       const resultsBody = document.getElementById('results-body');
       const emptyState = document.getElementById('empty-state');
@@ -218,7 +224,23 @@ const categoryColorMap: Record<string, string> = Object.fromEntries(
         type: '',
         president: 'all',
         category: '', // single-select per the bold mockup
+        sort: 'date-desc',
         page: 1,
+      };
+
+      // Sort is presentation, not a filter: no pill, not counted in
+      // has_active_filters, and "Clear all" leaves it alone.
+      const SORT_COMPARATORS = {
+        'date-desc': (a, b) => b.grantDate.localeCompare(a.grantDate),
+        'date-asc': (a, b) => a.grantDate.localeCompare(b.grantDate),
+        // Ties and the ~95% of $0 rows fall back to newest-first
+        'restitution-desc': (a, b) =>
+          (b.restitution - a.restitution) || b.grantDate.localeCompare(a.grantDate),
+      };
+      const SORT_LABELS = {
+        'date-desc': 'Sorted by date — newest first',
+        'date-asc': 'Sorted by date — oldest first',
+        'restitution-desc': 'Sorted by restitution — largest first',
       };
 
       function formatCategoryName(key) {
@@ -489,6 +511,7 @@ const categoryColorMap: Record<string, string> = Object.fromEntries(
         if (typeSelect.value !== state.type) typeSelect.value = state.type;
         if (categorySelect.value !== state.category) categorySelect.value = state.category;
         if (presidentSelect.value !== state.president) presidentSelect.value = state.president;
+        if (sortSelect.value !== state.sort) sortSelect.value = state.sort;
       }
 
       function syncUrl() {
@@ -497,6 +520,7 @@ const categoryColorMap: Record<string, string> = Object.fromEntries(
         if (state.type) params.set('type', state.type);
         if (state.president !== 'all') params.set('president', state.president);
         if (state.category) params.set('category', state.category);
+        if (state.sort !== 'date-desc') params.set('sort', state.sort);
         if (state.page > 1) params.set('page', String(state.page));
 
         const qs = params.toString();
@@ -508,6 +532,7 @@ const categoryColorMap: Record<string, string> = Object.fromEntries(
       function applyState() {
         syncControlsFromState();
         const filtered = getFilteredGrants();
+        filtered.sort(SORT_COMPARATORS[state.sort]);
         const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
         if (state.page > totalPages) state.page = totalPages;
         if (state.page < 1) state.page = 1;
@@ -515,6 +540,7 @@ const categoryColorMap: Record<string, string> = Object.fromEntries(
         renderPagination(filtered.length);
         renderFilterSummary(filtered);
         currentViewHeadline.textContent = buildHeadline();
+        if (sortLabel) sortLabel.textContent = SORT_LABELS[state.sort];
         syncUrl();
       }
 
@@ -599,6 +625,13 @@ const categoryColorMap: Record<string, string> = Object.fromEntries(
             source: 'pres_dropdown',
           });
         }
+      });
+
+      sortSelect.addEventListener('change', (e) => {
+        state.sort = e.target.value;
+        state.page = 1;
+        applyState();
+        window.posthog?.capture('search_sort_changed', { sort: state.sort });
       });
 
       filterSummary.addEventListener('click', (e) => {
@@ -734,6 +767,17 @@ const categoryColorMap: Record<string, string> = Object.fromEntries(
         }
       }
 
+      // Sort: validate against the select's options so garbage (including the
+      // never-shipped name-asc) is silently ignored.
+      const sortParam = urlParams.get('sort');
+      if (sortParam) {
+        const exists = Array.from(sortSelect.options).some((o) => o.value === sortParam);
+        if (exists) {
+          state.sort = sortParam;
+          sortSelect.value = sortParam;
+        }
+      }
+
       const pageParam = parseInt(urlParams.get('page') || '', 10);
       if (!Number.isNaN(pageParam) && pageParam > 1) state.page = pageParam;
 
@@ -755,7 +799,7 @@ const categoryColorMap: Record<string, string> = Object.fromEntries(
   /* ===== Filter bar (top) — search input + 3 selects (type, category, president) ===== */
   .sb-filter-bar {
     display: grid;
-    grid-template-columns: 1fr auto auto auto;
+    grid-template-columns: 1fr auto auto auto auto;
     gap: 0;
     border-top: var(--rule-emphasis);
     border-bottom: 1px solid var(--border-default);
