@@ -31,3 +31,5 @@ public/*.db
 # local git worktrees
 .worktrees/
 
+# gsc exports/analysis
+gsc/
