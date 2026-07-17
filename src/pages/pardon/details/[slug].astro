@@ -5,6 +5,7 @@ import "../../../styles/global.css";
 import { getCollection } from "astro:content";
 import { resolveUrl } from "../../../lib/parsers/types";
 import { generateBreadcrumbJsonLd } from "../../../lib/seo";
+import { buildDetailSeo } from "../../../lib/detail-seo";
 import { getAdministrationIndex } from "../../../lib/president-names";
 import {
     formatCompactMoney,
@@ -228,25 +229,19 @@ const breadcrumbJsonLd = generateBreadcrumbJsonLd([
     },
 ]);
 
-const ogDescriptionParts = [
-    `${clemencyLabel} granted to ${data.recipient_name} on ${grantDateLong}.`,
-];
-if (hasRestitution) {
-    ogDescriptionParts.push(
-        `${formatCompactMoney(data.restitution)} in restitution abandoned.`,
-    );
-}
-const ogDescription = ogDescriptionParts.join(" ");
+const seo = buildDetailSeo(data);
 const ogImagePath = `/og/${data.slug}.png`;
 ---
 
 <Layout
-    title={data.recipient_name}
-    description={ogDescription}
+    title={seo.title}
+    description={seo.metaDescription}
     ogImage={ogImagePath}
     currentPath={currentPath}
+    suffixTitle={false}
 >
     <script type="application/ld+json" set:html={breadcrumbJsonLd}></script>
+    <script type="application/ld+json" set:html={seo.jsonLd}></script>
 
     <main class="detail-bold">
         <!-- Breadcrumb -->

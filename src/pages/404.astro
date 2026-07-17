@@ -1,0 +1,53 @@
+---
+import Layout from "../layouts/Layout.astro";
+import "../styles/global.css";
+---
+
+<Layout
+    title="Page not found"
+    description="This page doesn't exist. Search presidential pardons and commutations by name."
+    currentPath="/404"
+>
+    <section class="max-w-home mx-auto px-5 md:px-10 py-10 md:py-section">
+        <div class="max-w-source">
+            <p class="text-sm uppercase tracking-wide text-muted">404</p>
+            <h1 class="font-serif text-4xl md:text-5xl mt-2">
+                Page not found.
+            </h1>
+            <p class="mt-4 text-body">
+                The page you're looking for doesn't exist — it may have moved,
+                or the name may be spelled differently in the official record.
+            </p>
+
+            <form
+                action="/search/"
+                method="get"
+                class="mt-8 flex gap-2"
+                role="search"
+            >
+                <label for="notfound-search" class="sr-only">
+                    Search pardons by name
+                </label>
+                <input
+                    id="notfound-search"
+                    type="search"
+                    name="q"
+                    placeholder="Search pardons by name…"
+                    class="flex-1 border border-line rounded px-4 py-2"
+                />
+                <button
+                    type="submit"
+                    class="border border-line rounded px-4 py-2 font-medium"
+                >
+                    Search
+                </button>
+            </form>
+
+            <ul class="mt-8 space-y-2">
+                <li><a href="/search/" class="underline">Search all pardons</a></li>
+                <li><a href="/recent/" class="underline">Recent clemency grants</a></li>
+                <li><a href="/all-presidents/" class="underline">Pardons by president</a></li>
+            </ul>
+        </div>
+    </section>
+</Layout>

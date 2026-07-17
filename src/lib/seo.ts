@@ -78,9 +78,13 @@ export function generateMetaTags(options: SeoOptions, url?: URL): Record<string,
   return tags;
 }
 
-export function generateJsonLd(options: SeoOptions, url?: URL): string {
+/**
+ * Site-wide schema — WebSite (with SearchAction) and Organization.
+ * Rendered on the home page ONLY; repeating it on every page dilutes the
+ * signal and is why it was removed from the shared head component.
+ */
+export function generateSiteJsonLd(): string {
   const siteUrl = siteConfig.siteUrl;
-  const pageUrl = options.canonicalUrl || (url ? url.toString() : siteUrl);
 
   const websiteSchema = {
     "@context": "https://schema.org",
@@ -95,14 +99,6 @@ export function generateJsonLd(options: SeoOptions, url?: URL): string {
     },
   };
 
-  const webpageSchema = {
-    "@context": "https://schema.org",
-    "@type": "WebPage",
-    name: options.title,
-    description: options.description,
-    url: pageUrl,
-  };
-
   const organizationSchema = {
     "@context": "https://schema.org",
     "@type": "Organization",
@@ -111,7 +107,7 @@ export function generateJsonLd(options: SeoOptions, url?: URL): string {
     url: siteUrl,
   };
 
-  return JSON.stringify([websiteSchema, webpageSchema, organizationSchema]);
+  return JSON.stringify([websiteSchema, organizationSchema]);
 }
 
 export function generateBreadcrumbJsonLd(items: { name: string; url: string }[]): string {

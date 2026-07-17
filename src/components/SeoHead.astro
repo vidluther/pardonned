@@ -1,5 +1,5 @@
 ---
-import { generateMetaTags, generateJsonLd, truncateText } from "../lib/seo";
+import { generateMetaTags, truncateText } from "../lib/seo";
 import { socialLinks } from "../config/social";
 
 interface Props {
@@ -11,7 +11,6 @@ interface Props {
 const { title, description, ogImage } = Astro.props;
 
 const seoMeta = generateMetaTags({ title, description, ogImage }, Astro.url);
-const jsonLd = generateJsonLd({ title, description }, Astro.url);
 
 // Truncate for social platform limits
 const ogTitle = truncateText(seoMeta["og:title"], 70);
@@ -47,6 +46,3 @@ const verifiedProfiles = socialLinks.filter((link) => link.rel === "me");
 
 <!-- Verified social profiles (rel="me") -->
 {verifiedProfiles.map((profile) => <link rel="me" href={profile.href} />)}
-
-<!-- JSON-LD Structured Data -->
-<script type="application/ld+json" set:html={jsonLd} />
