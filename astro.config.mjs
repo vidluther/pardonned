@@ -1,5 +1,5 @@
 // @ts-check
-import { defineConfig } from "astro/config";
+import { defineConfig, fontProviders } from "astro/config";
 import tailwindcss from "@tailwindcss/vite";
 
 import sitemap from "@astrojs/sitemap";
@@ -12,6 +12,26 @@ export default defineConfig({
   // trailingSlash "always" — see withastro/astro#17241. Unpin once the fix ships.
   trailingSlash: "always",
   integrations: [sitemap()],
+  // Fonts API downloads at build time and serves the files first-party —
+  // no runtime requests to fonts.googleapis.com/gstatic.
+  fonts: [
+    {
+      name: "DM Sans",
+      cssVariable: "--font-dm-sans",
+      provider: fontProviders.google(),
+      weights: [400, 500],
+      styles: ["normal"],
+      fallbacks: ["system-ui", "sans-serif"],
+    },
+    {
+      name: "DM Serif Display",
+      cssVariable: "--font-dm-serif-display",
+      provider: fontProviders.google(),
+      weights: [400],
+      styles: ["normal"],
+      fallbacks: ["Georgia", "serif"],
+    },
+  ],
   vite: {
     plugins: [tailwindcss()],
   },

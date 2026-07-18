@@ -14,7 +14,7 @@ Canonical state vocabulary: `needs-info`, `ready-for-agent`, `ready-for-human`, 
 
 ### Domain docs
 
-Single-context: `CONTEXT.md` and `docs/adr/` at the repo root (both currently empty — populated lazily by `grill-with-docs`). See `docs/agents/domain.md`.
+Single-context: `CONTEXT.md` (domain vocabulary) and `docs/adr/` (ADRs 0001–0005) at the repo root — read the ones touching your area before working. See `docs/agents/domain.md`.
 
 ## Code Style
 

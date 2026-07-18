@@ -3,6 +3,7 @@ import Layout from "../layouts/Layout.astro";
 import SectionHeader from "../components/SectionHeader.astro";
 import MoneyFigure from "../components/MoneyFigure.astro";
 import "../styles/global.css";
+import { generateSiteJsonLd } from "../lib/seo";
 
 import { getCollection } from "astro:content";
 import {
@@ -142,6 +143,7 @@ const heroEyebrow = `Presidential clemency · ${modernEraStartYear} → present`
     ogImage="/og/home.png"
     currentPath={currentPath}
 >
+    <script type="application/ld+json" set:html={generateSiteJsonLd()}></script>
     <main class="bold-home">
         <!-- HERO -->
         <section class="hero-bold">

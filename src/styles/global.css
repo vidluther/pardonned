@@ -4,12 +4,18 @@
  * scoped <style> blocks (e.g. masthead rules, accent-tint backgrounds, the
  * --cat-* category colors) to reference tokens by name.
  */
-@import 'tailwindcss';
+@import "tailwindcss";
+
+/* Font families come from the Astro Fonts API (self-hosted, hashed @font-face
+ * names). `@theme inline` below maps the Tailwind font tokens to the API's
+ * CSS variables — always reference var(--font-dm-sans) / var(--font-dm-serif-display),
+ * never the literal DM family names, which the API does not register. See ADR-0005. */
+@theme inline {
+  --font-sans: var(--font-dm-sans);
+  --font-serif: var(--font-dm-serif-display);
+}
 
 @theme {
-  --font-sans: DM Sans, system-ui, sans-serif;
-  --font-serif: DM Serif Display, Georgia, serif;
-
   --color-page: #fafaf7;
   --color-card: #ffffff;
   --color-muted: #f6f5f0;
@@ -134,12 +140,12 @@
 }
 
 @utility wordmark {
-  font-family: 'DM Serif Display', Georgia, serif;
+  font-family: var(--font-dm-serif-display);
   font-size: 26px;
 }
 
 @utility wordmark-footer {
-  font-family: 'DM Serif Display', Georgia, serif;
+  font-family: var(--font-dm-serif-display);
   font-size: 18px;
 
   & .wordmark-accent {
@@ -191,7 +197,7 @@
 }
 
 @utility stat-number {
-  font-family: 'DM Serif Display', Georgia, serif;
+  font-family: var(--font-dm-serif-display);
   font-size: 24px;
   line-height: 1.1;
 
@@ -201,7 +207,7 @@
 }
 
 @utility stat-number-sm {
-  font-family: 'DM Serif Display', Georgia, serif;
+  font-family: var(--font-dm-serif-display);
   font-size: 28px;
   line-height: 1.1;
 }
@@ -218,7 +224,7 @@
 }
 
 @utility category-count {
-  font-family: 'DM Serif Display', Georgia, serif;
+  font-family: var(--font-dm-serif-display);
   font-size: 24px;
   min-width: 60px;
 }
@@ -480,12 +486,7 @@
 
 @utility divider-gradient {
   height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(194, 59, 34, 0.2),
-    transparent
-  );
+  background: linear-gradient(90deg, transparent, rgba(194, 59, 34, 0.2), transparent);
 }
 
 @utility divider-flat {
@@ -548,7 +549,7 @@
 }
 
 @utility hero-headline {
-  font-family: 'DM Serif Display', Georgia, serif;
+  font-family: var(--font-dm-serif-display);
   font-size: 32px;
   line-height: 1.15;
   color: #1a1918;
@@ -869,11 +870,11 @@
       background 0.15s;
   }
 
-  & input[type='radio'] {
+  & input[type="radio"] {
     border-radius: 50%;
   }
 
-  & input[type='checkbox'] {
+  & input[type="checkbox"] {
     border-radius: 3px;
   }
 
@@ -882,8 +883,8 @@
     background: #c23b22;
   }
 
-  & input[type='radio']:checked::after {
-    content: '';
+  & input[type="radio"]:checked::after {
+    content: "";
     position: absolute;
     top: 50%;
     left: 50%;
@@ -894,8 +895,8 @@
     transform: translate(-50%, -50%);
   }
 
-  & input[type='checkbox']:checked::after {
-    content: '';
+  & input[type="checkbox"]:checked::after {
+    content: "";
     position: absolute;
     top: 0;
     left: 3px;
@@ -981,7 +982,7 @@
 }
 
 @utility filter-summary-count {
-  font-family: 'DM Serif Display', Georgia, serif;
+  font-family: var(--font-dm-serif-display);
   font-size: 26px;
   color: #1a1918;
   line-height: 1;
@@ -1092,7 +1093,7 @@
 }
 
 @utility search-sticky-count {
-  font-family: 'DM Serif Display', Georgia, serif;
+  font-family: var(--font-dm-serif-display);
   font-size: 22px;
   color: #1a1918;
   line-height: 1;
@@ -1447,8 +1448,8 @@
     --rule-accent: 2px solid var(--accent);
 
     /* Type families and layout primitives */
-    --serif: 'DM Serif Display', Georgia, serif;
-    --sans: 'DM Sans', system-ui, sans-serif;
+    --serif: var(--font-dm-serif-display);
+    --sans: var(--font-dm-sans);
     --radius-card: 8px;
     --radius-pill: 4px;
   }
@@ -1456,7 +1457,7 @@
 
 @layer base {
   html {
-    font-family: "DM Sans", system-ui, sans-serif;
+    font-family: var(--font-dm-sans);
     background-color: #fafaf7;
     color: #4a4840;
   }
@@ -1473,7 +1474,7 @@
   h4,
   h5,
   h6 {
-    font-family: "DM Serif Display", Georgia, serif;
+    font-family: var(--font-dm-serif-display);
     color: #1a1918;
     font-weight: 400;
   }

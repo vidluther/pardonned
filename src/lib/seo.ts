@@ -20,6 +20,15 @@ export function truncateText(text: string, maxLength: number): string {
   return result + "…";
 }
 
+/**
+ * Serialize a value to JSON-LD safe for an inline `<script>` rendered via
+ * `set:html`. Escaping `<` prevents scraped free text containing `</script>`
+ * (or `<!--`) from terminating the script element and breaking out into HTML.
+ */
+export function serializeJsonLd(value: unknown): string {
+  return JSON.stringify(value).replace(/</g, "\\u003c");
+}
+
 export interface SeoOptions {
   title: string;
   description: string;
@@ -78,9 +87,13 @@ export function generateMetaTags(options: SeoOptions, url?: URL): Record<string,
   return tags;
 }
 
-export function generateJsonLd(options: SeoOptions, url?: URL): string {
+/**
+ * Site-wide schema — WebSite (with SearchAction) and Organization.
+ * Rendered on the home page ONLY; repeating it on every page dilutes the
+ * signal and is why it was removed from the shared head component.
+ */
+export function generateSiteJsonLd(): string {
   const siteUrl = siteConfig.siteUrl;
-  const pageUrl = options.canonicalUrl || (url ? url.toString() : siteUrl);
 
   const websiteSchema = {
     "@context": "https://schema.org",
@@ -90,17 +103,11 @@ export function generateJsonLd(options: SeoOptions, url?: URL): string {
     url: siteUrl,
     potentialAction: {
       "@type": "SearchAction",
-      target: `${siteUrl}/search?q={search_term_string}`,
+      // Trailing slash: the site sets trailingSlash "always", so /search/ is
+      // the canonical URL — /search?q= would redirect.
+      target: `${siteUrl}/search/?q={search_term_string}`,
       "query-input": "required name=search_term_string",
     },
-  };
-
-  const webpageSchema = {
-    "@context": "https://schema.org",
-    "@type": "WebPage",
-    name: options.title,
-    description: options.description,
-    url: pageUrl,
   };
 
   const organizationSchema = {
@@ -111,11 +118,11 @@ export function generateJsonLd(options: SeoOptions, url?: URL): string {
     url: siteUrl,
   };
 
-  return JSON.stringify([websiteSchema, webpageSchema, organizationSchema]);
+  return serializeJsonLd([websiteSchema, organizationSchema]);
 }
 
 export function generateBreadcrumbJsonLd(items: { name: string; url: string }[]): string {
-  return JSON.stringify({
+  return serializeJsonLd({
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: items.map((item, i) => ({
