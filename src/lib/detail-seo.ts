@@ -1,6 +1,7 @@
 import { formatCompactMoney, formatGrantDateLong } from "./format";
 import { serializeJsonLd, truncateText } from "./seo";
 import { siteConfig } from "../config/site";
+import { cleanClause, normalizeSpaces, OFFENSE_SENTINELS, realClause } from "./pardon-clause";
 
 /** SERP snippet budget — Google truncates descriptions around this length. */
 const MAX_DESCRIPTION_LENGTH = 155;
@@ -20,7 +21,10 @@ const MAX_TITLE_LENGTH = 110;
  * "For any offenses…" legalese with no conviction; scraper sentinels leak
  * through (`district = "N/A"`, `offense = "Download PDF Clemency Warrant"`);
  * abbreviated districts end in `.`; group clemencies have 300+ char names.
- * The guards below keep the page from ever stating a false conviction.
+ * The clause guards live in `pardon-clause.ts` (shared with the page
+ * templates, so SERP strings and rendered pages can never disagree about
+ * whether a conviction exists); the guards here keep the SERP strings from
+ * ever stating a false conviction.
  */
 export interface DetailSeoInput {
   slug: string;
@@ -64,52 +68,6 @@ const CLEMENCY_LABELS: Record<string, string> = {
 
 function clemencyLabel(type: string): string {
   return CLEMENCY_LABELS[type] ?? type.charAt(0).toUpperCase() + type.slice(1);
-}
-
-/**
- * DOJ HTML uses &nbsp; inside some recipient names (repo gotcha). SERP-facing
- * strings must show regular spaces; slug/override lookups elsewhere must NOT
- * use this (they are byte-exact).
- */
-function normalizeSpaces(s: string): string {
-  return s.replace(/\u00A0/g, " ");
-}
-
-// "N/A" is a scraper placeholder in every clause field (district, offense,
-// original_sentence) — never a real value.
-const NA_SENTINEL = "N/A";
-// Field-specific sentinels beyond "N/A".
-const OFFENSE_SENTINELS = new Set(["Download PDF Clemency Warrant"]);
-// Preemptive-pardon scope legalese ("For any/those/nonviolent offenses against
-// the United States…") describes what the pardon covers — not a conviction or a
-// sentence. It leaks into both the offense and original_sentence fields.
-const PARDON_SCOPE_LEGALESE = /^for .{0,30}offenses against the United States/i;
-
-/**
- * Normalize a scraped clause value: NBSP→space, trim, drop trailing period
- * (so the module can add its own punctuation without doubling), and treat
- * empty/sentinel values as missing. "N/A" is always a sentinel; pass extras
- * for field-specific junk.
- */
-function cleanClause(
-  value: string | null | undefined,
-  extraSentinels?: Set<string>,
-): string | null {
-  if (!value) return null;
-  const trimmed = normalizeSpaces(value).trim();
-  if (!trimmed || trimmed === NA_SENTINEL || extraSentinels?.has(trimmed)) return null;
-  return trimmed.replace(/\.$/, "");
-}
-
-/**
- * A clause value that is real content — not a sentinel, not pardon-scope
- * legalese (which would falsely read as a conviction or a sentence). Used for
- * both the offense and original_sentence fields.
- */
-function realClause(value: string | null | undefined, extraSentinels?: Set<string>): string | null {
-  const cleaned = cleanClause(value, extraSentinels);
-  if (!cleaned || PARDON_SCOPE_LEGALESE.test(cleaned)) return null;
-  return cleaned;
 }
 
 // A trailing corporate designator: "… LLC", "… , Inc.", "… Limited".

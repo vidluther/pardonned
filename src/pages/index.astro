@@ -12,6 +12,7 @@ import {
     findHeadlineAction,
 } from "../lib/pardon-stats";
 import { getAdministrationIndex } from "../lib/president-names";
+import { displayClause, OFFENSE_SENTINELS } from "../lib/pardon-clause";
 import {
     formatCompactMoney,
     formatGrantDateLong,
@@ -238,6 +239,9 @@ const heroEyebrow = `Presidential clemency · ${modernEraStartYear} → present`
                         const lastName = d.president_name.split(" ").slice(-1)[0];
                         const restitution = d.restitution ?? 0;
                         const typeLabel = d.clemency_type === "pardon" ? "Pardon" : "Commutation";
+                        // Sentinel-free display values (pardon-clause.ts)
+                        const offenseText = displayClause(d.offense, OFFENSE_SENTINELS);
+                        const districtText = displayClause(d.district);
                         return (
                             <a
                                 class="wire-item"
@@ -257,8 +261,8 @@ const heroEyebrow = `Presidential clemency · ${modernEraStartYear} → present`
                                         <span class="wire-type">{typeLabel}</span>
                                     </div>
                                     <div class="wire-what">
-                                        {d.offense}
-                                        {d.district && ` · ${d.district}`}
+                                        {offenseText}
+                                        {districtText && ` · ${districtText}`}
                                     </div>
                                 </div>
                                 <div class="wire-pres">
@@ -370,6 +374,9 @@ const heroEyebrow = `Presidential clemency · ${modernEraStartYear} → present`
                 {restitutionLeaderboard.map((entry, i) => {
                     const d = entry.data;
                     const adminDisplay = adminIndex.get(d.administration_slug)?.displayName ?? d.president_name;
+                    // Sentinel-free display values (pardon-clause.ts)
+                    const offenseText = displayClause(d.offense, OFFENSE_SENTINELS);
+                    const districtText = displayClause(d.district);
                     return (
                         <a
                             class="lb-row"
@@ -382,8 +389,8 @@ const heroEyebrow = `Presidential clemency · ${modernEraStartYear} → present`
                             <div>
                                 <div class="lb-name">{d.recipient_name}</div>
                                 <div class="lb-offense">
-                                    {d.offense}
-                                    {d.district && ` · ${d.district}`}
+                                    {offenseText}
+                                    {districtText && ` · ${districtText}`}
                                 </div>
                             </div>
                             <div class="lb-pres">

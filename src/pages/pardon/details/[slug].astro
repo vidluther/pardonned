@@ -6,6 +6,12 @@ import { getCollection } from "astro:content";
 import { resolveUrl } from "../../../lib/parsers/types";
 import { generateBreadcrumbJsonLd } from "../../../lib/seo";
 import { buildDetailSeo } from "../../../lib/detail-seo";
+import {
+    displayClause,
+    OFFENSE_SENTINELS,
+    proseClause,
+    scopeClause,
+} from "../../../lib/pardon-clause";
 import { getAdministrationIndex } from "../../../lib/president-names";
 import {
     formatCompactMoney,
@@ -98,8 +104,27 @@ const categoryLabel =
     categoryLabels[data.offense_category] ??
     data.offense_category.replace(/\b\w/g, (c) => c.toUpperCase());
 
-// Offenses — split the comma-joined `offense` field into a numbered list
-const offenses = data.offense
+// Conviction vs scope mode (CONTEXT.md, "Preemptive pardon"). A record is
+// conviction-shaped only when its offense field holds real conviction content
+// — not a scraper sentinel, not preemptive-pardon scope legalese. Same
+// predicate family the SEO layer uses, so page and SERP never disagree.
+const convictionOffense = proseClause(data.offense, OFFENSE_SENTINELS);
+const isConviction = convictionOffense !== null;
+
+// Scope prose for preemptive pardons — the warrant's own words. Usually in
+// the offense field; Hunter Biden's offense is the sentinel and his legalese
+// leaks into original_sentence instead, hence the fallback.
+const scopeText = scopeClause(data.offense) ?? scopeClause(data.original_sentence);
+
+// Sentinel-free district ("N/A" must never render) and original sentence
+// (legalese must never masquerade as a court sentence).
+const district = displayClause(data.district);
+const originalSentenceText = proseClause(data.original_sentence);
+
+// Offenses — split the comma-joined `offense` field into a numbered list.
+// Only meaningful in conviction mode; scope legalese contains commas that
+// are not count boundaries.
+const offenses = (convictionOffense ?? "")
     .split(",")
     .map((o) => o.trim())
     .filter((o) => o.length > 0);
@@ -121,7 +146,7 @@ const hasFine = data.fine != null && data.fine > 0;
 const hasNumericSentence =
     data.sentence_in_months != null && data.sentence_in_months > 0;
 const hasLifeSentence =
-    !hasNumericSentence && data.original_sentence?.toLowerCase().includes("life");
+    !hasNumericSentence && originalSentenceText?.toLowerCase().includes("life");
 
 if (hasRestitution) {
     stripBlocks.push({
@@ -154,7 +179,7 @@ if (hasNumericSentence) {
                 ? "Sentence commuted"
                 : "Sentence",
         value: formatSentenceCompact(data.sentence_in_months),
-        sub: data.original_sentence ?? undefined,
+        sub: originalSentenceText ?? undefined,
         accent: false,
         muted: false,
     });
@@ -165,7 +190,7 @@ if (hasNumericSentence) {
                 ? "Life sentence commuted"
                 : "Life sentence",
         value: "Life",
-        sub: data.original_sentence ?? undefined,
+        sub: originalSentenceText ?? undefined,
         accent: false,
         muted: false,
     });
@@ -185,7 +210,10 @@ const sources = [
     },
 ].filter((s) => s.url);
 
-// Aside metadata kv-rows — em-dash for null/undefined, "$0" preserved for zero
+// Aside metadata kv-rows — em-dash for null/undefined, "$0" preserved for zero.
+// Em-dash means "unknown" — reserved for conviction records with missing data.
+// In scope mode the district/sentencing values are inapplicable (there was no
+// case), so their rows and the whole Sentencing & impact block are omitted.
 type KvRow = { key: string; value: string; unknown?: boolean };
 const caseDetails: KvRow[] = [
     { key: "Clemency type", value: clemencyLabel },
@@ -193,9 +221,9 @@ const caseDetails: KvRow[] = [
     { key: "President", value: adminDisplay },
     { key: "Category", value: categoryLabel },
 ];
-if (data.district) {
-    caseDetails.push({ key: "District", value: data.district });
-} else {
+if (district) {
+    caseDetails.push({ key: "District", value: district });
+} else if (isConviction) {
     caseDetails.push({ key: "District", value: "—", unknown: true });
 }
 
@@ -262,8 +290,8 @@ const ogImagePath = `/og/${data.slug}.png`;
                 <span class="db-meta-by">{grantDateLong}</span>
             </div>
             <h1 class="db-name">{data.recipient_name}.</h1>
-            {data.district && (
-                <p class="db-district">{data.district}</p>
+            {district && (
+                <p class="db-district">{district}</p>
             )}
         </header>
 
@@ -316,31 +344,57 @@ const ogImagePath = `/og/${data.slug}.png`;
 
         <div class="db-grid">
             <div class="db-main">
-                <!-- Offenses -->
-                <section class="db-section">
-                    <div class="db-section-eyebrow">The conviction</div>
-                    <h2 class="db-section-title">
-                        {offenses.length === 1
-                            ? "One federal count."
-                            : `${offenses.length} federal counts.`}
-                    </h2>
-                    <div class="db-off-list">
-                        {offenses.map((offense, i) => (
-                            <div class="db-off-row">
-                                <div class="db-off-n">
-                                    {String(i + 1).padStart(2, "0")}
+                <!--
+                    Offenses (conviction mode) or pardon scope (scope mode).
+                    Preemptive pardons have no conviction: no counts, no
+                    "convicted of" framing — the warrant's scope prose renders
+                    as a single quoted block instead (CONTEXT.md, "Preemptive
+                    pardon").
+                -->
+                {isConviction ? (
+                    <section class="db-section">
+                        {/*
+                            Single lead-in, no eyebrow: "THE CONVICTION" +
+                            "The offense." double-labeled the same idea.
+                            "Convicted of:" flows straight into the list.
+                        */}
+                        <h2 class="db-section-title">Convicted of:</h2>
+                        <div class="db-off-list">
+                            {offenses.map((offense, i) => (
+                                <div class="db-off-row">
+                                    <div class="db-off-n">
+                                        {String(i + 1).padStart(2, "0")}
+                                    </div>
+                                    <div class="db-off-text">
+                                        {offense.charAt(0).toUpperCase() +
+                                            offense.slice(1)}
+                                    </div>
                                 </div>
-                                <div class="db-off-text">
-                                    {offense.charAt(0).toUpperCase() +
-                                        offense.slice(1)}
+                            ))}
+                        </div>
+                    </section>
+                ) : (
+                    scopeText && (
+                        <section class="db-section">
+                            <div class="db-section-eyebrow">
+                                The {clemencyLabel.toLowerCase()}
+                            </div>
+                            <h2 class="db-section-title">
+                                What this {clemencyLabel.toLowerCase()} covers.
+                            </h2>
+                            <div class="db-pull">
+                                <div class="db-pull-lbl">From the warrant</div>
+                                <p class="db-pull-text">{scopeText}</p>
+                                <div class="db-pull-src">
+                                    Signed by {adminDisplay} · {grantDateLong}
                                 </div>
                             </div>
-                        ))}
-                    </div>
-                </section>
+                        </section>
+                    )
+                )}
 
                 <!-- Original sentence pull-quote (preserved bold-mockup treatment) -->
-                {data.original_sentence && (
+                {originalSentenceText && (
                     <section class="db-section">
                         <div class="db-section-eyebrow">From the warrant</div>
                         <h2 class="db-section-title">
@@ -350,10 +404,10 @@ const ogImagePath = `/og/${data.slug}.png`;
                             <div class="db-pull-lbl">
                                 As recorded by the court
                             </div>
-                            <p class="db-pull-text">{data.original_sentence}</p>
-                            {data.district && (
+                            <p class="db-pull-text">{originalSentenceText}</p>
+                            {district && (
                                 <div class="db-pull-src">
-                                    {data.district} · DOJ warrant
+                                    {district} · DOJ warrant
                                 </div>
                             )}
                         </div>
@@ -381,24 +435,26 @@ const ogImagePath = `/og/${data.slug}.png`;
                     </div>
                 </div>
 
-                <div class="db-aside-block">
-                    <h4>Sentencing &amp; impact</h4>
-                    <div class="db-kv">
-                        {sentencingRows.map((row) => (
-                            <div class="db-kv-row">
-                                <div class="db-kv-k">{row.key}</div>
-                                <div
-                                    class:list={[
-                                        "db-kv-v",
-                                        row.unknown && "db-kv-unknown",
-                                    ]}
-                                >
-                                    {row.value}
+                {isConviction && (
+                    <div class="db-aside-block">
+                        <h4>Sentencing &amp; impact</h4>
+                        <div class="db-kv">
+                            {sentencingRows.map((row) => (
+                                <div class="db-kv-row">
+                                    <div class="db-kv-k">{row.key}</div>
+                                    <div
+                                        class:list={[
+                                            "db-kv-v",
+                                            row.unknown && "db-kv-unknown",
+                                        ]}
+                                    >
+                                        {row.value}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
-                </div>
+                )}
 
                 {sources.length > 0 && (
                     <div class="db-aside-block">

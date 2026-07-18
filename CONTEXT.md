@@ -14,6 +14,8 @@ A nicer view of US presidential pardons. The DOJ Office of the Pardon Attorney's
 
 > **Scope note:** the project does not currently model amnesties or reprieves — only pardons (full) and commutations, because that's how DOJ exposes the underlying warrant data.
 
+**Preemptive pardon** — a Pardon (full) granted where **no conviction exists**: the warrant covers offenses the recipient "may have committed" over a stated period, rather than a specific adjudicated offense (e.g. Anthony Fauci, Mark Milley, Tina Peters, the Biden family group, the January 6 Select Committee). **Not a schema field** — there is no `clemency_type` value or flag column; the condition is derived at presentation time from the scope legalese in the warrant text (detected by `PARDON_SCOPE_LEGALESE` in `src/lib`). DOJ's phrasing varies — "For any offenses against the United States…", "For those offenses she has or may have committed… related to election integrity…" (no "against the United States" clause), sometimes wrapped in curly quotes — so detection anchors on the shared skeleton `For any|those … offenses … committed`, not any one phrasing. Pages and feeds must never frame these records as convictions — no "convicted of," no counts, no sentence/district/fine display. A record whose offense field is a scraper sentinel gets the same no-conviction-framing treatment; the site does not currently distinguish "never charged" from "data unavailable."
+
 **Pardon record** — one row in the `pardons` table. Identified by the compound key `(administration, recipient_name, grant_date, clemency_type)`. Counts and statistics on the site are over Pardon records, not over distinct humans.
 
 **Recipient** — the human(s) named in a Pardon record's `recipient_name`. **Not a first-class entity in the schema today.** There is no recipients table and no person-level deduplication. Group clemencies (e.g. Biden family, January 6 Select Committee) are stored as a single Pardon record with multiple humans implicit in the name string. Person-level questions ("how many distinct people did this president pardon?") are not answerable from the current model — see [issue #51](https://github.com/vidluther/pardonned/issues/51) for the planned extraction.
@@ -39,6 +41,13 @@ A closed taxonomy on each Pardon record: `violent crime`, `fraud`, `drug offense
 The taxonomy is **editorial, not legal**. Categories exist when they help surface patterns this project cares about. `FACE act` is a peer of broader categories (rather than nested under "violent crime" or "other") because the Trump-2 pardons of FACE Act defendants are a focal pattern. **Don't "normalize" or flatten the taxonomy without raising it as an editorial change first.**
 
 Classification today is regex-based via `categorizeOffense()` in `src/lib/parsers/categorize.ts`. **An LLM-backed enhancement is planned in [issue #26](https://github.com/vidluther/pardonned/issues/26)** — the categories themselves stay; only the classifier gets smarter, with a local cache to keep build cost flat. Don't hand-tune the regex map or attempt to swap classifiers ahead of #26 — coordinate with that work.
+
+**This taxonomy answers exactly one question: what kind of crime.** Two neighboring axes are deliberately kept out of it and must not be folded in:
+
+1. **Record shape** — whether a conviction exists at all. Derived from warrant text at presentation time (see **Preemptive pardon**), never a category value.
+2. **Motive / notability** — why a pardon matters (e.g. alleged political retribution). That is editorial interpretation and belongs in Pardon Context ([ADR-0002](docs/adr/0002-pardon-context-as-editorial-layer.md), [issue #52](https://github.com/vidluther/pardonned/issues/52)), authored by a human — never asserted by a classifier.
+
+Do not add values like `preemptive` or `political retribution` to this enum — each collapses an orthogonal axis into it and forces false choices (a Fauci-type record is simultaneously `other`, preemptive, and allegedly retribution-motivated).
 
 ## Pardon Context (planned, not yet in the schema)
 

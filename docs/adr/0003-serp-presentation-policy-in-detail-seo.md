@@ -1,6 +1,6 @@
 # ADR-0003 — SERP presentation policy lives in the detail-seo module
 
-**Status:** Accepted. Governs the PR #64 fix round (review findings from the xhigh review, 2026-07-17).
+**Status:** Accepted. Governs the PR #64 fix round (review findings from the xhigh review, 2026-07-17). **Amended by [ADR-0006](0006-conviction-vs-scope-presentation.md) (2026-07-18):** the clause guards described below as module-private (sentinels, legalese regex, `cleanClause`/`realClause`) now live in `src/lib/pardon-clause.ts`, shared by every rendering surface, and the legalese pattern is generalized beyond `/^for any offenses/i` to cover DOJ's phrasing variants (Tina Peters). The SERP policy itself is unchanged.
 
 ## Context
 

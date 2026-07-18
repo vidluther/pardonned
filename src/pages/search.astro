@@ -6,6 +6,7 @@ import '../styles/global.css';
 import { getCollection } from "astro:content";
 import { getAdministrationIndex } from "../lib/president-names";
 import { getCategoryColor } from "../lib/category-colors";
+import { displayClause, OFFENSE_SENTINELS, proseClause } from "../lib/pardon-clause";
 
 const currentPath = Astro.url.pathname;
 
@@ -49,9 +50,13 @@ const searchResults = sortedGrants.map((entry) => {
         name: d.recipient_name,
         clemencyType: d.clemency_type,
         category: d.offense_category,
-        offense: d.offense,
-        district: d.district ?? "",
-        sentence: formatSentence(d.sentence_in_months, d.original_sentence),
+        // Sentinel-free display values ("N/A" district, garbage offense) and a
+        // legalese-free sentence — a pardon's scope prose is not a court
+        // sentence (see pardon-clause.ts). Scope legalese stays visible in the
+        // offense column: it is informative and self-describing.
+        offense: displayClause(d.offense, OFFENSE_SENTINELS) ?? "",
+        district: displayClause(d.district) ?? "",
+        sentence: formatSentence(d.sentence_in_months, proseClause(d.original_sentence)),
         grantDate: d.grant_date,
         date: formatDate(d.grant_date),
         restitution: d.restitution ?? 0,
