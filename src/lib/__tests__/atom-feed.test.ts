@@ -44,8 +44,12 @@ describe("buildAtomFeed", () => {
     expect(xml).toContain("</feed>");
     expect(xml).toContain("<id>https://pardonned.com/recent.xml</id>");
     expect(xml).toContain("<title>Pardonned — Recent Clemency Grants</title>");
-    expect(xml).toContain('<link rel="self" type="application/atom+xml" href="https://pardonned.com/recent.xml"/>');
-    expect(xml).toContain('<link rel="alternate" type="text/html" href="https://pardonned.com/recent"/>');
+    expect(xml).toContain(
+      '<link rel="self" type="application/atom+xml" href="https://pardonned.com/recent.xml"/>',
+    );
+    expect(xml).toContain(
+      '<link rel="alternate" type="text/html" href="https://pardonned.com/recent"/>',
+    );
   });
 
   it("sorts entries by grant_date desc and applies the default limit of 50", () => {
@@ -106,11 +110,16 @@ describe("buildAtomFeed", () => {
 
   it("links each entry to its detail page using the slug", () => {
     const xml = buildAtomFeed([makeEntry({ slug: "paul-manafort" })], baseOptions);
-    expect(xml).toContain('<link rel="alternate" type="text/html" href="https://pardonned.com/pardon/details/paul-manafort"/>');
+    expect(xml).toContain(
+      '<link rel="alternate" type="text/html" href="https://pardonned.com/pardon/details/paul-manafort"/>',
+    );
   });
 
   it("uses a stable tag: URI for entry id", () => {
-    const xml = buildAtomFeed([makeEntry({ slug: "paul-manafort", grant_date: "2020-12-23" })], baseOptions);
+    const xml = buildAtomFeed(
+      [makeEntry({ slug: "paul-manafort", grant_date: "2020-12-23" })],
+      baseOptions,
+    );
     expect(xml).toContain("<id>tag:pardonned.com,2020-12-23:pardon-paul-manafort</id>");
   });
 
@@ -199,8 +208,69 @@ describe("buildAtomFeed", () => {
     );
   });
 
+  it("renders scope prose un-labeled — never 'Offense:' — for preemptive pardons", () => {
+    const scope =
+      "For any offenses against the United States which he may have committed or taken part in during the period from January 1, 2014, through the date of this pardon.";
+    const xml = buildAtomFeed(
+      [
+        makeEntry({
+          recipient_name: "Anthony S. Fauci",
+          offense: scope,
+          district: "N/A",
+          grant_date: "2025-01-20",
+          president_name: "Joseph R. Biden",
+        }),
+      ],
+      baseOptions,
+    );
+    expect(xml).not.toContain("Offense:");
+    expect(xml).toContain("which he may have committed");
+    // No doubled trailing period after the scope prose
+    expect(xml).not.toContain("pardon..");
+  });
+
+  it("falls back to original_sentence scope prose when the offense field is a scraper sentinel", () => {
+    const xml = buildAtomFeed(
+      [
+        makeEntry({
+          recipient_name: "Robert Hunter Biden",
+          offense: "Download PDF Clemency Warrant",
+          original_sentence:
+            "For those offenses against the United States which he has committed or may have committed or taken part in during the period from January 1, 2014 through December 1, 2024.",
+        }),
+      ],
+      baseOptions,
+    );
+    expect(xml).not.toContain("Offense:");
+    expect(xml).not.toContain("Download PDF Clemency Warrant");
+    expect(xml).toContain("For those offenses against the United States");
+  });
+
+  it("omits the offense clause entirely when only sentinels are available", () => {
+    const xml = buildAtomFeed(
+      [
+        makeEntry({
+          recipient_name: "Test Person",
+          clemency_type: "pardon",
+          offense: "Download PDF Clemency Warrant",
+          original_sentence: "N/A",
+          grant_date: "2024-12-01",
+          president_name: "Joseph R. Biden",
+        }),
+      ],
+      baseOptions,
+    );
+    expect(xml).toContain(
+      "Pardon granted to Test Person by Joseph R. Biden on 2024-12-01.</summary>",
+    );
+    expect(xml).not.toContain("Offense:");
+  });
+
   it("uses the configured siteUrl for self-link, alternate-link, and feed id", () => {
-    const xml = buildAtomFeed([makeEntry()], { ...baseOptions, siteUrl: "https://staging.pardonned.com" });
+    const xml = buildAtomFeed([makeEntry()], {
+      ...baseOptions,
+      siteUrl: "https://staging.pardonned.com",
+    });
     expect(xml).toContain("<id>https://staging.pardonned.com/recent.xml</id>");
     expect(xml).toContain('href="https://staging.pardonned.com/recent.xml"');
     expect(xml).toContain('href="https://staging.pardonned.com/recent"');

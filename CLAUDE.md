@@ -14,7 +14,7 @@ Canonical state vocabulary: `needs-info`, `ready-for-agent`, `ready-for-human`, 
 
 ### Domain docs
 
-Single-context: `CONTEXT.md` (domain vocabulary) and `docs/adr/` (ADRs 0001–0005) at the repo root — read the ones touching your area before working. See `docs/agents/domain.md`.
+Single-context: `CONTEXT.md` (domain vocabulary) and `docs/adr/` (ADRs 0001–0006) at the repo root — read the ones touching your area before working. See `docs/agents/domain.md`.
 
 ## Code Style
 
@@ -66,6 +66,7 @@ The loader joins `pardons` against `administrations` and exposes `administration
 - `src/db/schema.ts` — Drizzle schema for `administrations` and `pardons` tables
 - `src/loaders/pardon-details.ts` — content collection loader (SQLite query + join)
 - `src/content.config.ts` — Astro content collection config
+- `src/lib/pardon-clause.ts` — clause predicates for `offense`/`district`/`original_sentence`; every surface rendering these fields must go through it (ADR-0006)
 - `src/lib/pardon-stats.ts` — `computeStats`, `filterByAdministration`, etc.
 - `src/lib/president-names.ts` — display-name formatter + collection index builder
 - `src/lib/slugify.ts` — URL slug generator (checks override map, caps at 60 chars with sha1 suffix fallback)
@@ -90,6 +91,7 @@ pnpm scrape              # Repopulate from DOJ sources (slow, 5-10 min)
 
 ## Gotchas
 
+- **Never render `offense`, `district`, or `original_sentence` raw**: ~6 records are preemptive pardons (no conviction — Fauci, Milley, Tina Peters, Hunter Biden, two group clemencies) whose fields carry scope legalese or scraper sentinels (`"N/A"`, `"Download PDF Clemency Warrant"`). Rendering them raw states a false conviction. Always go through the predicates in `src/lib/pardon-clause.ts` — see ADR-0006 and CONTEXT.md ("Preemptive pardon"). Related: em-dash in the detail-page aside means *unknown*; *inapplicable* values (scope-mode records) omit the row entirely.
 - **U+00A0 non-breaking spaces in `recipient_name`**: scraped from `&nbsp;` in DOJ HTML. ~14 pardon records carry NBSPs somewhere in the name (e.g. "Robin Marie Davis", "Terrance Cox", the Biden family group pardon). Any string comparison against `recipient_name` must account for this — three records have slug-override keys using `\u00A0` explicitly in `src/lib/pardon-slug-overrides.ts`, and the /search name matcher normalizes NBSPs before comparing (`normalizeName` in `src/pages/search.astro`).
 - **Long `recipient_name` values need manual slug overrides**: ~21 records have names >50 chars, including one 374-char group clemency (the January 6 Select Committee). If the scraper discovers a new long name, `pnpm build` crashes with `ENAMETOOLONG` on the OG image step — add the new record to `src/lib/pardon-slug-overrides.ts`.
 - **Slug collisions cause ~30 pardons to collapse**: `getStaticPaths` deduplicates on the slug param, so two different pardons with the same slugified name produce only one HTML page. Pre-existing issue tracked in #13; don't be surprised when `2149 rows read` produces only `2119 pages built`.

@@ -1,4 +1,5 @@
 import type { PardonDetail } from "../loaders/pardon-details";
+import { OFFENSE_SENTINELS, realClause, scopeClause } from "./pardon-clause";
 import { formatAdministrationDisplayName } from "./president-names";
 
 /**
@@ -90,7 +91,17 @@ export function buildAtomFeed(entries: AtomEntry[], options: AtomFeedOptions): s
         isOnlyTerm: termsPerPresident.get(d.president_name)!.size === 1,
       });
       const clemencyLabel = d.clemency_type === "pardon" ? "Pardon" : "Commutation";
-      const summary = `${clemencyLabel} granted to ${d.recipient_name} by ${adminDisplay} on ${d.grant_date}. Offense: ${d.offense}.`;
+      // "Offense:" only when a real conviction exists. Preemptive pardons get
+      // the warrant's own scope prose un-labeled (it self-describes); scraper
+      // sentinels get nothing (see pardon-clause.ts).
+      const offense = realClause(d.offense, OFFENSE_SENTINELS);
+      const scope = scopeClause(d.offense) ?? scopeClause(d.original_sentence);
+      const base = `${clemencyLabel} granted to ${d.recipient_name} by ${adminDisplay} on ${d.grant_date}.`;
+      const summary = offense
+        ? `${base} Offense: ${offense}.`
+        : scope
+          ? `${base} ${scope}${scope.endsWith(".") ? "" : "."}`
+          : base;
 
       return `  <entry>
     <id>tag:pardonned.com,${d.grant_date}:pardon-${escapeXml(d.slug)}</id>

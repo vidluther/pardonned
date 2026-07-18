@@ -8,6 +8,7 @@ import {
     getCurrentAdministration,
 } from "../lib/president-names";
 import { getCategoryColor } from "../lib/category-colors";
+import { displayClause, OFFENSE_SENTINELS } from "../lib/pardon-clause";
 import {
     formatCompactMoney,
     formatGrantDateLong,
@@ -204,6 +205,12 @@ function dayLabel(isoDate: string): string {
                                     d.clemency_type === "pardon"
                                         ? "Pardon"
                                         : "Commutation";
+                                // Sentinel-free display values (pardon-clause.ts)
+                                const offenseText = displayClause(
+                                    d.offense,
+                                    OFFENSE_SENTINELS,
+                                );
+                                const districtText = displayClause(d.district);
                                 return (
                                     <a
                                         class="rb-entry"
@@ -241,16 +248,16 @@ function dayLabel(isoDate: string): string {
                                                 >
                                                     {catLabel}
                                                 </span>
-                                                {d.offense && (
+                                                {offenseText && (
                                                     <span class="rb-offense">
                                                         {" · "}
-                                                        {d.offense}
+                                                        {offenseText}
                                                     </span>
                                                 )}
-                                                {d.district && (
+                                                {districtText && (
                                                     <span class="rb-district">
                                                         {" · "}
-                                                        {d.district}
+                                                        {districtText}
                                                     </span>
                                                 )}
                                             </div>
